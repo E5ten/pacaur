@@ -1429,7 +1429,7 @@ MakePkgs() {
             if [[ $builtpkg ]]; then
                 if [[ " ${aurdepspkgs[@]} " =~ " $j " || $installpkg ]]; then
                     Note "i" $"Installing ${colorW}$j${reset} cached package..."
-                    sudo $pacmanbin -Ud $builtpkg --ask 36 ${pacopts[@]/--quiet} --noconfirm
+                    sudo $pacmanbin -U $builtpkg --ask 36 ${pacopts[@]/--quiet} --noconfirm
                     [[ ! " ${aurpkgs[@]} " =~ " $j " ]] && sudo $pacmanbin -D $j --asdeps ${pacopts[@]} &>/dev/null
                 else
                     Note "w" $"Package ${colorW}$j${reset} already available in cache"
@@ -1489,7 +1489,7 @@ MakePkgs() {
                 Note "f" $"ensure package name has a VCS suffix if this is a devel package"
                 errinstall+=(${pkgsdeps[$i]})
             else
-                sudo $pacmanbin -Ud ${builtdepspkgs[@]} ${builtpkgs[@]} --ask 36 ${pacopts[@]/--quiet} --noconfirm
+                sudo $pacmanbin -U ${builtdepspkgs[@]} ${builtpkgs[@]} --ask 36 ${pacopts[@]/--quiet} --noconfirm
             fi
         fi
 
@@ -1935,10 +1935,10 @@ GetJson() {
     if json_verify -q <<< "$2"; then
         case "$1" in
             var)
-                json_reformat <<< "$2" | tr -d "\", " | grep -Po "$3:.*" | sed -r "s/$3:/$3#/g" | awk -F "#" '{print $2}';;
+                json_reformat <<< "$2" | tr -d "\", " | pcre2grep -o "$3:.*" | sed -r "s/$3:/$3#/g" | awk -F "#" '{print $2}';;
             varvar)
                 json_reformat <<< "$2" | tr -d ", " | sed -e "/\"Name\":\"$4\"/,/}/!d" | \
-                tr -d "\"" | grep -Po "$3:.*" | sed -r "s/$3:/$3#/g" | awk -F "#" '{print $2}';;
+                tr -d "\"" | pcre2grep -o "$3:.*" | sed -r "s/$3:/$3#/g" | awk -F "#" '{print $2}';;
             array)
                 json_reformat <<< "$2" | tr -d ", " | sed -e "/^\"$3\"/,/]/!d" | tr -d '\"' \
                 | tr '\n' ' ' | sed "s/] /]\n/g" | cut -d' ' -f 2- | tr -d '[]"' | tr -d '\n';;
