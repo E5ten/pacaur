@@ -97,6 +97,70 @@ source "$configdir/config"
 # Functions
 #
 
+auwrap() {
+  FLAGS="--color never"
+  info() {
+      PACKAGE="$1"
+      RAWINFO="$(auracle rawinfo "$PACKAGE")"
+      FORMATTEDINFO="$(echo "$RAWINFO" | jq '.results[].Name, .results[].Version, .results[].Description, .results[].URL')"
+      URL+="https://aur.archlinux.org/packages/$PACKAGE"
+      FORMATTEDINFO+=" \"$URL\""
+      optfields=(
+          URL
+          License
+          Keywords
+          Groups
+          Provides
+          Depends
+          MakeDepends
+          CheckDepends
+          OptDepends
+          Replaces
+          Conflicts
+      )
+      for i in ${optfields[@]}; do
+          echo "$RAWINFO" | jq ".results[].$i[]" &>/dev/null 
+          if [ $? == 0 ]; then
+              FORMATTEDINFO+=" $(echo "$RAWINFO" | jq ". | .results[].$i")"
+          else
+              FORMATTEDINFO+=' [ "" ]'
+          fi
+      done
+      FORMATTEDINFO+=" $(echo "$RAWINFO" | jq '.results[].Maintainer, .results[].Popularity, .results[].NumVotes' | sed 's%[^ ][^ ]*%"&"%g')"
+      OUTOFDATE=" $(echo "$RAWINFO" | jq '.results[].OutOfDate' | sed -e 's%[^ ][^ ]*%"&"%g' -e 's%null%no%' -e 's%\"[0-9]*\"%\"yes\"%')"
+      OUTOFDATEDATE=" $(echo "$RAWINFO" | jq '.results[].OutOfDate' | sed -e 's%[^ ][^ ]*%"&"%g' -e 's%null%0%')"
+      FORMATTEDINFO+=$OUTOFDATE
+      FORMATTEDINFO+=$OUTOFDATEDATE
+      FORMATTEDINFO+=" $(echo "$RAWINFO" | jq '.results[].FirstSubmitted, .results[].LastModified' | sed 's%[^ ][^ ]*%"&"%g')"
+      FORMATTEDINFO="$(echo $FORMATTEDINFO | sed -e 's%\", \"% %g' -e 's% \[ \"%%' -e 's%\" \[ \"%\|%g' -e 's%\" \] \"%\|%g' -e 's%\" \] \[ \"%\|%g' -e 's%\" \"%\|%g' -e 's%\"%%g')"
+      
+      echo "$FORMATTEDINFO"
+  }
+
+  while getopts "s:i:" opt; do
+      case $opt in
+          s)
+              SEARCH="yes"
+              shift
+              ;;
+          i)
+              info $2
+              shift 2
+              ;;
+          \?)
+              echo "Invalid option: -$OPTARG" >&2
+              ;;
+          :)
+              echo "Option -$OPTARG requires an argument." >&2
+              ;;
+      esac
+  done
+
+  if [[ "$SEARCH" == "yes" ]]; then
+      auracle search ${FLAGS} $@
+  fi
+}
+
 ClassifyPkgs() {
     local noaurpkgs norepopkgs
     # global aurpkgs repopkgs
@@ -1479,13 +1543,13 @@ SearchAur() {
     if [[ -z "$(grep -E "\-\-[r]?sort" <<< ${auropts[@]})" ]]; then
         [[ $sortorder = descending ]] && auropts+=("--rsort=$sortby") || auropts+=("--sort=$sortby");
     fi
-    cower ${auropts[@]} -- $@
+    auwrap ${auropts[@]} -- $@
 }
 
 InfoAur() {
     local aurinfopkgs info infolabel maxlength linfo lbytes
 
-    readarray aurinfopkgs < <(cower ${auropts[@]} --format "%n|%v|%d|%u|%p|%L|%W|%G|%P|%D|%M|%K|%O|%C|%R|%m|%r|%o|%t|%w|%s|%a\n" $@)
+    readarray aurinfopkgs < <(auwrap ${auropts[@]} $@)
     aurinfopkgsQname=($(expac -Q '%n' $@))
     aurinfopkgsQver=($(expac -Q '%v' $@))
 
@@ -1784,7 +1848,7 @@ CleanCache() {
 GetIgnoredPkgs() {
     # global ignoredpkgs
     ignoredpkgs+=($(grep '^IgnorePkg' '/etc/pacman.conf' | awk -F '=' '{print $NF}' | tr -d "'\""))
-    [[ -e "$HOME/.config/cower/config" ]] && ignoredpkgs+=($(grep '^IgnorePkg' "$HOME/.config/cower/config" | awk -F '=' '{print $NF}' | tr -d "'\""))
+    [[ -e "$HOME/.config/auracle/config" ]] && ignoredpkgs+=($(grep '^IgnorePkg' "$HOME/.config/auracle/config" | awk -F '=' '{print $NF}' | tr -d "'\""))
     ignoredpkgs=(${ignoredpkgs[@]//,/ })
 }
 
@@ -2306,4 +2370,4 @@ case $operation in
         fi
         exit;;
 esac
-# vim:set ts=4 sw=2 et:
+# vim:set ts=4 sw=4 et:
