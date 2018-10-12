@@ -98,15 +98,14 @@ source "$configdir/config"
 #
 
 auwrap() {
-  FLAGS="--color never"
-  info() {
+    FLAGS="--color never"
+    info() {
       PACKAGE="$1"
       RAWINFO="$(auracle rawinfo "$PACKAGE")"
-      FORMATTEDINFO="$(echo "$RAWINFO" | jq '.results[].Name, .results[].Version, .results[].Description, .results[].URL')"
+      FORMATTEDINFO="$(echo "$RAWINFO" | jq -c '.results[].Name, .results[].Version, .results[].Description, .results[].URL')"
       URL+="https://aur.archlinux.org/packages/$PACKAGE"
       FORMATTEDINFO+=" \"$URL\""
       optfields=(
-          URL
           License
           Keywords
           Groups
@@ -119,25 +118,28 @@ auwrap() {
           Conflicts
       )
       for i in ${optfields[@]}; do
-          echo "$RAWINFO" | jq ".results[].$i[]" &>/dev/null 
+          echo "$RAWINFO" | jq ".results[].$i[]" &>/dev/null
           if [ $? == 0 ]; then
-              FORMATTEDINFO+=" $(echo "$RAWINFO" | jq ". | .results[].$i")"
+              FORMATTEDINFO+="$(echo "$RAWINFO" | jq ". | .results[].$i" | sed -e 's%\[\]%\"\"%' -e 's%\]%%g' -e 's%\[%%g')"
+              # echo "$RAWINFO" | jq -e ". | .results[].$i"
           else
-              FORMATTEDINFO+=' [ "" ]'
+              FORMATTEDINFO+='""'
           fi
       done
-      FORMATTEDINFO+=" $(echo "$RAWINFO" | jq '.results[].Maintainer, .results[].Popularity, .results[].NumVotes' | sed 's%[^ ][^ ]*%"&"%g')"
-      OUTOFDATE=" $(echo "$RAWINFO" | jq '.results[].OutOfDate' | sed -e 's%[^ ][^ ]*%"&"%g' -e 's%null%no%' -e 's%\"[0-9]*\"%\"yes\"%')"
+      FORMATTEDINFO+="$(echo "$RAWINFO" | jq '.results[].Maintainer, .results[].Popularity, .results[].NumVotes' | sed 's%[^ ][^ ]*%"&"%g')"
+      # echo "$FORMATTEDINFO"
+      OUTOFDATE="$(echo "$RAWINFO" | jq '.results[].OutOfDate' | sed -e 's%[^ ][^ ]*%"&"%g' -e 's%null%no%' -e 's%\"[0-9]*\"%\"yes\"%')"
       OUTOFDATEDATE=" $(echo "$RAWINFO" | jq '.results[].OutOfDate' | sed -e 's%[^ ][^ ]*%"&"%g' -e 's%null%0%')"
       FORMATTEDINFO+=$OUTOFDATE
+      # echo $FORMATTEDINFO
       FORMATTEDINFO+=$OUTOFDATEDATE
-      FORMATTEDINFO+=" $(echo "$RAWINFO" | jq '.results[].FirstSubmitted, .results[].LastModified' | sed 's%[^ ][^ ]*%"&"%g')"
-      FORMATTEDINFO="$(echo $FORMATTEDINFO | sed -e 's%\", \"% %g' -e 's% \[ \"%%' -e 's%\" \[ \"%\|%g' -e 's%\" \] \"%\|%g' -e 's%\" \] \[ \"%\|%g' -e 's%\" \"%\|%g' -e 's%\"%%g')"
+      FORMATTEDINFO+="$(echo "$RAWINFO" | jq '.results[].FirstSubmitted, .results[].LastModified' | sed 's%[^ ][^ ]*%"&"%g')"
+      FORMATTEDINFO="$(echo $FORMATTEDINFO | sed -e 's%\",\"% %g' -e 's%\" \"%\"\"%g' -e 's%\[ %%g' -e 's% \]%%g' -e 's%\"\"%\|%g' -e 's%\"%%g')" # -e 's%\[%\|%g' -e 's%\]%\|%g')" # -e 's% \[ \"%%' -e 's%\" \[ \"%\|%g' -e 's%\" \] \"%\|%g' -e 's%\" \] \[ \"%\|%g' -e 's%\" \"%\|%g' -e 's%\"%%g')"
       
       echo "$FORMATTEDINFO"
-  }
+    }
 
-  while getopts "s:i:" opt; do
+    while getopts "s:i:" opt; do
       case $opt in
           s)
               SEARCH="yes"
@@ -154,11 +156,11 @@ auwrap() {
               echo "Option -$OPTARG requires an argument." >&2
               ;;
       esac
-  done
+    done
 
-  if [[ "$SEARCH" == "yes" ]]; then
+    if [[ "$SEARCH" == "yes" ]]; then
       auracle search ${FLAGS} $@
-  fi
+    fi
 }
 
 ClassifyPkgs() {
