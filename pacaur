@@ -93,6 +93,9 @@ source "$configdir/config"
 # set up directories
 [[ ! -d "$clonedir" ]] && mkdir -p "$clonedir" -m 700
 
+# source makepkg library script for check_buildenv()
+source /usr/share/makepkg/util/option.sh
+
 #
 # Functions
 #
@@ -465,7 +468,10 @@ FindDepsAur() {
     # cached packages makedeps check
     if [[ ! $PKGDEST || $rebuild || $foreign ]]; then
         depspkgs+=($(GetJson "array" "$json" "MakeDepends"))
-        depspkgs+=($(GetJson "array" "$json" "CheckDepends"))
+        # only install CheckDepends if check is enabled in in makepkg.conf
+        if check_buildenv "check" "y"; then
+            depspkgs+=($(GetJson "array" "$json" "CheckDepends"))
+        fi
     else
         [[ -z "${depspkgsaur[@]}" ]] && depspkgsaurtmp=(${aurpkgs[@]}) || depspkgsaurtmp=(${depspkgsaur[@]})
         for i in "${!depspkgsaurtmp[@]}"; do
@@ -474,7 +480,10 @@ FindDepsAur() {
             GetBuiltPkg "$depsAname-$depsAver" "$PKGDEST"
             if [[ ! $builtpkg ]]; then
                 depspkgs+=($(GetJson "arrayvar" "$json" "MakeDepends" "${depspkgsaurtmp[$i]}"))
-                depspkgs+=($(GetJson "arrayvar" "$json" "CheckDepends" "${depspkgsaurtmp[$i]}"))
+                # only install CheckDepends if check is enabled in in makepkg.conf
+                if check_buildenv "check" "y"; then
+                    depspkgs+=($(GetJson "arrayvar" "$json" "CheckDepends" "${depspkgsaurtmp[$i]}"))
+                fi
             fi
             unset builtpkg
         done
@@ -589,7 +598,10 @@ SortDepsAur() {
 
         sortdepspkgs+=($(GetJson "arrayvar" "$json" "Depends" "${sortaurpkgs[$i]}"))
         sortdepspkgs+=($(GetJson "arrayvar" "$json" "MakeDepends" "${sortaurpkgs[$i]}"))
-        sortdepspkgs+=($(GetJson "arrayvar" "$json" "CheckDepends" "${sortaurpkgs[$i]}"))
+        # only install CheckDepends if check is enabled in in makepkg.conf
+        if check_buildenv "check" "y"; then
+            sortdepspkgs+=($(GetJson "arrayvar" "$json" "CheckDepends" "${sortaurpkgs[$i]}"))
+        fi
 
         # remove versioning
         for j in "${!errdeps[@]}"; do
@@ -640,7 +652,10 @@ FindDepsAurError() {
     if [[ ! " ${aurpkgs[@]} " =~ " $nexterrdep " ]]; then
         nextallerrdeps=($(GetJson "arrayvar" "$json" "Depends" "$nexterrdep"))
         nextallerrdeps+=($(GetJson "arrayvar" "$json" "MakeDepends" "$nexterrdep"))
-        nextallerrdeps+=($(GetJson "arrayvar" "$json" "CheckDepends" "$nexterrdep"))
+        # only use CheckDepends if check is enabled in in makepkg.conf
+        if check_buildenv "check" "y"; then
+            nextallerrdeps+=($(GetJson "arrayvar" "$json" "CheckDepends" "$nexterrdep"))
+        fi
 
         # remove versioning
         for i in "${!nextallerrdeps[@]}"; do
@@ -657,7 +672,10 @@ FindDepsAurError() {
         for i in "${!aurpkgs[@]}"; do
             nextallerrdeps=($(GetJson "arrayvar" "$json" "Depends" "${aurpkgs[$i]}"))
             nextallerrdeps+=($(GetJson "arrayvar" "$json" "MakeDepends" "${aurpkgs[$i]}"))
-            nextallerrdeps+=($(GetJson "arrayvar" "$json" "CheckDepends" "${aurpkgs[$i]}"))
+            # only use CheckDepends if check is enabled in in makepkg.conf
+            if check_buildenv "check" "y"; then
+                nextallerrdeps+=($(GetJson "arrayvar" "$json" "CheckDepends" "${aurpkgs[$i]}"))
+            fi
 
             # remove versioning
             for j in "${!nextallerrdeps[@]}"; do
@@ -1187,9 +1205,8 @@ DownloadPkgs() {
             git reset --hard HEAD -q # updated pkgver of vcs packages prevent pull
             [[ "$displaybuildfiles" = diff ]] && git rev-parse HEAD > ".git/HEAD.prev"
             # git pull --ff -q
-            cd -
         fi
-        auracle clone --quiet "$i"
+        auracle -C "$clonedir" clone --quiet "$i"
         (($? > 0)) && errgit+=($i)
     done
 
