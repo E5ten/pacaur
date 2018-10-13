@@ -98,7 +98,9 @@ source "$configdir/config"
 #
 
 auwrap() {
+    local FLAGS PACKAGE RAWINFO FORMATTEDINFO URL optfields opt SEARCH
     FLAGS="--color never"
+    # Format auracle rawinfo output like the cower format flag pacaur used before
     info() {
       PACKAGE="$1"
       RAWINFO="$(auracle rawinfo "$PACKAGE")"
@@ -121,24 +123,21 @@ auwrap() {
           echo "$RAWINFO" | jq ".results[].$i[]" &>/dev/null
           if [ $? == 0 ]; then
               FORMATTEDINFO+="$(echo "$RAWINFO" | jq ". | .results[].$i" | sed -e 's%\[\]%\"\"%' -e 's%\]%%g' -e 's%\[%%g')"
-              # echo "$RAWINFO" | jq -e ". | .results[].$i"
           else
               FORMATTEDINFO+='""'
           fi
       done
       FORMATTEDINFO+="$(echo "$RAWINFO" | jq '.results[].Maintainer, .results[].Popularity, .results[].NumVotes' | sed 's%[^ ][^ ]*%"&"%g')"
-      # echo "$FORMATTEDINFO"
       OUTOFDATE="$(echo "$RAWINFO" | jq '.results[].OutOfDate' | sed -e 's%[^ ][^ ]*%"&"%g' -e 's%null%no%' -e 's%\"[0-9]*\"%\"yes\"%')"
       OUTOFDATEDATE=" $(echo "$RAWINFO" | jq '.results[].OutOfDate' | sed -e 's%[^ ][^ ]*%"&"%g' -e 's%null%0%')"
       FORMATTEDINFO+=$OUTOFDATE
-      # echo $FORMATTEDINFO
       FORMATTEDINFO+=$OUTOFDATEDATE
       FORMATTEDINFO+="$(echo "$RAWINFO" | jq '.results[].FirstSubmitted, .results[].LastModified' | sed 's%[^ ][^ ]*%"&"%g')"
-      FORMATTEDINFO="$(echo $FORMATTEDINFO | sed -e 's%\",\"% %g' -e 's%\" \"%\"\"%g' -e 's%\[ %%g' -e 's% \]%%g' -e 's%\"\"%\|%g' -e 's%\"%%g')" # -e 's%\[%\|%g' -e 's%\]%\|%g')" # -e 's% \[ \"%%' -e 's%\" \[ \"%\|%g' -e 's%\" \] \"%\|%g' -e 's%\" \] \[ \"%\|%g' -e 's%\" \"%\|%g' -e 's%\"%%g')"
+      FORMATTEDINFO="$(echo $FORMATTEDINFO | sed -e 's%\",\"% %g' -e 's%\" \"%\"\"%g' -e 's%\[ %%g' -e 's% \]%%g' -e 's%\"\"%\|%g' -e 's%\"%%g')"
       
       echo "$FORMATTEDINFO"
     }
-
+    # Let auracle accept shortopts like cower for the 2 cower shortopt commands used in pacaur
     while getopts "s:i:" opt; do
       case $opt in
           s)
@@ -1181,14 +1180,16 @@ DownloadPkgs() {
     # clone
     for i in ${basepkgs[@]}; do
         cd "$clonedir" || exit 1
-        if [[ ! -d "$i" ]]; then
-            git clone --depth=1 https://aur.archlinux.org/$i.git
-        else
+        if [[ -d "$i" ]]; then
+            # git clone --depth=1 https://aur.archlinux.org/$i.git
+        # else
             cd "$clonedir/$i" || exit 1
             git reset --hard HEAD -q # updated pkgver of vcs packages prevent pull
             [[ "$displaybuildfiles" = diff ]] && git rev-parse HEAD > ".git/HEAD.prev"
-            git pull --ff -q
+            # git pull --ff -q
+            cd -
         fi
+        auracle clone --quiet "$i"
         (($? > 0)) && errgit+=($i)
     done
 
@@ -1932,18 +1933,19 @@ DownloadJson() {
 }
 
 GetJson() {
-    if json_verify -q <<< "$2"; then
+    jq '.' <<< "$2" &>/dev/null
+    if [[ $? == "0" ]]; then
         case "$1" in
             var)
-                json_reformat <<< "$2" | tr -d "\", " | pcre2grep -o "$3:.*" | sed -r "s/$3:/$3#/g" | awk -F "#" '{print $2}';;
+                jq -M '.' <<< "$2" | tr -d "\", " | grep -o "$3:.*" | sed -r "s/$3:/$3#/g" | awk -F "#" '{print $2}';;
             varvar)
-                json_reformat <<< "$2" | tr -d ", " | sed -e "/\"Name\":\"$4\"/,/}/!d" | \
-                tr -d "\"" | pcre2grep -o "$3:.*" | sed -r "s/$3:/$3#/g" | awk -F "#" '{print $2}';;
+                jq -M '.' <<< "$2" | tr -d ", " | sed -e "/\"Name\":\"$4\"/,/}/!d" | \
+                tr -d "\"" | grep -o "$3:.*" | sed -r "s/$3:/$3#/g" | awk -F "#" '{print $2}';;
             array)
-                json_reformat <<< "$2" | tr -d ", " | sed -e "/^\"$3\"/,/]/!d" | tr -d '\"' \
+                jq -M '.' <<< "$2" | tr -d ", " | sed -e "/^\"$3\"/,/]/!d" | tr -d '\"' \
                 | tr '\n' ' ' | sed "s/] /]\n/g" | cut -d' ' -f 2- | tr -d '[]"' | tr -d '\n';;
             arrayvar)
-                json_reformat <<< "$2" | tr -d ", " | sed -e "/\"Name\":\"$4\"/,/}/!d" | \
+                jq -M '.' <<< "$2" | tr -d ", " | sed -e "/\"Name\":\"$4\"/,/}/!d" | \
                 sed -e "/^\"$3\"/,/]/!d" | tr -d '\"' | tr '\n' ' ' | cut -d' ' -f 2- | tr -d '[]';;
         esac
     else
@@ -1962,8 +1964,15 @@ CheckRequires() {
 
 Proceed() {
     local Y y N n answer readline ret
-    Y="$(gettext pacman Y)"; y="${Y,,}";
-    N="$(gettext pacman N)"; n="${N,,}"
+    # Use gettext if it is present
+    if type gettext >/dev/null 2>&1; then
+        Y="$(gettext pacman Y)"; y="${Y,,}";
+        N="$(gettext pacman N)"; n="${N,,}"
+    else
+        Y="Y"; y="${Y,,}";
+        N="N"; n="${N,,}"
+    fi
+
     if [[ "$TERM" = dumb ]] || [[ $cleancache ]]; then
         readline=1
     else
