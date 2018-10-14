@@ -77,6 +77,10 @@ silent=false                                # silence output
 sortby=popularity                           # sort method (name|votes|popularity)
 sortorder=descending                        # sort order (ascending|descending)
 sudoloop=true                               # prevent sudo timeout
+enableforce=false					        # use deprecated --force pacman flag instead 
+									        # of redirecting to --overwrite "*", enabling
+									        # is not recommended
+
 
 # set variables
 pacmanbin="${PACMAN:-pacman}"               # pacman binary
@@ -2193,6 +2197,14 @@ while [[ -n "${!OPTIND}" ]]; do
                     sysroot=?*) pacopts+=("--sysroot ${OPTARG#*=}");;
                     sysroot) pacopts+=("--sysroot ${!OPTIND}"); shift;;
                     overwrite) pacopts+=("--overwrite \\${!OPTIND}"); shift;;
+                    force)
+                        if [[ "$enableforce" == "false" ]]; then
+                            pacopts+=("--overwrite "\\*"")
+                            echo 'using --overwrite "*" instead of deprecated --force'
+                        else
+                            pacopts+=("--$OPTARG")
+                        fi
+                        shift;;
                     version) Version; exit;;
                     help) Usage; exit;;
                     *) pacopts+=("--$OPTARG");;
