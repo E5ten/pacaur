@@ -16,7 +16,4 @@
 #sortby=popularity                     # sort method (name|votes|popularity)
 #sortorder=descending                  # sort order (ascending|descending)
 #sudoloop=true                         # prevent sudo timeout
-#enableforce=false					   # use deprecated --force pacman flag instead 
-									   # of redirecting to --overwrite "*", enabling
-									   # is not recommended
 
