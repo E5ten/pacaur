@@ -106,23 +106,31 @@ source /usr/share/makepkg/util/option.sh
 
 auwrap() {
     local FLAGS PACKAGE RAWINFO FORMATTEDINFO URL optfields opt SEARCH
-      if [ -z "$(grep '^Color' '/etc/pacman.conf')" ]; then
-        FLAGS="--color never "
-      fi
+    if [ -z "$(grep '^Color' '/etc/pacman.conf')" ]; then
+        FLAGS+="--color never "
+    fi
+
     
     # Let auracle accept shortopts like cower for the 2 cower shortopt commands used in pacaur
     while getopts "qs:i:" opt; do
-      case $opt in
-          q)
-              FLAGS+="--quiet"
-              shift
-              ;;
-          s)
-              FLAGS+="search"
-              shift
-              ;;
-          i)
-              FLAGS+="info"
+        case $opt in
+            q)
+                FLAGS+="--quiet "
+                shift
+                ;;
+            s)
+                FLAGS+="search "
+                if [[ -z "$(grep -E "\-\-[r]?sort" <<< ${auropts[@]})" ]]; then
+                    if [[ $sortorder = descending ]]; then
+                        FLAGS+="--rsort=$sortby "
+                    else
+                        FLAGS+="--sort=$sortby ";
+                    fi
+                fi
+                shift
+                ;;
+            i)
+              FLAGS+="info "
               shift 2
               ;;
           \?)
@@ -1531,17 +1539,6 @@ MakePkgs() {
     fi
 }
 
-SearchAur() {
-    if [[ -z "$(grep -E "\-\-[r]?sort" <<< ${auropts[@]})" ]]; then
-        [[ $sortorder = descending ]] && auropts+=("--rsort=$sortby") || auropts+=("--sort=$sortby");
-    fi
-    auwrap ${auropts[@]} -- $@
-}
-
-InfoAur() {
-    auwrap ${auropts[@]} -- $@
-}
-
 CheckUpdates() {
     local foreignpkgs foreignpkgsbase repopkgsQood repopkgsQver repopkgsSver repopkgsSrepo repopkgsQgrp repopkgsQignore
     local aurpkgsQood aurpkgsAname aurpkgsAver aurpkgsQver aurpkgsQignore i json
@@ -2207,7 +2204,7 @@ case $operation in
                 exitrepo=$?
             fi
             if [[ ! $repo && ($fallback = true || $aur) ]]; then
-                SearchAur ${pkgs[@]}
+                auwrap ${auropts[@]} -- $@ ${pkgs[@]}
                 exitaur=$?
             fi
             # exit code
@@ -2241,7 +2238,7 @@ case $operation in
                     fi
                 fi
                 # display info without buffer delay
-                tmpinfo=$(mktemp "$tmpdir/pacaur.infoaur.XXXX") && InfoAur ${aurpkgs[@]} > $tmpinfo && cat $tmpinfo && rm $tmpinfo
+                tmpinfo=$(mktemp "$tmpdir/pacaur.infoaur.XXXX") && auwrap ${auropts[@]} -- $@ ${aurpkgs[@]} > $tmpinfo && cat $tmpinfo && rm $tmpinfo
             fi
         # clean (-Sc) handling
         elif [[ $cleancache ]]; then
