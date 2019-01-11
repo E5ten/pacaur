@@ -92,7 +92,7 @@ _pacaur_opts_pkgfile=(
     '*-d[Skip dependency checks]'
     '*--nodeps[Skip dependency checks]'
     '--dbonly[Only remove database entry, do not remove files]'
-    '--force[Overwrite conflicting files]'
+    '--overwrite[Overwrite conflicting files]:overwrite files:_files'
     '--needed[Do not reinstall up to date packages]'
     '*:package file:_files -g "*.pkg.tar*~*.sig(.,@)"'
 )
@@ -162,7 +162,7 @@ _pacaur_opts_sync_modifiers=(
     '*--ignoregroup[Ignore a group upgrade]:package group:_pacaur_completions_all_groups'
     '--asdeps[Install packages as non-explicitly installed]'
     '--asexplicit[Install packages as explicitly installed]'
-    '--force[Overwrite conflicting files]'
+    '--overwrite[Overwrite conflicting files]:overwrite files:_files'
 )
 
 # handles check subcommand

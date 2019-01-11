@@ -105,7 +105,6 @@ auwrap() {
     if [ -z "$(grep '^Color' '/etc/pacman.conf')" ]; then
         FLAGS+="--color never "
     fi
-
     
     # Let auracle accept shortopts like cower for the 2 cower shortopt commands used in pacaur
     while getopts "qs:i:" opt; do
@@ -129,13 +128,13 @@ auwrap() {
               FLAGS+="info "
               shift 2
               ;;
-          \?)
-              echo "Invalid option: -$OPTARG" >&2
-              ;;
-          :)
-              echo "Option -$OPTARG requires an argument." >&2
-              ;;
-      esac
+            \?)
+                echo "Invalid option: -$OPTARG" >&2
+                ;;
+            :)
+                echo "Option -$OPTARG requires an argument." >&2
+                ;;
+        esac
     done
 
     auracle ${FLAGS} $@
@@ -243,7 +242,7 @@ IgnoreChecks() {
     # check targets
     SetJson ${aurpkgsnover[@]}
     checkaurpkgs=($(GetJson "var" "$json" "Name"))
-    errdeps+=($(rg -xvf <(printf '%s\n' "${aurpkgsnover[@]}") <(printf '%s\n' "${checkaurpkgs[@]}")))
+    errdeps+=($(grep -xvf <(printf '%s\n' "${aurpkgsnover[@]}") <(printf '%s\n' "${checkaurpkgs[@]}")))
     errdeps+=($(grep -xvf <(printf '%s\n' "${checkaurpkgs[@]}") <(printf '%s\n' "${aurpkgsnover[@]}")))
     unset aurpkgsnover
 
