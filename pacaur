@@ -100,46 +100,6 @@ source /usr/share/makepkg/util/option.sh
 # Functions
 #
 
-auwrap() {
-    local FLAGS PACKAGE RAWINFO FORMATTEDINFO URL optfields opt SEARCH
-    if [ -z "$(grep '^Color' '/etc/pacman.conf')" ]; then
-        FLAGS+="--color never "
-    fi
-    
-    # Let auracle accept shortopts like cower for the 2 cower shortopt commands used in pacaur
-    while getopts "qs:i:" opt; do
-        case $opt in
-            q)
-                FLAGS+="--quiet "
-                shift
-                ;;
-            s)
-                FLAGS+="search "
-                if [[ -z "$(grep -E "\-\-[r]?sort" <<< ${auropts[@]})" ]]; then
-                    if [[ $sortorder = descending ]]; then
-                        FLAGS+="--rsort=$sortby "
-                    else
-                        FLAGS+="--sort=$sortby ";
-                    fi
-                fi
-                shift
-                ;;
-            i)
-              FLAGS+="info "
-              shift 2
-              ;;
-            \?)
-                echo "Invalid option: -$OPTARG" >&2
-                ;;
-            :)
-                echo "Option -$OPTARG requires an argument." >&2
-                ;;
-        esac
-    done
-
-    auracle ${FLAGS} $@
-}
-
 ClassifyPkgs() {
     local noaurpkgs norepopkgs
     # global aurpkgs repopkgs
@@ -2017,8 +1977,8 @@ count=0
 while [[ -n "${!OPTIND}" ]]; do
     case "${!OPTIND}" in
         sync) operation=sync; installpkg=true; aur='1'; shift $OPTIND;;
-        info) operation=sync; info=true; auropts+=("-i"); aur='1'; shift $OPTIND;;
-        search) operation=sync; search=true; auropts+=("-s"); aur='1'; shift $OPTIND;;
+        info) operation=sync; info=true; auropts+=("info"); aur='1'; shift $OPTIND;;
+        search) operation=sync; search=true; auropts+=("search"); aur='1'; shift $OPTIND;;
         buildonly) operation=sync; aur='1'; shift $OPTIND;;
         upgrade) operation=sync; upgrade=true; installpkg=true; selective=true; aur='1'; shift $OPTIND;;
         check) operation=upgrades; pacopts+=("--foreign"); shift $OPTIND;;
@@ -2031,11 +1991,11 @@ while [[ -n "${!OPTIND}" ]]; do
             -)
                 case "$OPTARG" in
                     search) [[ $pac || $pacS || $pacQ ]] && pacopts+=("--search");
-                        [[ $pacS ]] && operation=sync && search=true && auropts+=("-s");
-                        [[ $pac || $pacQ || $pacS ]] && continue || operation=sync; search=true; auropts+=("-s"); aur='1';;
+                        [[ $pacS ]] && operation=sync && search=true && auropts+=("search");
+                        [[ $pac || $pacQ || $pacS ]] && continue || operation=sync; search=true; auropts+=("search"); aur='1';;
                     info) [[ $pac || $pacS || $pacQ ]] && pacopts+=("--info");
-                        [[ $pacS ]] && operation=sync && info=true && auropts+=("-i");
-                        [[ $pac || $pacQ || $pacS ]] && continue || operation=sync; info=true; auropts+=("-i"); aur='1';;
+                        [[ $pacS ]] && operation=sync && info=true && auropts+=("info");
+                        [[ $pac || $pacQ || $pacS ]] && continue || operation=sync; info=true; auropts+=("info"); aur='1';;
                     download) operation=download && ((count++));;
                     makepkg) operation=sync; aur='1';;
                     sync) [[ $pac || $pacS || $pacQ ]] && pacopts+=("--sync");
@@ -2081,10 +2041,10 @@ while [[ -n "${!OPTIND}" ]]; do
                     help) Usage; exit;;
                     *) pacopts+=("--$OPTARG");;
                 esac;;
-            s)  [[ $pacS ]] && operation=sync && search=true && auropts+=("-s");
-                [[ $pac || $pacQ || $pacS ]] && continue || operation=sync; search=true; auropts+=("-s"); aur='1';;
-            i)  [[ $pacS ]] && operation=sync && info=true && auropts+=("-i");
-                [[ $pac || $pacQ || $pacS ]] && continue || operation=sync; info=true; auropts+=("-i"); aur='1';;
+            s)  [[ $pacS ]] && operation=sync && search=true && auropts+=("search");
+                [[ $pac || $pacQ || $pacS ]] && continue || operation=sync; search=true; auropts+=("search"); aur='1';;
+            i)  [[ $pacS ]] && operation=sync && info=true && auropts+=("info");
+                [[ $pac || $pacQ || $pacS ]] && continue || operation=sync; info=true; auropts+=("info"); aur='1';;
             d)  [[ $pacS ]] && nodeps=true && pacopts+=("--nodeps") && makeopts+=("--nodeps") && ((count++));
                 [[ $pac || $pacQ || $pacS ]] && continue || operation=download && ((count++));;
             m)  [[ $pac || $pacQ || $pacS ]] && continue || operation=sync; aur='1';;
@@ -2139,7 +2099,7 @@ elif [[ -z "$(grep '^Color' '/etc/pacman.conf')" && ($color = 'always' || $color
     colorC="\e[1;36m"
     colorW="\e[1;39m"
 else
-    [[ $color != 'always' && $color != 'auto' ]] && makeopts+=("--nocolor")
+    [[ $color != 'always' && $color != 'auto' ]] && makeopts+=("--nocolor") && auropts+=("--color=never")
 fi
 
 # sanity check
@@ -2191,7 +2151,7 @@ case $operation in
                 exitrepo=$?
             fi
             if [[ ! $repo && ($fallback = true || $aur) ]]; then
-                auwrap ${auropts[@]} -- $@ ${pkgs[@]}
+                auracle ${auropts[@]} -- $@ ${pkgs[@]}
                 exitaur=$?
             fi
             # exit code
@@ -2225,7 +2185,7 @@ case $operation in
                     fi
                 fi
                 # display info without buffer delay
-                tmpinfo=$(mktemp "$tmpdir/pacaur.infoaur.XXXX") && auwrap ${auropts[@]} -- $@ ${aurpkgs[@]} > $tmpinfo && cat $tmpinfo && rm $tmpinfo
+                tmpinfo=$(mktemp "$tmpdir/pacaur.infoaur.XXXX") && auracle ${auropts[@]} -- $@ ${aurpkgs[@]} > $tmpinfo && cat $tmpinfo && rm $tmpinfo
             fi
         # clean (-Sc) handling
         elif [[ $cleancache ]]; then
