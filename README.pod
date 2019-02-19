@@ -209,13 +209,6 @@ When searching the AUR, search by I<FIELD> where I<FIELD> is B<name>, B<name-des
 or B<maintainer> to search for packages by their name, name and description, or by
 the package maintainer, respectively. The default is to search by name-desc.
 
-=item B<--ignore-ood>, B<--no-ignore-ood>
-
-When searching the AUR, ignore all results marked as out of date or do not ignore
-results marked as out of date, respectively. The default is to not ignore results
-marked as out of date. This can be changed with the I<IgnoreOOD> option in the
-cower config file.
-
 =item B<--literal>
 
 When searching the AUR, disable regex search and interpret target as a literal

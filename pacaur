@@ -1798,13 +1798,13 @@ GetJson() {
     if [[ $? == "0" ]]; then
         case "$1" in
             var)
-                jq -M '.' <<< "$2" | tr -d "\", " | grep -o "$3:.*" | sed -r "s/$3:/$3#/g" | awk -F "#" '{print $2}';;
+                jq -M '.' <<< "$2" | tr -d "\", " | grep -o "$3:.*" | sed -r "s%$3:%$3#%g" | awk -F "#" '{print $2}';;
             varvar)
                 jq -M '.' <<< "$2" | tr -d ", " | sed -e "/\"Name\":\"$4\"/,/}/!d" | \
-                tr -d "\"" | grep -o "$3:.*" | sed -r "s/$3:/$3#/g" | awk -F "#" '{print $2}';;
+                tr -d "\"" | grep -o "$3:.*" | sed -r "s%$3:%$3#%g" | awk -F "#" '{print $2}';;
             array)
                 jq -M '.' <<< "$2" | tr -d ", " | sed -e "/^\"$3\"/,/]/!d" | tr -d '\"' \
-                | tr '\n' ' ' | sed "s/] /]\n/g" | cut -d' ' -f 2- | tr -d '[]"' | tr -d '\n';;
+                | tr '\n' ' ' | sed "s%] %]\n%g" | cut -d' ' -f 2- | tr -d '[]"' | tr -d '\n';;
             arrayvar)
                 jq -M '.' <<< "$2" | tr -d ", " | sed -e "/\"Name\":\"$4\"/,/}/!d" | \
                 sed -e "/^\"$3\"/,/]/!d" | tr -d '\"' | tr '\n' ' ' | cut -d' ' -f 2- | tr -d '[]';;
@@ -2014,8 +2014,6 @@ while [[ -n "${!OPTIND}" ]]; do
                     ignore) ignoredpkgs+=(${!OPTIND}); ignoreopts+=("--ignore ${!OPTIND}"); shift;;
                     color=?*) color=${OPTARG#*=}; pacopts+=("--color ${OPTARG#*=}") && auropts+=("--color=${OPTARG#*=}");;
                     color) color=${!OPTIND}; pacopts+=("--color ${!OPTIND}") && auropts+=("--color=${!OPTIND}"); shift;;
-                    ignore-ood) auropts+=("--ignore-ood");;
-                    no-ignore-ood) auropts+=("--no-ignore-ood");;
                     literal) auropts+=("--literal");;
                     sort=?*) auropts+=("--sort ${OPTARG#*=}");;
                     sort) auropts+=("--sort ${!OPTIND}"); shift;;
