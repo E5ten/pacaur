@@ -1134,12 +1134,9 @@ DownloadPkgs() {
     for i in ${basepkgs[@]}; do
         cd "$clonedir" || exit 1
         if [[ -d "$i" ]]; then
-            # git clone --depth=1 https://aur.archlinux.org/$i.git
-        # else
             cd "$clonedir/$i" || exit 1
             git reset --hard HEAD -q # updated pkgver of vcs packages prevent pull
             [[ "$displaybuildfiles" = diff ]] && git rev-parse HEAD > ".git/HEAD.prev"
-            # git pull --ff -q
         fi
         auracle -C "$clonedir" clone --quiet "$i"
         (($? > 0)) && errgit+=($i)
@@ -2241,4 +2238,5 @@ case $operation in
         fi
         exit;;
 esac
+
 # vim:set ts=4 sw=4 et:
