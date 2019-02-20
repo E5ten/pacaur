@@ -203,7 +203,7 @@ also be hidden.
 
 =over 4
 
-=item B<--by> <FIELD>
+=item B<--by> <FIELD>, B<--searchby> <FIELD>
 
 When searching the AUR, search by I<FIELD> where I<FIELD> is B<name>, B<name-desc>,
 or B<maintainer> to search for packages by their name, name and description, or by

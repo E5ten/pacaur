@@ -2002,8 +2002,8 @@ while [[ -n "${!OPTIND}" ]]; do
                     sort) auropts+=("--sort ${!OPTIND}"); shift;;
                     rsort=?*) auropts+=("--rsort ${OPTARG#*=}");;
                     rsort) auropts+=("--rsort ${!OPTIND}"); shift;;
-                    by=?*) auropts+=("--by ${OPTARG#*=}");;
-                    by) auropts+=("--by ${!OPTIND}"); shift;;
+                    by=?*|searchby=?*) auropts+=("--searchby ${OPTARG#*=}");;
+                    by|searchby) auropts+=("--searchby ${!OPTIND}"); shift;;
                     asdep|asdeps) pacopts+=("--asdeps"); makeopts+=("--asdeps");;
                     needed) needed=true; pacopts+=("--needed"); makeopts+=("--needed");;
                     nodeps) nodeps=true; pacopts+=("--nodeps"); makeopts+=("--nodeps"); ((count++));;
