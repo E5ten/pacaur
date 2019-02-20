@@ -6,7 +6,7 @@
 
 _aur_pkg() {
     # at least 2 characters required due to AUR limitation
-    COMPREPLY+=($(compgen -W "$(cower -sq -- ^$cur 2>/dev/null)" -- $cur))
+    COMPREPLY+=($(compgen -W "$(auracle search -q -- ^$cur 2>/dev/null)" -- $cur))
 }
 
 _pacaur() {
