@@ -93,8 +93,10 @@ source "$configdir/config"
 # set up directories
 [[ ! -d "$clonedir" ]] && mkdir -p "$clonedir" -m 700
 
-# source makepkg library script for check_buildenv()
+# source makepkg library script for check_buildoption()
 source /usr/share/makepkg/util/option.sh
+# Only install CheckDepends if check is enabled
+check_buildoption "check" "y" && checkdepends=true
 
 #
 # Functions
@@ -403,10 +405,7 @@ FindDepsAur() {
     # cached packages makedeps check
     if [[ ! $PKGDEST || $rebuild || $foreign ]]; then
         depspkgs+=($(GetJson "array" "$json" "MakeDepends"))
-        # only install CheckDepends if check is enabled in in makepkg.conf
-        if check_buildenv "check" "y"; then
-            depspkgs+=($(GetJson "array" "$json" "CheckDepends"))
-        fi
+        [[ "$checkdepends" == true ]] && depspkgs+=($(GetJson "array" "$json" "CheckDepends"))
     else
         [[ -z "${depspkgsaur[@]}" ]] && depspkgsaurtmp=(${aurpkgs[@]}) || depspkgsaurtmp=(${depspkgsaur[@]})
         for i in "${!depspkgsaurtmp[@]}"; do
@@ -415,10 +414,7 @@ FindDepsAur() {
             GetBuiltPkg "$depsAname-$depsAver" "$PKGDEST"
             if [[ ! $builtpkg ]]; then
                 depspkgs+=($(GetJson "arrayvar" "$json" "MakeDepends" "${depspkgsaurtmp[$i]}"))
-                # only install CheckDepends if check is enabled in in makepkg.conf
-                if check_buildenv "check" "y"; then
-                    depspkgs+=($(GetJson "arrayvar" "$json" "CheckDepends" "${depspkgsaurtmp[$i]}"))
-                fi
+                [[ "$checkdepends" == true ]] && depspkgs+=($(GetJson "array" "$json" "CheckDepends"))
             fi
             unset builtpkg
         done
@@ -533,10 +529,7 @@ SortDepsAur() {
 
         sortdepspkgs+=($(GetJson "arrayvar" "$json" "Depends" "${sortaurpkgs[$i]}"))
         sortdepspkgs+=($(GetJson "arrayvar" "$json" "MakeDepends" "${sortaurpkgs[$i]}"))
-        # only install CheckDepends if check is enabled in in makepkg.conf
-        if check_buildenv "check" "y"; then
-            sortdepspkgs+=($(GetJson "arrayvar" "$json" "CheckDepends" "${sortaurpkgs[$i]}"))
-        fi
+        [[ "$checkdepends" == true ]] && depspkgs+=($(GetJson "array" "$json" "CheckDepends"))
 
         # remove versioning
         for j in "${!errdeps[@]}"; do
@@ -587,10 +580,7 @@ FindDepsAurError() {
     if [[ ! " ${aurpkgs[@]} " =~ " $nexterrdep " ]]; then
         nextallerrdeps=($(GetJson "arrayvar" "$json" "Depends" "$nexterrdep"))
         nextallerrdeps+=($(GetJson "arrayvar" "$json" "MakeDepends" "$nexterrdep"))
-        # only use CheckDepends if check is enabled in in makepkg.conf
-        if check_buildenv "check" "y"; then
-            nextallerrdeps+=($(GetJson "arrayvar" "$json" "CheckDepends" "$nexterrdep"))
-        fi
+        [[ "$checkdepends" == true ]] && depspkgs+=($(GetJson "array" "$json" "CheckDepends"))
 
         # remove versioning
         for i in "${!nextallerrdeps[@]}"; do
@@ -607,10 +597,7 @@ FindDepsAurError() {
         for i in "${!aurpkgs[@]}"; do
             nextallerrdeps=($(GetJson "arrayvar" "$json" "Depends" "${aurpkgs[$i]}"))
             nextallerrdeps+=($(GetJson "arrayvar" "$json" "MakeDepends" "${aurpkgs[$i]}"))
-            # only use CheckDepends if check is enabled in in makepkg.conf
-            if check_buildenv "check" "y"; then
-                nextallerrdeps+=($(GetJson "arrayvar" "$json" "CheckDepends" "${aurpkgs[$i]}"))
-            fi
+            [[ "$checkdepends" == true ]] && depspkgs+=($(GetJson "array" "$json" "CheckDepends"))
 
             # remove versioning
             for j in "${!nextallerrdeps[@]}"; do
@@ -1709,7 +1696,6 @@ CleanCache() {
 GetIgnoredPkgs() {
     # global ignoredpkgs
     ignoredpkgs+=($(grep '^IgnorePkg' '/etc/pacman.conf' | awk -F '=' '{print $NF}' | tr -d "'\""))
-    [[ -e "$HOME/.config/auracle/config" ]] && ignoredpkgs+=($(grep '^IgnorePkg' "$HOME/.config/auracle/config" | awk -F '=' '{print $NF}' | tr -d "'\""))
     ignoredpkgs=(${ignoredpkgs[@]//,/ })
 }
 
@@ -1823,7 +1809,7 @@ CheckRequires() {
 Proceed() {
     local Y y N n answer readline ret
     # Use gettext if it is present
-    if type gettext >/dev/null 2>&1; then
+    if type gettext &>/dev/null; then
         Y="$(gettext pacman Y)"; y="${Y,,}";
         N="$(gettext pacman N)"; n="${N,,}"
     else
@@ -2179,8 +2165,7 @@ case $operation in
                         Note "w" $"Package ${colorW}${aurpkgs[*]}${reset} not found in repositories, trying ${colorM}AUR${reset}..."
                     fi
                 fi
-                # display info without buffer delay
-                tmpinfo=$(mktemp "$tmpdir/pacaur.infoaur.XXXX") && auracle ${auropts[@]} -- $@ ${aurpkgs[@]} > $tmpinfo && cat $tmpinfo && rm $tmpinfo
+                auracle ${auropts[@]} -- $@ ${aurpkgs[@]}
             fi
         # clean (-Sc) handling
         elif [[ $cleancache ]]; then
