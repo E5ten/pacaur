@@ -4,7 +4,7 @@
 # pacaur: an AUR helper that minimizes user interaction
 #
 
-version="4.8.0"
+version="4.8.2"
 
 #
 # Config
@@ -74,7 +74,7 @@ editor="${VISUAL:-${EDITOR:-vi}}"           # build files editor
 displaybuildfiles=diff                      # display build files (none|diff|full)
 fallback=true                               # pacman fallback to the AUR
 silent=false                                # silence output
-sortby=popularity                           # sort method (name|votes|popularity)
+sortby=name	                                # sort method (name|votes|popularity)
 sortorder=descending                        # sort order (ascending|descending)
 sudoloop=true                               # prevent sudo timeout
 

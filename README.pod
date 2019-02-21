@@ -14,7 +14,7 @@ Pacaur is an Arch User Repository (AUR) helper aiming at speed and simplicity
 and is designed to minimize user prompt interaction. It uses an uncluttered
 interface and makes use of the full secured RPC interface to solve the dependency
 tree. It will also automatically prompt for sudo access when needed. It is built
-upon the well designed auracle and expac C backends.
+upon the well designed auracle C++ and expac C backends.
 
 Invoking pacaur consists of supplying an operation, any applicable options, and
 usually one or more targets. A I<target> is usually a package name or a search

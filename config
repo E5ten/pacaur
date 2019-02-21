@@ -14,6 +14,6 @@
 #fallback=true                         # pacman fallback to the AUR
 #silent=false                          # silence output
 #sortby=popularity                     # sort method (name|votes|popularity)
-#sortorder=descending                  # sort order (ascending|descending)
+#sortorder=name	                       # sort order (ascending|descending)
 #sudoloop=true                         # prevent sudo timeout
 
