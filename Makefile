@@ -6,6 +6,7 @@ VERSION = $(shell git describe --always | sed 's/-/./g')
 
 PREFIX ?= /usr/local
 MANPREFIX ?= $(PREFIX)/share/man
+SHELL = /bin/bash
 
 # default target
 all: doc
