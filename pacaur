@@ -1332,13 +1332,11 @@ MakePkgs() {
 
         cd "$clonedir/${basepkgs[$i]}" || exit 1
 
+        # retrieve updated version
+        aurdevelpkgsAver=($(makepkg --packagelist | awk -F "-" '{print $(NF-2)"-"$(NF-1)}'))
+        aurdevelpkgsAver=${aurdevelpkgsAver[0]}
         # build devel if necessary only (supported protocols only)
-        unset aurdevelpkgsAver
         if [[ -n "$(grep -E "\-(bzr|git|hg|svn|daily.*|nightly.*)$" <<< ${basepkgs[$i]})" ]]; then
-            # retrieve updated version
-            aurdevelpkgsAver=($(makepkg --packagelist | awk -F "-" '{print $(NF-2)"-"$(NF-1)}'))
-            aurdevelpkgsAver=${aurdevelpkgsAver[0]}
-
             # check split packages update
             unset basepkgsupdate checkpkgsdepslist
             for j in "${pkgsdepslist[@]}"; do
@@ -1361,7 +1359,7 @@ MakePkgs() {
         # check package cache
         for j in "${pkgsdepslist[@]}"; do
             unset builtpkg
-            [[ $aurdevelpkgsAver ]] && depsAver="$aurdevelpkgsAver" || depsAver="$(GetJson "varvar" "$json" "Version" "$j")"
+            depsAver="$aurdevelpkgsAver"
             [[ $PKGDEST && ! $rebuild ]] && GetBuiltPkg "$j-$depsAver" "$PKGDEST"
             if [[ $builtpkg ]]; then
                 if [[ " ${aurdepspkgs[@]} " =~ " $j " || $installpkg ]]; then
@@ -1407,7 +1405,7 @@ MakePkgs() {
         unset builtpkgs builtdepspkgs
         for j in "${pkgsdepslist[@]}"; do
             unset builtpkg
-            [[ $aurdevelpkgsAver ]] && depsAver="$aurdevelpkgsAver" || depsAver="$(GetJson "varvar" "$json" "Version" "$j")"
+            depsAver="$aurdevelpkgsAver"
             if [[ $PKGDEST ]]; then
                 GetBuiltPkg "$j-$depsAver" "$PKGDEST"
             else
@@ -1422,8 +1420,6 @@ MakePkgs() {
             # inform about missing name suffix and metadata mismatch
             if [[ -z "${builtdepspkgs[@]}" && -z "${builtpkgs[@]}" ]]; then
                 Note "f" $"${colorW}${pkgsdeps[$i]}${reset} package(s) failed to install."
-                Note "f" $"ensure package version does not mismatch between .SRCINFO and PKGBUILD"
-                Note "f" $"ensure package name has a VCS suffix if this is a devel package"
                 errinstall+=(${pkgsdeps[$i]})
             else
                 sudo $pacmanbin -U ${builtdepspkgs[@]} ${builtpkgs[@]} --ask 36 ${pacopts[@]/--quiet} --noconfirm
