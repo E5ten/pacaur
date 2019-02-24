@@ -660,9 +660,3 @@ msgstr ""
 
 #~ msgid "Installing ${colorW}$i${reset} dependencies..."
 #~ msgstr "Instalacja zależności ${colorW}$i${reset}..."
-
-#~ msgid "   --fixbackend     quickly rebuild backend"
-#~ msgstr "   --fixbackend     szybka przebudowa backendu"
-
-#~ msgid "Rebuilding ${colorW}cower${reset} backend..."
-#~ msgstr "Przebudowa ${colorW}cower${reset} backendu..."

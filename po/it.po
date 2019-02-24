@@ -821,6 +821,3 @@ msgstr ""
 
 #~ msgid " AUR only"
 #~ msgstr " soltanto AUR"
-
-#~ msgid "   --fixbackend     quickly rebuild backend"
-#~ msgstr "   --fixbackend     rebuild veloce del backend"

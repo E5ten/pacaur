@@ -1808,14 +1808,8 @@ CheckRequires() {
 
 Proceed() {
     local Y y N n answer readline ret
-    # Use gettext if it is present
-    if type gettext &>/dev/null; then
-        Y="$(gettext pacman Y)"; y="${Y,,}";
-        N="$(gettext pacman N)"; n="${N,,}"
-    else
-        Y="Y"; y="${Y,,}";
-        N="N"; n="${N,,}"
-    fi
+    Y="Y"; y="${Y,,}";
+    N="N"; n="${N,,}"
 
     if [[ "$TERM" = dumb ]] || [[ $cleancache ]]; then
         readline=1

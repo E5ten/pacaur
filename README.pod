@@ -320,6 +320,13 @@ with a fall back to
 
   $HOME/.cache/pacaur
 
+=item B<makeopts>
+
+Internally used variable for passing options to makepkg, can be set externally to
+add flags for pacaur to always pass to makepkg, such as I<-A>, which ignores the
+arch field in a PKGBUILD to allow for building on other architectures regardless of
+if that architecture has been added to the arch field
+
 =back
 
 In addition, makepkg environment variables are fully honored. See B<makepkg>(8).
