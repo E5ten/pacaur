@@ -4,7 +4,7 @@
 # pacaur: an AUR helper that minimizes user interaction
 #
 
-version="4.8.2"
+version="4.8.3"
 
 #
 # Config
@@ -1417,13 +1417,7 @@ MakePkgs() {
         # install
         if [[ $installpkg || -z "${builtpkgs[@]}" ]]; then
             Note "i" $"Installing ${colorW}${pkgsdeps[$i]}${reset} package(s)..."
-            # inform about missing name suffix and metadata mismatch
-            if [[ -z "${builtdepspkgs[@]}" && -z "${builtpkgs[@]}" ]]; then
-                Note "f" $"${colorW}${pkgsdeps[$i]}${reset} package(s) failed to install."
-                errinstall+=(${pkgsdeps[$i]})
-            else
-                sudo $pacmanbin -U ${builtdepspkgs[@]} ${builtpkgs[@]} --ask 36 ${pacopts[@]/--quiet} --noconfirm
-            fi
+            sudo $pacmanbin -U ${builtdepspkgs[@]} ${builtpkgs[@]} --ask 36 ${pacopts[@]/--quiet} --noconfirm
         fi
 
         # set dep status
