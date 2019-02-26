@@ -283,7 +283,7 @@ DepsSolver() {
         done
 
         aurpkgsconflicts=($(grep -xf <(printf '%s\n' "${aurpkgsproviders[@]}") <(printf '%s\n' "${aurpkgsconflicts[@]}")))
-        aurpkgsconflicts=($(tr ' ' '\n' <<< ${aurpkgsconflicts[@]} | LC_COLLATE=C sort -u))
+        aurpkgsconflicts=($(tr ' ' '\n' <<< ${aurpkgsconflicts[@]} | sort -u))
 
         for i in "${aurpkgsconflicts[@]}"; do
             [[ ! " ${aurpkgsnover[@]} " =~ " $i " ]] && continue
@@ -455,7 +455,7 @@ FindDepsAur() {
             [[ ! $foreign ]] && depspkgs=($($pacmanbin -T ${depspkgs[@]} | sort -u))
             depspkgstmp=($(grep -xvf <(printf '%s\n' "${depspkgs[@]}") <(printf '%s\n' "${vcsdepspkgs[@]}")))
             depspkgstmp+=($(grep -xvf <(printf '%s\n' "${vcsdepspkgs[@]}") <(printf '%s\n' "${depspkgs[@]}")))
-            depspkgs=($(tr ' ' '\n' <<< ${depspkgstmp[@]} | LC_COLLATE=C sort -u))
+            depspkgs=($(tr ' ' '\n' <<< ${depspkgstmp[@]} | sort -u))
         fi
         # remove installed binary packages only
         if [[ $foreign ]]; then
@@ -844,7 +844,7 @@ ProviderChecks() {
 
     # get binary packages info
     if [[ -n "${repodepspkgs[@]}" ]]; then
-        repodepspkgs=($(expac -S -1 '%n' "${repodepspkgs[@]}" | LC_COLLATE=C sort -u))
+        repodepspkgs=($(expac -S -1 '%n' "${repodepspkgs[@]}" | sort -u))
         repodepsSver=($(expac -S -1 '%v' "${repodepspkgs[@]}"))
         repodepsQver=($(expac -Q '%v' "${repodepspkgs[@]}"))
         repodepsSrepo=($(expac -S -1 '%r/%n' "${repodepspkgs[@]}"))
@@ -874,7 +874,7 @@ ConflictChecks() {
     done
     aurconflicts=($(grep -xf <(printf '%s\n' "${Aprovides[@]}") <(printf '%s\n' "${allQconflicts[@]}")))
     aurconflicts+=($(grep -xf <(printf '%s\n' "${Aconflicts[@]}") <(printf '%s\n' "${allQprovides[@]}")))
-    aurconflicts=($(tr ' ' '\n' <<< ${aurconflicts[@]} | LC_COLLATE=C sort -u))
+    aurconflicts=($(tr ' ' '\n' <<< ${aurconflicts[@]} | sort -u))
 
     for i in "${aurconflicts[@]}"; do
         unset aurAconflicts
@@ -954,7 +954,7 @@ ConflictChecks() {
 
         repoconflicts+=($(grep -xf <(printf '%s\n' "${repodepsprovides[@]}") <(printf '%s\n' "${allQconflicts[@]}")))
         repoconflicts+=($(grep -xf <(printf '%s\n' "${checkedrepodepsconflicts[@]}") <(printf '%s\n' "${allQprovides[@]}")))
-        repoconflicts=($(tr ' ' '\n' <<< ${repoconflicts[@]} | LC_COLLATE=C sort -u))
+        repoconflicts=($(tr ' ' '\n' <<< ${repoconflicts[@]} | sort -u))
     fi
 
     for i in "${repoconflicts[@]}"; do
@@ -1925,10 +1925,6 @@ Usage() {
     echo
 }
 
-Version() {
-    echo "pacaur $version"
-}
-
 #
 # Main
 #
@@ -2002,7 +1998,7 @@ while [[ -n "${!OPTIND}" ]]; do
                     sysroot=?*) pacopts+=("--sysroot ${OPTARG#*=}");;
                     sysroot) pacopts+=("--sysroot ${!OPTIND}"); shift;;
                     overwrite) pacopts+=("--overwrite \\${!OPTIND}"); shift;;
-                    version) Version; exit;;
+                    version) echo "pacaur $version"; exit;;
                     help) Usage; exit;;
                     *) pacopts+=("--$OPTARG");;
                 esac;;
@@ -2032,7 +2028,7 @@ while [[ -n "${!OPTIND}" ]]; do
                 [[ "${opts[@]}" =~ "g" || "${opts[@]}" =~ "l" || "${opts[@]}" =~ "p" ]] && unset operation;;
             [A-Z]) pac='1';;
             h)  [[ "${opts[@]}" =~ ^-[A-Z] ]] && unset operation && continue || Usage; exit;;
-            v)  [[ "${opts[@]}" =~ ^-[A-Z] ]] && continue || Version; exit;;
+            v)  [[ "${opts[@]}" =~ ^-[A-Z] ]] && continue || echo "pacaur $version"; exit;;
             *)  continue;;
         esac
     done

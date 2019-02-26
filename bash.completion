@@ -46,4 +46,4 @@ _pacaur() {
 _completion_loader pacman
 complete -o default -F _pacaur pacaur
 
-# vim:set ts=4 sw=2 et:
+# vim:set ts=4 sw=4 et:
