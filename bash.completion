@@ -16,7 +16,7 @@ _pacaur() {
     cur=$(_get_cword)
     if ((COMP_CWORD == 1)); then
         if [[ $cur != -* ]]; then
-            _arch_compgen "${COMPREPLY[@]}" "sync search info buildonly upgrade check clean cleanall"
+            _arch_compgen "${COMPREPLY[@]}" "--aur-sync --aur-search --aur-info --aur-buildonly --aur-upgrade --aur-check --aur-clean --aur-cleanall"
             _pacman_file
             return 0
         else
