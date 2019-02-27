@@ -1938,16 +1938,6 @@ done
 # get options
 count=0
 while [[ -n "${!OPTIND}" ]]; do
-    case "${!OPTIND}" in
-        --aur-sync) operation=sync; installpkg=true; aur='1'; shift $OPTIND;;
-        --aur-info) operation=sync; info=true; auropts+=("info"); aur='1'; shift $OPTIND;;
-        --aur-search) operation=sync; search=true; auropts+=("search"); aur='1'; shift $OPTIND;;
-        --aur-buildonly) operation=sync; aur='1'; shift $OPTIND;;
-        --aur-upgrade) operation=sync; upgrade=true; installpkg=true; selective=true; aur='1'; shift $OPTIND;;
-        --aur-check) operation=upgrades; pacopts+=("--foreign"); shift $OPTIND;;
-        --aur-clean) operation=sync; cleancache=true; aur='1'; count=1; shift $OPTIND;;
-        --aur-cleanall) operation=sync; cleancache=true; aur='1'; count=2; shift $OPTIND;;
-    esac
     while getopts "sidmykufecqrahvxVDFQRSTUbglnoptw-:" OPT; do
         pacmanarg+=("-$OPT");
         case "$OPT" in
@@ -2000,6 +1990,14 @@ while [[ -n "${!OPTIND}" ]]; do
                     overwrite) pacopts+=("--overwrite \\${!OPTIND}"); shift;;
                     version) echo "pacaur $version"; exit;;
                     help) Usage; exit;;
+                    aur-sync) operation=sync; installpkg=true; aur='1';;
+                    aur-info) operation=sync; info=true; auropts+=("info"); aur='1';;
+                    aur-search) operation=sync; search=true; auropts+=("search"); aur='1';;
+                    aur-buildonly) operation=sync; aur='1';;
+                    aur-upgrade) operation=sync; upgrade=true; installpkg=true; selective=true; aur='1';;
+                    aur-check) operation=upgrades; pacopts+=("--foreign");;
+                    aur-clean) operation=sync; cleancache=true; aur='1'; count=1;;
+                    aur-cleanall) operation=sync; cleancache=true; aur='1'; count=2;;
                     *) pacopts+=("--$OPTARG");;
                 esac;;
             s)  [[ $pacS ]] && operation=sync && search=true && auropts+=("search");
