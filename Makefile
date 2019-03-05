@@ -2,7 +2,7 @@
 # pacaur - An AUR helper that minimizes user interaction
 ##
 
-VERSION = $(shell git describe --always | sed 's/-/./g')
+VERSION = $(shell git describe --always | sed 's%-%.%g')
 
 PREFIX ?= /usr/local
 MANPREFIX ?= $(PREFIX)/share/man
@@ -15,10 +15,10 @@ all: doc
 doc:
 	@echo "Generating documentation..."
 	@pod2man --utf8 --section=1 --center="Pacaur Manual" --name="PACAUR" \
-	--release="pacaur $(VERSION)" ./README.pod > ./pacaur.1
+	--release="pacaur $(VERSION)" ./README.pod ./pacaur.1
 
 # aux
-install:
+install: doc
 	@echo "Installing..."
 	@install -D -m644 ./config $(DESTDIR)/etc/xdg/pacaur/config
 	@install -D -m755 ./pacaur $(DESTDIR)$(PREFIX)/bin/pacaur
