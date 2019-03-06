@@ -24,7 +24,7 @@ install: doc
 	@install -D -m755 ./pacaur $(DESTDIR)$(PREFIX)/bin/pacaur
 	@install -D -m644 ./bash.completion $(DESTDIR)$(PREFIX)/share/bash-completion/completions/pacaur
 	@install -D -m644 ./zsh.completion $(DESTDIR)$(PREFIX)/share/zsh/site-functions/_pacaur
-	@install -D -m644 ./pacaur.1 $(DESTDIR)$(MANPREFIX)/man1/pacaur.8
+	@install -D -m644 ./pacaur.8 $(DESTDIR)$(MANPREFIX)/man8/pacaur.8
 	@install -D -m644 ./LICENSE $(DESTDIR)$(PREFIX)/share/licenses/pacaur/LICENSE
 	@for i in {ca,da,de,es,fi,fr,hu,it,ja,nb,nl,pl,pt,ru,sk,sl,sr,sr@latin,tr,zh_CN}; do \
 		mkdir -p "$(DESTDIR)$(PREFIX)/share/locale/$$i/LC_MESSAGES/"; \
@@ -45,6 +45,6 @@ uninstall:
 
 clean:
 	@echo "Cleaning..."
-	@$(RM) ./pacaur.1
+	@$(RM) ./pacaur.8
 
 .PHONY: doc install uninstall clean
