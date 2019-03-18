@@ -32,7 +32,7 @@ _pacaur() {
     _pacman &> /dev/null
     if [[ "$cur" == -* ]]; then
         case "$op" in
-            S) _arch_compgen "${COMPREPLY[@]}" "-a --aur -r --repo -e --edit --devel --domain --foreign --noedit --rebuild --silent";;
+            S) _arch_compgen "${COMPREPLY[@]}" "-a --aur -r --repo -e --edit --devel --foreign --noedit --rebuild --silent";;
         esac
     else
         case "$op" in

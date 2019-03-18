@@ -64,7 +64,6 @@ _pacaur_opts_extended=(
     {-a,--aur}'[Only search, build, install or clean target(s) from the AUR]'
     {-e,--edit}'[Edit target(s) PKGBUILD and view install script]'
     {-r,--repo}'[Only search, build, install or clean target(s) from the repositories]'
-    '--domain[Point at another domain]'
     '--foreign[Consider already installed foreign dependencies]'
     '--noedit[Do not prompt to edit files]'
     '--rebuild[Always rebuild package(s)]'
