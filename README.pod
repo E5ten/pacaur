@@ -222,16 +222,6 @@ respectively, by I<KEY> where I<KEY> is B<name>, B<votes> or B<popularity>.
 
 =back
 
-=head2 Other options
-
-=over 4
-
-=item B<--domain> <FQDN>
-
-Point at a domain other than the default I<aur.archlinux.org>.
-
-=back
-
 =head1 CONFIG FILE
 
 =over 4
