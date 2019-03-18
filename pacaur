@@ -82,10 +82,6 @@ sudoloop=true                               # prevent sudo timeout
 pacmanbin="${PACMAN:-pacman}"               # pacman binary
 clonedir="${AURDEST:-$usercachedir}"        # clone directory
 
-# set AUR variables
-aururl="aur.archlinux.org"
-aurrpc="/rpc/?type=info&v=5"
-
 # source xdg config
 source "$configdir/config"
 [[ -r "$userconfigdir/config" ]] && source "$userconfigdir/config"
@@ -1737,32 +1733,9 @@ SetJson() {
     else
         # global json
         if [[ -z "${jsoncache[$@]}" ]]; then
-            jsoncache[$@]="$(DownloadJson $@)"
+            jsoncache[$@]="$(auracle rawinfo -- $@)"
         fi
         json="${jsoncache[$@]}"
-    fi
-}
-
-DownloadJson() {
-    local urlencodedpkgs urlargs urlcurl urlarg urlmax j
-    urlencodedpkgs=($(sed 's/+/%2b/g;s/@/%40/g' <<< $@)) # pkgname consists of alphanum@._+-
-    urlarg='&arg[]='
-    urlargs="$(printf "$urlarg%s" "${urlencodedpkgs[@]}")"
-    urlmax=4400
-    # ensure the URI length is shorter than 4444 bytes (44 for AUR path)
-    if [[ "${#urlargs}" -lt $urlmax ]]; then
-        curl -sfg --compressed -C 0 -w "" "https://$aururl$aurrpc$urlargs"
-    else
-        # split and merge json stream
-        j=0
-        for i in "${!urlencodedpkgs[@]}"; do
-            if [[ $((${#urlcurl[$j]} + ${#urlencodedpkgs[$i]} + ${#urlarg})) -ge $urlmax ]]; then
-                j=$(($j + 1))
-            fi
-            urlcurl[$j]=${urlcurl[$j]}${urlarg}${urlencodedpkgs[$i]}
-        done
-        urlargs="$(printf "https://$aururl$aurrpc%s " "${urlcurl[@]}")"
-        curl -sfg --compressed -C 0 -w "" $urlargs | sed 's/\(]}{\)\([A-Za-z0-9":,]\+[[]\)/,/g;s/\("resultcount":\)\([0-9]\+\)/"resultcount":0/g'
     fi
 }
 
@@ -1983,8 +1956,6 @@ while [[ -n "${!OPTIND}" ]]; do
                     noedit) noedit=true;;
                     rebuild) rebuild=true;;
                     silent) silent=true; makeopts+=("--log");;
-                    domain=?*) aururl=${OPTARG#*=}; auropts+=("--domain ${OPTARG#*=}");;
-                    domain) aururl=${!OPTIND}; auropts+=("--domain ${!OPTIND}"); shift;;
                     sysroot=?*) pacopts+=("--sysroot ${OPTARG#*=}");;
                     sysroot) pacopts+=("--sysroot ${!OPTIND}"); shift;;
                     overwrite) pacopts+=("--overwrite \\${!OPTIND}"); shift;;
