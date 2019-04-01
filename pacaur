@@ -1113,7 +1113,13 @@ DownloadPkgs() {
     Note "i" $"${colorW}Retrieving package(s)...${reset}"
     GetPkgbase $@
 
-    # clone
+    # no results check
+    if [[ -z "${basepkgs[@]}" ]]; then
+        Note "e" $"no results found"
+        return
+    fi
+
+    # reset
     for i in ${basepkgs[@]}; do
         cd "$clonedir" || exit 1
         if [[ -d "$i" ]]; then
@@ -1121,20 +1127,13 @@ DownloadPkgs() {
             git reset --hard HEAD -q # updated pkgver of vcs packages prevent pull
             [[ "$displaybuildfiles" = diff ]] && git rev-parse HEAD > ".git/HEAD.prev"
         fi
-        auracle -C "$clonedir" clone --quiet "$i"
-        (($? > 0)) && errgit+=($i)
     done
 
-    # error check
-    if [[ -n "${errgit[@]}" ]]; then
-        for i in "${errgit[@]}"; do
-            Note "f" $"failed to retrieve ${colorW}$i${reset} package"
-        done
+    # clone
+    if ! auracle -C "$clonedir" clone --quiet "$@"; then
+        Note "f" $"failed to retrieve packages"
         exit 1
     fi
-
-    # no results check
-    [[ -z "${basepkgs[@]}" ]] && Note "e" $"no results found"
 }
 
 EditPkgs() {
