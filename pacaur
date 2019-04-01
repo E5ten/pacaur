@@ -1687,7 +1687,7 @@ GetIgnoredPkgs() {
 
 GetIgnoredGrps() {
     # global ignoredgrps
-    ignoredpkgs+=($(pacman-conf IgnoreGroup))
+    ignoredgrps+=($(pacman-conf IgnoreGroup))
     ignoredgrps=(${ignoredgrps[@]//,/ })
 }
 
