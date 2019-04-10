@@ -6,7 +6,6 @@ VERSION = $(shell git describe --always | sed 's%-%.%g')
 
 PREFIX ?= /usr/local
 MANPREFIX ?= $(PREFIX)/share/man
-SHELL = /bin/bash
 
 # default target
 all: doc
@@ -20,13 +19,13 @@ doc:
 # aux
 install: doc
 	@echo "Installing..."
-	@install -D -m644 ./config $(DESTDIR)/etc/xdg/pacaur/config
-	@install -D -m755 ./pacaur $(DESTDIR)$(PREFIX)/bin/pacaur
-	@install -D -m644 ./bash.completion $(DESTDIR)$(PREFIX)/share/bash-completion/completions/pacaur
-	@install -D -m644 ./zsh.completion $(DESTDIR)$(PREFIX)/share/zsh/site-functions/_pacaur
-	@install -D -m644 ./pacaur.8 $(DESTDIR)$(MANPREFIX)/man8/pacaur.8
-	@install -D -m644 ./LICENSE $(DESTDIR)$(PREFIX)/share/licenses/pacaur/LICENSE
-	@for i in {ca,da,de,es,fi,fr,hu,it,ja,nb,nl,pl,pt,ru,sk,sl,sr,sr@latin,tr,zh_CN}; do \
+	@install -Dm644 ./config $(DESTDIR)/etc/xdg/pacaur/config
+	@install -Dm755 ./pacaur -t $(DESTDIR)$(PREFIX)/bin
+	@install -Dm644 ./bash.completion $(DESTDIR)$(PREFIX)/share/bash-completion/completions/pacaur
+	@install -Dm644 ./zsh.completion $(DESTDIR)$(PREFIX)/share/zsh/site-functions/_pacaur
+	@install -Dm644 ./pacaur.8 -t $(DESTDIR)$(MANPREFIX)/man8
+	@install -Dm644 ./LICENSE -t $(DESTDIR)$(PREFIX)/share/licenses/pacaur
+	@for i in ca da de es fi fr hu it ja nb nl pl pt ru sk sl sr sr@latin tr zh_CN; do \
 		mkdir -p "$(DESTDIR)$(PREFIX)/share/locale/$$i/LC_MESSAGES/"; \
 		msgfmt ./po/$$i.po -o "$(DESTDIR)$(PREFIX)/share/locale/$$i/LC_MESSAGES/pacaur.mo"; \
 	done
@@ -39,7 +38,7 @@ uninstall:
 	@$(RM) $(DESTDIR)$(PREFIX)/share/zsh/site-functions/_pacaur
 	@$(RM) $(DESTDIR)$(MANPREFIX)/man8/pacaur.8
 	@$(RM) $(DESTDIR)$(PREFIX)/share/licenses/pacaur/LICENSE
-	@for i in {ca,da,de,es,fi,fr,hu,it,ja,nb,nl,pl,pt,ru,sk,sl,sr,sr@latin,tr,zh_CN}; do \
+	@for i in ca da de es fi fr hu it ja nb nl pl pt ru sk sl sr sr@latin tr zh_CN; do \
 		$(RM) "$(DESTDIR)$(PREFIX)/share/locale/$$i/LC_MESSAGES/pacaur.mo"; \
 	done
 
