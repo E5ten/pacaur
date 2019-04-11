@@ -15,15 +15,9 @@ _pacaur() {
     COMPREPLY=()
     cur=$(_get_cword)
     if ((COMP_CWORD == 1)); then
-        if [[ $cur != -* ]]; then
-            _arch_compgen "${COMPREPLY[@]}" "--aur-sync --aur-search --aur-info --aur-buildonly --aur-upgrade --aur-check --aur-clean --aur-cleanall"
-            _pacman_file
-            return 0
-        else
-            _pacman &> /dev/null
-            _arch_compgen "${COMPREPLY[@]}" "-v --version -h --help"
-            return 0
-        fi
+        _pacman &> /dev/null
+        _arch_compgen "${COMPREPLY[@]}" "-v --version -h --help"
+        return 0
     fi
     for o in 'D database' 'F files' 'Q query' 'R remove' 'S sync' 'T deptest' 'U upgrade' 'V version'; do
         _arch_incomp "$o" && break
