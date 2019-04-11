@@ -29,11 +29,9 @@ being knowledgeable about sudo and gpg configuration.
 
 Two sets of command line options are provided: commands which call the pacman
 binary and extend it with AUR functions B<(-S, -Ss, -Si, -Sw, -Su, -Qu, -Sc, -Scc)>,
-and flags which are AUR specific B<(--aur-sync, --aur-search, --aur-info,
---aur-buildonly, --aur-upgrade, --aur-check, --aur-clean, --aur-cleanall)>. As such,
-pacaur can be used by users who prefer to have a single tool to manage the official
-and AUR repositories, or by users who prefer to keep their AUR frontend separated
-from pacman.
+and I<-a/--aur> can be added to only apply these to the AUR. As such, pacaur can be
+used by users who prefer to have a single tool to manage the officialand AUR
+repositories, or by users who prefer to keep their AUR frontend separated from pacman.
 
 =head1 OPERATIONS
 
@@ -48,60 +46,6 @@ sync, search, info, download only, system upgrade, upgrades check, clean and
 clean all functions to the AUR. This extension behavior is optional and can be
 disabled with the I<fallback> variable in the config file. Pacaur will also pass
 any other pacman operations and their related options to the pacman binary.
-
-=back
-
-=head2 AUR specific operations
-
-=over 4
-
-=item B<--aur-sync>
-
-Clone build files, build and install I<target(s)>. Missing dependencies will be
-automatically installed as needed.
-
-=item B<--aur-search>
-
-Search for packages with the I<target(s)> as the search term(s). Queries with
-multiple targets will return the result of the intersection of all query
-results. Extended regex patterns as defined by POSIX are allowed.
-The output will display the name, version, votes and popularity values of each
-package. The flagged status will also be indicated by a <!> symbol or a colored
-version string if colored output is enabled.
-
-=item B<--aur-info>
-
-Show info for I<target(s)>.
-
-=item B<--aur-buildonly>
-
-Clone build files and build I<target(s)>. Missing dependencies will be installed
-as needed for the build process, and removed automatically afterwards.
-
-=item B<--aur-upgrade>
-
-Update foreign packages in the AUR. Without any arguments, all manually
-installed packages will be upgraded. If I<target(s)> are supplied, only those
-packages will be upgraded.
-
-=item B<--aur-check>
-
-Check foreign packages for upgrades in the AUR. Without any arguments, all
-manually installed packages will be checked. If I<target(s)> are supplied, only
-those packages will be checked.
-
-=item B<--aur-clean>
-
-Clean foreign packages and clones. Offer to remove all non locally installed
-built packages from defined I<PKGDEST> cache, all non development files from
-defined I<SRCDEST> cache, and all uninstalled clones from AUR clones directory.
-If I<target(s)> are supplied, only those specific clones will be removed.
-
-=item B<--aur-cleanall>
-
-Clean all foreign packages and clones. Offer to remove all built packages from
-defined I<PKGDEST>, all sources in defined I<SRCDEST>, and all local clones from
-clones directory.
 
 =back
 
@@ -185,7 +129,6 @@ Perform commands without confirmation from the user.
 
 Perform commands without editing any installation files. Overrides the
 I<--edit> option.
-
 =item B<--rebuild>
 
 Always rebuild packages regardless of any existing file in I<$PKGDEST> directory,
