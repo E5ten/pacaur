@@ -96,6 +96,13 @@ source /usr/share/makepkg/util/parseopts.sh
 # only install CheckDepends if check is enabled
 check_buildoption "check" "y" && checkdepends=true
 
+# determine whether we have gettext; make it a no-op if we do not
+if ! type -p gettext >/dev/null; then
+	gettext() {
+		printf "%s\n" "$@"
+	}
+fi
+
 #
 # Functions
 #
@@ -1472,7 +1479,7 @@ CheckUpdates() {
 
     GetIgnoredPkgs
 
-    if [[ ! "${opts[@]}" =~ "n" && ! " ${pacopts[@]} " =~ --native && $fallback = true ]]; then
+    if [[ ! "${OPTRET[@]}" =~ " -n" && ! " ${pacopts[@]} " =~ --native && $fallback = true ]]; then
         [[ -z "${pkgs[@]}" ]] && foreignpkgs=($($pacmanbin -Qmq)) || foreignpkgs=(${pkgs[@]})
         if [[ -n "${foreignpkgs[@]}" ]]; then
             SetJson ${foreignpkgs[@]}
@@ -1843,31 +1850,24 @@ Usage() {
 # Main
 #
 
-
-ARG_LIST=("$@")
-for i in "${ARG_LIST[@]}"; do
-    [[ "$i" =~ ^-[a-zA-Z0-9] ]] && opts+=($i)
-done
-
 count=0
 
 OPT_SHORT="sidmykufecqrahvxVDFQRSTUbglnoptw"
-OPT_LONG=('sync' 'query' 'search' 'info' 'downloadonly' 'update' 'edit' 'quiet' 'repo' 'aur' 'devel'
-          'foreign' 'ignore:' 'color:' 'literal' 'sort:' 'rsort:' 'by:' 'searchby:' 'asdep' 'asdeps'
-          'needed' 'nodeps' 'assume-installed:' 'noconfirm' 'noedit' 'rebuild' 'silent' 'sysroot:'
-          'overwrite' 'version' 'help')
+OPT_LONG=('asdep' 'asdeps' 'assume-installed:' 'aur' 'by:' 'color:' 'devel' 'downloadonly' 'edit'
+          'foreign' 'help' 'ignore:' 'info' 'literal' 'native' 'needed' 'noconfirm' 'nodeps' 'noedit'
+          'overwrite:' 'query' 'quiet' 'rebuild' 'repo' 'root' 'rsort:' 'search' 'searchby:' 'silent'
+          'sort:' 'sync' 'sysroot:' 'update' 'version')
 
 if ! parseopts "${OPT_SHORT}" "${OPT_LONG[@]}" -- "$@"; then
     Note "e" $"pacaur: unrecognized option $1"
 fi
 set -- "${OPTRET[@]}"
-unset OPT_SHORT OPT_LONG OPTRET
 
 while true; do
     pacmanarg+=("$1");
     case "$1" in
-        -S|--sync) pacS=1; operation=sync; [[ "${opts[@]}" =~ "w" ]] && continue || installpkg=true;
-            [[ "${opts[@]}" =~ "g" || "${opts[@]}" =~ "l" || "${opts[@]}" =~ "p" ]] && unset operation;;
+        -S|--sync) pacS=1; operation=sync; [[ "${OPTRET[@]}" =~ " -w" ]] && shift && continue || installpkg=true;
+            [[ "${OPTRET[@]}" =~ " -g" || "${OPTRET[@]}" =~ " -l" || "${OPTRET[@]}" =~ " -p" ]] && unset operation;;
         -Q|--query) pacQ=1;;
         -s|--search) [[ $pacS ]] && operation=sync && search=true && auropts+=("search");;
         -i|--info) [[ $pacS ]] && operation=sync && info=true && auropts+=("info");;
@@ -1904,8 +1904,8 @@ while true; do
         -e) [[ $pacQ ]] && pacopts+=("--explicit") && continue || edit=true;
             [[ ! $operation ]] && operation=editpkg;;
         -c) [[ $pacS ]] && operation=sync && cleancache=true && ((count++));;
-        -h) [[ "${opts[@]}" =~ ^-[A-Z] ]] && unset operation && continue || Usage; exit;;
-        -v) [[ "${opts[@]}" =~ ^-[A-Z] ]] && continue || echo "pacaur $version"; exit;;
+        -h) [[ "${OPTRET[@]}" =~ ^-[A-Z] ]] && unset operation && shift && continue || Usage; exit;;
+        -v) [[ "${OPTRET[@]}" =~ ^-[A-Z] ]] && shift && continue || echo "pacaur $version"; exit;;
         -w) [[ $pacS ]] && operation=sync && aur=1;;
         --) shift; break;;
     esac
