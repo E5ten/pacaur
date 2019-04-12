@@ -1852,14 +1852,14 @@ Usage() {
 
 count=0
 
-OPT_SHORT="sidmykufecqrahvxVDFQRSTUbglnoptw"
-OPT_LONG=('asdep' 'asdeps' 'assume-installed:' 'aur' 'by:' 'color:' 'devel' 'downloadonly' 'edit'
+shortopts="sidmykufecqrahvxVDFQRSTUbglnoptw"
+longopts=('asdep' 'asdeps' 'assume-installed:' 'aur' 'by:' 'color:' 'devel' 'downloadonly' 'edit'
           'foreign' 'help' 'ignore:' 'info' 'literal' 'native' 'needed' 'noconfirm' 'nodeps' 'noedit'
-          'overwrite:' 'query' 'quiet' 'rebuild' 'repo' 'root' 'rsort:' 'search' 'searchby:' 'silent'
+          'overwrite:' 'query' 'quiet' 'rebuild' 'repo' 'root:' 'rsort:' 'search' 'searchby:' 'silent'
           'sort:' 'sync' 'sysroot:' 'update' 'version')
 
-if ! parseopts "${OPT_SHORT}" "${OPT_LONG[@]}" -- "$@"; then
-    Note "e" $"pacaur: unrecognized option $1"
+if ! parseopts "${shortopts}" "${longopts[@]}" -- "$@"; then
+    exit 1
 fi
 set -- "${OPTRET[@]}"
 
@@ -1867,7 +1867,7 @@ while true; do
     pacmanarg+=("$1");
     case "$1" in
         -S|--sync) pacS=1; operation=sync; [[ "${OPTRET[@]}" =~ " -w" ]] && shift && continue || installpkg=true;
-            [[ "${OPTRET[@]}" =~ " -g" || "${OPTRET[@]}" =~ " -l" || "${OPTRET[@]}" =~ " -p" ]] && unset operation;;
+            [[ "${OPTRET[@]}" =~ [:SPACE:]*-(g|l|p) ]] && unset operation;;
         -Q|--query) pacQ=1;;
         -s|--search) [[ $pacS ]] && operation=sync && search=true && auropts+=("search");;
         -i|--info) [[ $pacS ]] && operation=sync && info=true && auropts+=("info");;
@@ -1880,22 +1880,21 @@ while true; do
         -a|--aur) aur=1;;
         --devel) devel=true;;
         -m|--foreign) [[ $pacQ ]] && pacopts+=("--foreign") && foreign=true && aur=1;;
-        --ignore) shift; ignoredpkgs+=("$1"); ignoreopts+=("--ignore $1");;
-        --color) shift; color="$1"; pacopts+=("--color $1") && auropts+=("--color=$1");;
+        --ignore) shift; ignoredpkgs+=("$1"); ignoreopts+=("--ignore=$1");;
+        --color) shift; color="$1"; pacopts+=("--color=$1") && auropts+=("--color=$1");;
         --literal) auropts+=("--literal");;
-        --sort) shift; auropts+=("--sort $1");;
-        --rsort) shift; auropts+=("--rsort $1");;
-        --by|searchby) shift; auropts+=("--searchby $1");;
+        --rsort|--sort) auropts+=("$1=$2"); shift;;
+        --by|searchby) shift; auropts+=("--searchby=$1");;
         --asdep|asdeps) pacopts+=("--asdeps"); makeopts+=("--asdeps");;
         --needed) [[ $pacS ]] && pacopts+=("--needed") && makeopts+=("--needed") && needed=true;;
         --nodeps) nodeps=true; pacopts+=("--nodeps"); makeopts+=("--nodeps"); ((count++));;
-        --assume-installed) shift; assumeinstalled+=("$1"); pacopts+=("--assume-installed $1");;
+        --assume-installed) shift; assumeinstalled+=("$1"); pacopts+=("--assume-installed=$1");;
         --noconfirm) noconfirm=true; pacopts+=("--noconfirm");;
         --noedit) noedit=true;;
         --rebuild) rebuild=true;;
         --silent) silent=true; makeopts+=("--log");;
-        --sysroot) shift; pacopts+=("--sysroot $1");;
-        --overwrite) shift; pacopts+=("--overwrite \\$1");;
+        --root|--sysroot) pacopts+=("$1=$2"); shift;;
+        --overwrite) shift; pacopts+=("--overwrite=\\$1");;
         --version) echo "pacaur $version"; exit;;
         --help) Usage; exit;;
         -d) [[ $pacS ]] && nodeps=true && pacopts+=("--nodeps") && makeopts+=("--nodeps") && ((count++));;
@@ -1904,8 +1903,8 @@ while true; do
         -e) [[ $pacQ ]] && pacopts+=("--explicit") && continue || edit=true;
             [[ ! $operation ]] && operation=editpkg;;
         -c) [[ $pacS ]] && operation=sync && cleancache=true && ((count++));;
-        -h) [[ "${OPTRET[@]}" =~ ^-[A-Z] ]] && unset operation && shift && continue || Usage; exit;;
-        -v) [[ "${OPTRET[@]}" =~ ^-[A-Z] ]] && shift && continue || echo "pacaur $version"; exit;;
+        -h) [[ "${OPTRET[@]}" =~ [:SPACE:]*-[A-Z] ]] && unset operation && shift && continue || Usage; exit;;
+        -v) [[ "${OPTRET[@]}" =~ [:SPACE:]*-[A-Z] ]] && shift && continue || echo "pacaur $version"; exit;;
         -w) [[ $pacS ]] && operation=sync && aur=1;;
         --) shift; break;;
     esac
