@@ -583,10 +583,6 @@ msgstr "   -m, --makepkg    prenesi in prevedi tarče"
 msgid "   -y, --sync       download, make and install target(s)"
 msgstr "   -y, --sync       prenesi, prevedi in namesti tarče"
 
-#: pacaur:1766
-msgid "   -u, --update     update AUR package(s)"
-msgstr "   -u, --update     posodobi AUR paket(e)"
-
 #: pacaur:1767
 msgid "   -k, --check      check for AUR update(s)"
 msgstr "   -k, --check      poišči posodobitve v AUR"

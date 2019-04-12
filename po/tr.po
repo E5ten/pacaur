@@ -437,10 +437,6 @@ msgstr "   -y, --sync       hedef(ler)i indir, derle ve kur"
 msgid "   -k, --check      check for AUR update(s)"
 msgstr "   -k, --check      AUR güncellemelerini denetle"
 
-#: pacaur:1322
-msgid "   -u, --update     update AUR package(s)"
-msgstr "   -u, --update     AUR paket(ler)ini güncelle"
-
 #: pacaur:1323 pacaur:1331
 msgid " general"
 msgstr " genel"

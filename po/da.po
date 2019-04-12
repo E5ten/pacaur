@@ -428,10 +428,6 @@ msgstr "   -y, --sync       download, byg og installer mål"
 msgid "   -k, --check      check for AUR update(s)"
 msgstr "   -k, --check      tjek for AUR opdateringer"
 
-#: pacaur:1372
-msgid "   -u, --update     update AUR package(s)"
-msgstr "   -u, --update     opdater AUR pakke(r)"
-
 #: pacaur:1373 pacaur:1381
 msgid " general"
 msgstr "generelt"

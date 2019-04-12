@@ -442,10 +442,6 @@ msgstr "   -y, --sync       télécharger, construire et installer les cibles"
 msgid "   -k, --check      check for AUR update(s)"
 msgstr "   -k, --check      vérifier les mises à jour depuis l'AUR"
 
-#: pacaur:1322
-msgid "   -u, --update     update AUR package(s)"
-msgstr "   -u, --update     mettre à jour les paquets de l'AUR"
-
 #: pacaur:1323 pacaur:1331
 msgid " general"
 msgstr " général"

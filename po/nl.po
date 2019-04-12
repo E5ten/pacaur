@@ -568,10 +568,6 @@ msgstr "   -m, --makepkg    download en bouw doel(en)"
 msgid "   -y, --sync       download, make and install target(s)"
 msgstr "   -y, --sync       download, bouw en installeer doel(en)"
 
-#: pacaur:1681
-msgid "   -u, --update     update AUR package(s)"
-msgstr "   -u, --update     AUR-pakket(ten) updaten"
-
 #: pacaur:1682
 msgid "   -k, --check      check for AUR update(s)"
 msgstr "   -k, --check      naar AUR-update(s) zoeken"
