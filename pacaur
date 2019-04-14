@@ -11,8 +11,8 @@ version="4.8.6"
 #
 
 # sanitize
-unset aur checkdeps cleancache devel edit info installpkg needed noconfirm nodeps noedit
-unset operation pac pacQ pacS quiet rebuild refresh repo search upgrade usage ver
+unset aur checkdeps cleancache ccount dcount devel edit info installpkg needed noconfirm nodeps noedit
+unset operation pac pacQ pacS pacglp pacn pacw quiet rebuild refresh repo search upgrade usage ver
 
 # internationalization
 LC_COLLATE=C
@@ -357,7 +357,7 @@ FindDepsAur() {
     local depspkgs depspkgstmp depspkgsaurtmp repodepstmp builtpkg vcsdepspkgs assumedepspkgs
     local aurversionpkgs aurversionpkgsname aurversionpkgsver aurversionpkgsaurver i j json
     # global aurpkgsnover depspkgsaur errdeps depsAname depsAver repodeps aurdepspkgs prevdepspkgsaur foreignpkgs
-    [[ $nodeps && $count -ge 2 ]] && return
+    [[ $nodeps && $dcount -ge 2 ]] && return
 
     # set json
     unset aurversionpkgs
@@ -463,7 +463,7 @@ FindDepsAur() {
     unset depspkgsaur
     if [[ -n "${depspkgs[@]}" ]]; then
         # remove all pkgs versioning
-        if [[ $nodeps && $count -eq 1 ]]; then
+        if [[ $nodeps && $dcount -eq 1 ]]; then
             for i in "${!depspkgs[@]}"; do
                 depspkgs[$i]=$(awk -F ">|<|=" '{print $1}' <<< ${depspkgs[$i]})
             done
@@ -1470,7 +1470,7 @@ CheckUpdates() {
 
     GetIgnoredPkgs
 
-    if [[ ! "${OPTRET[@]}" =~ " -n" && ! " ${pacopts[@]} " =~ --native && $fallback = true ]]; then
+    if [[ ! "$pacn" && $fallback = true ]]; then
         [[ -z "${pkgs[@]}" ]] && foreignpkgs=($($pacmanbin -Qmq)) || foreignpkgs=(${pkgs[@]})
         if [[ -n "${foreignpkgs[@]}" ]]; then
             SetJson ${foreignpkgs[@]}
@@ -1554,9 +1554,9 @@ CleanCache() {
     [[ $cachedir ]] && cachedir=${cachedir[@]%/} && PKGDEST=${PKGDEST%/}
 
     if [[ $PKGDEST && ! " ${cachedir[@]} " =~ " $PKGDEST " ]]; then
-        [[ $count -eq 1 ]] && printf "\n%s\n %s\n" $"Packages to keep:" $"All locally installed packages"
+        [[ $ccount -eq 1 ]] && printf "\n%s\n %s\n" $"Packages to keep:" $"All locally installed packages"
         printf "\n%s %s\n" $"AUR cache directory:" "$PKGDEST"
-        if [[ $count -eq 1 ]]; then
+        if [[ $ccount -eq 1 ]]; then
             if Proceed "y" $"Do you want to remove all other packages from AUR cache?"; then
                 printf "%s\n" $"removing old packages from cache..."
                 for i in $(ls $PKGDEST | sed "s%\(.*\)-.*%\1%g" ); do
@@ -1573,9 +1573,9 @@ CleanCache() {
     fi
 
     if [[ $SRCDEST ]]; then
-        [[ $count -eq 1 ]] && printf "\n%s\n %s\n" $"Sources to keep:" $"All development packages sources"
+        [[ $ccount -eq 1 ]] && printf "\n%s\n %s\n" $"Sources to keep:" $"All development packages sources"
         printf "\n%s %s\n" $"AUR source cache directory:" "$SRCDEST"
-        if [[ $count -eq 1 ]]; then
+        if [[ $ccount -eq 1 ]]; then
             if Proceed "y" $"Do you want to remove all non development files from AUR source cache?"; then
                 printf "%s\n" $"removing non development files from source cache..."
                 rm -f "$SRCDEST"/* &>/dev/null
@@ -1589,7 +1589,7 @@ CleanCache() {
     fi
     if [[ -d "$clonedir" ]]; then
         cd $clonedir
-        if [[ $count -eq 1 ]]; then
+        if [[ $ccount -eq 1 ]]; then
             if [[ -z "${pkgs[@]}" ]]; then
                 printf "\n%s\n %s\n" $"Clones to keep:" $"All locally installed clones"
             else
@@ -1597,7 +1597,7 @@ CleanCache() {
             fi
         fi
         printf "\n%s %s\n" $"AUR clone directory:" "$clonedir"
-        if [[ $count -eq 1 ]]; then
+        if [[ $ccount -eq 1 ]]; then
             foreignpkgsbase=($(expac -Q '%n %e' $($pacmanbin -Qmq) | awk '{if ($2 == "(null)") print $1; else print $2}'))
             # get target
             if [[ -n "${pkgs[@]}" ]]; then
@@ -1841,7 +1841,8 @@ Usage() {
 # Main
 #
 
-count=0
+ccount=0
+dcount=0
 
 shortopts="DFQRSTUVacdefghiklmnopqrstuvwxy"
 longopts=('help' 'database' 'files' 'query' 'remove' 'sync' 'deptest' 'upgrade')
@@ -1858,6 +1859,15 @@ if ! parseopts "${shortopts}" "${longopts[@]}" "${longopts_aur[@]}" "${longopts_
 fi
 set -- "${OPTRET[@]}"
 
+for i in "${OPTRET[@]}"; do
+    [[ "$i" =~ ^-(S|-sync) ]] && pac=1 && pacS=1 && operation=sync
+    [[ "$i" =~ ^-(Q|-query) ]] && pac=1 && pacQ=1
+    [[ "$i" =~ ^-([DFRTUV]|-database|-files|-remove|-deptest|-upgrade) ]] && pac=1
+    [[ "$i" =~ ^-(w|-downloadonly) ]] && pacw=1
+    [[ "$i" =~ ^-(n|-native) ]] && pacn=1
+    [[ "$i" =~ ^-([glp]|-groups|-list|-print) ]] && pacglp=1
+done
+
 while true; do
     [[ "$1" = -[cdf-qs-zDFQRSTUV] ]] && pacmanarg+=("$1")
     for i in "${longopts[@]}"; do
@@ -1867,36 +1877,32 @@ while true; do
         [[ "$1" = "--$i" ]] && pacopts+=("$1 $2")
     done
     case "$1" in
-        -S|--sync) pac=1; pacS=1; operation=sync;
-            [[ "${OPTRET[@]}" =~ [:SPACE:]*-w ]] && shift && continue || installpkg=1;
-            [[ "${OPTRET[@]}" =~ [:SPACE:]*-(g|l|p) ]] && unset operation;;
-        -Q|--query) pac=1; pacQ=1;;
-        -s|--search) [[ $pacS ]] && operation=sync && search=1 && auropts+=("search");;
-        -i|--info) [[ $pacS ]] && operation=sync && info=1 && auropts+=("info");;
+        -S|--sync) [[ "$pacw" ]] && shift && continue || installpkg=1; [[ "$pacglp" ]] && unset operation;;
+        -s|--search) [[ $pacS ]] && search=1 && auropts+=("search");;
+        -i|--info) [[ $pacS ]] && info=1 && auropts+=("info");;
         -u|--update) [[ $pacQ ]] && operation=upgrades; [[ $pacS ]] && operation=sync; upgrade=1; installpkg=1;;
         --edit) edit=1; [[ ! $pacQ && ! $operation ]] && operation=edit;;
-        -q|--quiet) quiet=1; auropts+=("$1"); [[ $search || $operation = upgrades ]] && color=never;;
-        -c|--clean) [[ $pacS ]] && operation=sync && cleancache=1 && ((count++));;
+        -q|--quiet) quiet=1; auropts+=("$1");;
+        -c|--clean) [[ $pacS ]] && cleancache=1 && ((ccount++));;
         -r|--repo) repo=1;;
         -a|--aur) aur=1;;
         --ignore) ignoredpkgs+=("$2"); shift;;
         --color) color="$2"; auropts+=("$1=$2"); shift;;
         --literal) auropts+=("$1");;
         --@(by|searchby|rsort|sort)) auropts+=("$1=$2"); shift;;
-        --nodeps) nodeps=1; makeopts+=("$1"); ((count++));;
+        -d|--nodeps) nodeps=1; makeopts+=("$1"); ((dcount++));;
         --assume-installed) assumeinstalled+=("$2"); shift;;
         --@(devel|needed|noconfirm|noedit|rebuild)) declare "${1/--}"=1;;
         --silent) silent=true; pacopts+=("--quiet"); makeopts+=("--log");;
         --overwrite) pacopts+=("$1=\\$2"); shift;;
         --version) echo "pacaur $version"; exit;;
-        -[DFRTUV]|--@(database|files|remove|deptest|upgrade)) pac=1;;
         -h|--help) usage=1;;
         -v|--version) ver=1;;
-        -d) [[ $pacS ]] && nodeps=1 && makeopts+=("--nodeps") && ((count++));;
-        -y) [[ $pacS ]] && operation=sync && refresh=1;;
-        -u) [[ $pacQ ]] && operation=upgrades; [[ $pacS ]] && operation=sync && upgrade=1;;
-        -e) [[ $pacQ ]] && pacopts+=("--explicit") && continue || edit=1; [[ ! $operation ]] && operation=edit;;
-        -w) [[ $pacS ]] && operation=sync && aur=1;;
+        -y) [[ $pacS ]] && refresh=1;;
+        -u) [[ $pacQ ]] && operation=upgrades; [[ $pacS ]] && upgrade=1;;
+        -e) [[ $pacQ ]] && pacopts+=("--explicit") && shift && continue || edit=1;
+            [[ ! $pac ]] && operation=edit;;
+        -w) [[ $pacS ]] && aur=1;;
         --) shift; break;;
     esac
     shift
@@ -1915,6 +1921,7 @@ fi
 [[ -n "$@" ]] && pkgs+=("$@")
 
 # color
+[[ "$quiet" ]] && [[ $search || $operation = upgrades ]] && color=never
 if [[ -n "$(pacman-conf Color)" && $color != 'never' ]]; then
     [[ $color = 'always' ]] && auropts+=("--color=always") || auropts+=("--color=auto")
     reset="\e[0m"
