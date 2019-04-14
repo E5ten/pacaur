@@ -12,7 +12,7 @@ version="4.8.6"
 
 # sanitize
 unset aur cleancache devel edit info installpkg foreign needed noconfirm nodeps noedit
-unset operation pac pacQ pacS quiet rebuild refresh repo search selective upgrade
+unset operation pac pacQ pacS quiet rebuild refresh repo search upgrade
 
 # internationalization
 LC_COLLATE=C
@@ -163,19 +163,14 @@ UpgradeAur() {
     # global aurpkgs
     Note "i" $"${colorW}Starting AUR upgrade...${reset}"
 
-    # selective upgrade switch
-    if [[ $selective && -n ${pkgs[@]} ]]; then
-        aurpkgs+=(${pkgs[@]})
-    else
-        foreignpkgs=($($pacmanbin -Qmq))
-        SetJson ${foreignpkgs[@]}
-        allaurpkgs=($(GetJson "$json" "Name"))
-        allaurpkgsAver=($(GetJson "$json" "Version"))
-        allaurpkgsQver=($(expac -Q '%v' ${allaurpkgs[@]}))
-        for i in "${!allaurpkgs[@]}"; do
-            [[ $(vercmp "${allaurpkgsAver[$i]}" "${allaurpkgsQver[$i]}") -gt 0 ]] && aurpkgs+=(${allaurpkgs[$i]});
-        done
-    fi
+    foreignpkgs=($($pacmanbin -Qmq))
+    SetJson ${foreignpkgs[@]}
+    allaurpkgs=($(GetJson "$json" "Name"))
+    allaurpkgsAver=($(GetJson "$json" "Version"))
+    allaurpkgsQver=($(expac -Q '%v' ${allaurpkgs[@]}))
+    for i in "${!allaurpkgs[@]}"; do
+        [[ $(vercmp "${allaurpkgsAver[$i]}" "${allaurpkgsQver[$i]}") -gt 0 ]] && aurpkgs+=(${allaurpkgs[$i]});
+    done
 
     # foreign packages check
     aurforeignpkgs=($(grep -xvf <(printf '%s\n' "${allaurpkgs[@]}") <(printf '%s\n' "${foreignpkgs[@]}")))
@@ -1843,7 +1838,7 @@ Usage() {
     printf "%s\n" $"   --noedit         do not prompt to edit files"
     printf "%s\n" $"   --rebuild        always rebuild package(s)"
     printf "%s\n" $"   --silent         silence output"
-    echo
+    exit 0
 }
 
 #
@@ -1852,59 +1847,63 @@ Usage() {
 
 count=0
 
-shortopts="sidmykufecqrahvxVDFQRSTUbglnoptw"
-longopts=('asdep' 'asdeps' 'assume-installed:' 'aur' 'by:' 'color:' 'devel' 'downloadonly' 'edit'
-          'foreign' 'help' 'ignore:' 'info' 'literal' 'native' 'needed' 'noconfirm' 'nodeps' 'noedit'
-          'overwrite:' 'query' 'quiet' 'rebuild' 'repo' 'root:' 'rsort:' 'search' 'searchby:' 'silent'
-          'sort:' 'sync' 'sysroot:' 'update' 'version')
+shortopts="DFQRSTUVab:cdefghiklmnopqr:stuvwxy"
+longopts=('help' 'version' 'database' 'files' 'query' 'remove' 'sync' 'deptest' 'upgrade')
+longopts+=('asdep' 'asdeps' 'aur' 'devel' 'downloadonly' 'edit' 'foreign' 'info' 'literal'
+           'native' 'needed' 'noconfirm' 'nodeps' 'noedit' 'quiet' 'rebuild' 'repo' 'search'
+           'silent' 'update')
+longopts_arg+=('assume-installed:' 'by:' 'color:' 'dbpath:' 'ignore:' 'overwrite:' 'root:' 'rsort:'
+               'searchby:' 'sort:' 'sysroot:')
 
-if ! parseopts "${shortopts}" "${longopts[@]}" -- "$@"; then
+if ! parseopts "${shortopts}" "${longopts[@]} ${longopts_arg[@]}" -- "$@"; then
     exit 1
 fi
 set -- "${OPTRET[@]}"
 
 while true; do
-    pacmanarg+=("$1");
+    [[ "$1" = -[c-qs-zDFQRSTUV] ]] && pacmanarg+=("$1")
+    for i in "${longopts[@]}"; do
+        [[ "$1" = "--$i" ]] && pacmanarg+=("$1")
+    done
     case "$1" in
-        -S|--sync) pacS=1; operation=sync; [[ "${OPTRET[@]}" =~ " -w" ]] && shift && continue || installpkg=true;
+        -S|--sync) pac=1; pacS=1; operation=sync;
+            [[ "${OPTRET[@]}" =~ [:SPACE:]*-w ]] && shift && continue || installpkg=1;
             [[ "${OPTRET[@]}" =~ [:SPACE:]*-(g|l|p) ]] && unset operation;;
-        -Q|--query) pacQ=1;;
-        -s|--search) [[ $pacS ]] && operation=sync && search=true && auropts+=("search");;
-        -i|--info) [[ $pacS ]] && operation=sync && info=true && auropts+=("info");;
-        --downloadonly) [[ $pacS ]] && operation=sync && aur=1;;
-        --update) operation=sync; upgrade=true; installpkg=true; selective=true; aur=1;;
-        --edit) edit=true; [[ ! $pacQ && ! $operation ]] && operation=editpkg;;
-        -q|--quiet) quiet=true; pacopts+=("--quiet"); auropts+=("-q");
-            [[ $search || $operation = upgrades ]] && color=never;;
+        -Q|--query) pac=1; pacQ=1;;
+        -s|--search) [[ $pacS ]] && operation=sync && search=1 && auropts+=("search");;
+        -i|--info) [[ $pacS ]] && operation=sync && info=1 && auropts+=("info");;
+        -b|--dbpath) pacopts+=("$1 $2"); shift;;
+        -u|--update) [[ $pacQ ]] && operation=upgrades; [[ $pacS ]] && operation=sync; upgrade=1; installpkg=1;;
+        --edit) edit=1; [[ ! $pacQ && ! $operation ]] && operation=edit;;
+        -q|--quiet) quiet=1; auropts+=("$1"); [[ $search || $operation = upgrades ]] && color=never;;
         -r|--repo) repo=1;;
         -a|--aur) aur=1;;
-        --devel) devel=true;;
-        -m|--foreign) [[ $pacQ ]] && pacopts+=("--foreign") && foreign=true && aur=1;;
-        --ignore) shift; ignoredpkgs+=("$1"); ignoreopts+=("--ignore=$1");;
-        --color) shift; color="$1"; pacopts+=("--color=$1") && auropts+=("--color=$1");;
-        --literal) auropts+=("--literal");;
+        --devel) devel=1;;
+        -m|--foreign) foreign=1;;
+        --ignore) ignoredpkgs+=("$2"); ignoreopts+=("$1=$2"); shift;;
+        --color) color="$2"; pacopts+=("$1=$2") && auropts+=("$1=$2"); shift;;
+        --literal) auropts+=("$1");;
         --rsort|--sort) auropts+=("$1=$2"); shift;;
-        --by|searchby) shift; auropts+=("--searchby=$1");;
-        --asdep|asdeps) pacopts+=("--asdeps"); makeopts+=("--asdeps");;
-        --needed) [[ $pacS ]] && pacopts+=("--needed") && makeopts+=("--needed") && needed=true;;
-        --nodeps) nodeps=true; pacopts+=("--nodeps"); makeopts+=("--nodeps"); ((count++));;
-        --assume-installed) shift; assumeinstalled+=("$1"); pacopts+=("--assume-installed=$1");;
-        --noconfirm) noconfirm=true; pacopts+=("--noconfirm");;
-        --noedit) noedit=true;;
-        --rebuild) rebuild=true;;
+        --by|searchby) auropts+=("$1=$2"); shift;;
+        --asdep|asdeps) makeopts+=("--asdeps");;
+        --needed) makeopts+=("$1") && needed=1;;
+        --nodeps) nodeps=1; makeopts+=("$1"); ((count++));;
+        --assume-installed) assumeinstalled+=("$2"); pacopts+=("$1=$2"); shift;;
+        --noconfirm) noconfirm=1;;
+        --noedit) noedit=1;;
+        --rebuild) rebuild=1;;
         --silent) silent=true; makeopts+=("--log");;
-        --root|--sysroot) pacopts+=("$1=$2"); shift;;
+        -r|--root|--sysroot) pacopts+=("$1 $2"); shift;;
         --overwrite) shift; pacopts+=("--overwrite=\\$1");;
         --version) echo "pacaur $version"; exit;;
-        --help) Usage; exit;;
-        -d) [[ $pacS ]] && nodeps=true && pacopts+=("--nodeps") && makeopts+=("--nodeps") && ((count++));;
-        -y) [[ $pacS ]] && operation=sync && refresh=true;;
-        -u) [[ $pacQ ]] && operation=upgrades; [[ $pacS ]] && operation=sync && upgrade=true;;
-        -e) [[ $pacQ ]] && pacopts+=("--explicit") && continue || edit=true;
-            [[ ! $operation ]] && operation=editpkg;;
-        -c) [[ $pacS ]] && operation=sync && cleancache=true && ((count++));;
-        -h) [[ "${OPTRET[@]}" =~ [:SPACE:]*-[A-Z] ]] && unset operation && shift && continue || Usage; exit;;
-        -v) [[ "${OPTRET[@]}" =~ [:SPACE:]*-[A-Z] ]] && shift && continue || echo "pacaur $version"; exit;;
+        -[DFQRSTU]|--@(database|files|query|remove|sync|deptest|upgrade)) pac=1;;
+        -h|--help) [[ $pac ]] && unset operation || Usage;;
+        -d) [[ $pacS ]] && nodeps=1 && makeopts+=("--nodeps") && ((count++));;
+        -y) [[ $pacS ]] && operation=sync && refresh=1;;
+        -u) [[ $pacQ ]] && operation=upgrades; [[ $pacS ]] && operation=sync && upgrade=1;;
+        -e) [[ $pacQ ]] && pacopts+=("--explicit") && continue || edit=1; [[ ! $operation ]] && operation=edit;;
+        -c) [[ $pacS ]] && operation=sync && cleancache=1 && ((count++));;
+        -v) [[ ! "${OPTRET[@]}" =~ [:SPACE:]*-[A-Z] ]] && echo "pacaur $version"; exit;;
         -w) [[ $pacS ]] && operation=sync && aur=1;;
         --) shift; break;;
     esac
@@ -1940,23 +1939,21 @@ else
 fi
 
 # sanity check
-pacmanarg=(${pacmanarg[@]/--/})
-pacmanarg=(${pacmanarg[@]/-r/})
-pacmanarg=(${pacmanarg[@]/-a/})
-[[ $operation = sync && ! $search && ! $info && ! $cleancache ]] && [[ "$EUID" -eq 0 ]] && Note "e" $"you cannot perform this operation as root"
+pacmanarg=(${pacmanarg[@]/-- /})
+[[ $operation = sync && ! $search && ! $info && ! $cleancache && "$EUID" -eq 0 ]] && Note "e" $"you cannot perform this operation as root"
 [[ $pacS ]] && pacmanarg=(${pacmanarg[@]/-e/})
 [[ $pacS ]] && [[ $search && $info ]] && auropts=(${auropts[@]/-i/})
 [[ $pacS ]] && [[ $cleancache ]] && unset search info upgrade
 [[ ! $(command -v "${editor%% *}") ]] && Note "e" $"${colorW}\$VISUAL${reset} and ${colorW}\$EDITOR${reset} environment variables not set or defined ${colorW}editor${reset} not found"
 [[ "$PACMAN" = $(basename "$0") ]] && Note "e" $"you cannot use ${colorW}pacaur${reset} as PACMAN environment variable"
 [[ ! -w "$clonedir" ]] && Note "e" $"${colorW}$clonedir${reset} does not have write permission"
-[[ -z "${pkgs[@]}" ]] && [[ $operation = sync || $operation = editpkg ]] && [[ ! $refresh && ! $upgrade && ! $cleancache ]] && Note "e" $"no targets specified (use -h for help)"
+[[ -z "${pkgs[@]}" ]] && [[ $operation = sync || $operation = edit ]] && [[ ! $refresh && ! $upgrade && ! $cleancache ]] && Note "e" $"no targets specified (use -h for help)"
 [[ -z "${pkgs[@]}" && -n "$(grep -e "-[RU]" <<< ${pacmanarg[@]})" && -z "$(grep -e "-[h]" <<< ${pacmanarg[@]})" ]] && Note "e" $"no targets specified (use -h for help)"
 [[ $repo && $aur ]] && Note "e" $"target not found"
 
 # operations
 case $operation in
-    editpkg)
+    edit)
         # edit (-e) handling
         GetPkgbase ${pkgs[@]}
         EditPkgs ${pkgsbase[@]}
