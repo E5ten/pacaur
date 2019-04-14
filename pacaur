@@ -11,8 +11,8 @@ version="4.8.6"
 #
 
 # sanitize
-unset aur cleancache devel edit info installpkg foreign needed noconfirm nodeps noedit
-unset operation pac pacQ pacS quiet rebuild refresh repo search upgrade
+unset aur checkdeps cleancache devel edit info installpkg needed noconfirm nodeps noedit
+unset operation pac pacQ pacS quiet rebuild refresh repo search upgrade usage ver
 
 # internationalization
 LC_COLLATE=C
@@ -94,7 +94,7 @@ source /usr/share/makepkg/util/option.sh
 source /usr/share/makepkg/util/parseopts.sh
 
 # only install CheckDepends if check is enabled
-check_buildoption "check" "y" && check_depends=true
+check_buildoption "check" "y" && checkdeps=1
 
 # determine whether we have gettext; make it a no-op if we do not
 if ! type -p gettext >/dev/null; then
@@ -403,9 +403,9 @@ FindDepsAur() {
     depspkgs=($(GetJson "$json" "Depends"))
 
     # cached packages makedeps check
-    if [[ ! $PKGDEST || $rebuild || $foreign ]]; then
+    if [[ ! $PKGDEST || $rebuild ]]; then
         depspkgs+=($(GetJson "$json" "MakeDepends"))
-        [[ "$check_depends" == true ]] && depspkgs+=($(GetJson "$json" "CheckDepends"))
+        [[ "$checkdeps" == true ]] && depspkgs+=($(GetJson "$json" "CheckDepends"))
     else
         [[ -z "${depspkgsaur[@]}" ]] && depspkgsaurtmp=(${aurpkgs[@]}) || depspkgsaurtmp=(${depspkgsaur[@]})
         for i in "${!depspkgsaurtmp[@]}"; do
@@ -414,7 +414,7 @@ FindDepsAur() {
             GetBuiltPkg "$depsAname-$depsAver" "$PKGDEST"
             if [[ ! $builtpkg ]]; then
                 depspkgs+=($(GetJson "$json" "MakeDepends" "${depspkgsaurtmp[$i]}"))
-                [[ "$check_depends" == true ]] && depspkgs+=($(GetJson "$json" "CheckDepends"))
+                [[ "$checkdeps" == true ]] && depspkgs+=($(GetJson "$json" "CheckDepends"))
             fi
             unset builtpkg
         done
@@ -435,7 +435,7 @@ FindDepsAur() {
     fi
 
     # remove installed deps
-    if [[ ! $foreign && ! $devel ]]; then
+    if [[ ! $devel ]]; then
         depspkgs=($($pacmanbin -T ${depspkgs[@]} | sort -u))
     else
         # remove versioning and check providers
@@ -452,14 +452,10 @@ FindDepsAur() {
         done
         # reorder devel
         if [[ $devel ]]; then
-            [[ ! $foreign ]] && depspkgs=($($pacmanbin -T ${depspkgs[@]} | sort -u))
+            depspkgs=($($pacmanbin -T ${depspkgs[@]} | sort -u))
             depspkgstmp=($(grep -xvf <(printf '%s\n' "${depspkgs[@]}") <(printf '%s\n' "${vcsdepspkgs[@]}")))
             depspkgstmp+=($(grep -xvf <(printf '%s\n' "${vcsdepspkgs[@]}") <(printf '%s\n' "${depspkgs[@]}")))
             depspkgs=($(tr ' ' '\n' <<< ${depspkgstmp[@]} | sort -u))
-        fi
-        # remove installed binary packages only
-        if [[ $foreign ]]; then
-            depspkgs=($(grep -xf <(printf '%s\n' "${depspkgs[@]}") <(printf '%s\n' "${foreignpkgs[@]}")))
         fi
     fi
 
@@ -529,7 +525,7 @@ SortDepsAur() {
 
         sortdepspkgs+=($(GetJson "$json" "Depends" "${sortaurpkgs[$i]}"))
         sortdepspkgs+=($(GetJson "$json" "MakeDepends" "${sortaurpkgs[$i]}"))
-        [[ "$check_depends" == true ]] && depspkgs+=($(GetJson "$json" "CheckDepends"))
+        [[ "$checkdeps" == true ]] && depspkgs+=($(GetJson "$json" "CheckDepends"))
 
         # remove versioning
         for j in "${!errdeps[@]}"; do
@@ -580,7 +576,7 @@ FindDepsAurError() {
     if [[ ! " ${aurpkgs[@]} " =~ " $nexterrdep " ]]; then
         nextallerrdeps=($(GetJson "$json" "Depends" "$nexterrdep"))
         nextallerrdeps+=($(GetJson "$json" "MakeDepends" "$nexterrdep"))
-        [[ "$check_depends" == true ]] && depspkgs+=($(GetJson "$json" "CheckDepends"))
+        [[ "$checkdeps" == true ]] && depspkgs+=($(GetJson "$json" "CheckDepends"))
 
         # remove versioning
         for i in "${!nextallerrdeps[@]}"; do
@@ -597,7 +593,7 @@ FindDepsAurError() {
         for i in "${!aurpkgs[@]}"; do
             nextallerrdeps=($(GetJson "$json" "Depends" "${aurpkgs[$i]}"))
             nextallerrdeps+=($(GetJson "$json" "MakeDepends" "${aurpkgs[$i]}"))
-            [[ "$check_depends" == true ]] && depspkgs+=($(GetJson "$json" "CheckDepends"))
+            [[ "$checkdeps" == true ]] && depspkgs+=($(GetJson "$json" "CheckDepends"))
 
             # remove versioning
             for j in "${!nextallerrdeps[@]}"; do
@@ -994,7 +990,7 @@ ReinstallChecks() {
     # global aurpkgs aurdepspkgs deps aurconflictingpkgs depsAname depsQver depsAver depsAood depsAmain
     depsAtmp=(${depsAname[@]})
     for i in "${!depsAtmp[@]}"; do
-        [[ ! $foreign ]] && [[ ! " ${aurpkgs[@]} " =~ " ${depsAname[$i]} " || " ${aurconflictingpkgs[@]} " =~ " ${depsAname[$i]} " ]] && continue
+        [[ ! " ${aurpkgs[@]} " =~ " ${depsAname[$i]} " || " ${aurconflictingpkgs[@]} " =~ " ${depsAname[$i]} " ]] && continue
         [[ -z "${depsQver[$i]}" || "${depsQver[$i]}" = '#' || $(vercmp "${depsAver[$i]}" "${depsQver[$i]}") -gt 0 ]] && continue
         [[ ! $installpkg && ! " ${aurdepspkgs[@]} " =~ " ${depsAname[$i]} " ]] && continue
         if [[ -n "$(grep -E "\-(cvs|svn|git|hg|bzr|darcs|daily.*|nightly.*)$" <<< ${depsAname[$i]})" ]]; then
@@ -1848,16 +1844,16 @@ Usage() {
 count=0
 
 shortopts="DFQRSTUVacdefghiklmnopqrstuvwxy"
-longopts=('help' 'version' 'database' 'files' 'query' 'remove' 'sync' 'deptest' 'upgrade')
+longopts=('help' 'database' 'files' 'query' 'remove' 'sync' 'deptest' 'upgrade')
 longopts+=('asdep' 'asdeps' 'check' 'downloadonly' 'foreign' 'info' 'list'
            'native' 'needed' 'noconfirm' 'nodeps' 'quiet' 'search'
            'sysupgrade' 'verbose')
 longopts_arg=('arch:' 'assume-installed:' 'cachedir:' 'color:' 'config:' 'dbpath:' 'gpgdir:' 'hookdir:'
               'ignore:' 'ignoregroup:' 'logfile:' 'print-format:' 'root:' 'sysroot:')
 longopts_aur=('aur' 'by:' 'devel' 'edit' 'literal' 'noedit' 'overwrite:' 'rebuild' 'repo' 'rsort:'
-              'searchby:' 'silent' 'sort:' 'update')
+              'searchby:' 'silent' 'sort:' 'update' 'version')
 
-if ! parseopts "${shortopts}" "${longopts[@]} ${longopts_aur[@]} ${longopts_arg[@]}" -- "$@"; then
+if ! parseopts "${shortopts}" "${longopts[@]}" "${longopts_aur[@]}" "${longopts_arg[@]}" -- "$@"; then
     exit 1
 fi
 set -- "${OPTRET[@]}"
@@ -1883,29 +1879,37 @@ while true; do
         -c|--clean) [[ $pacS ]] && operation=sync && cleancache=1 && ((count++));;
         -r|--repo) repo=1;;
         -a|--aur) aur=1;;
-        -m|--foreign) foreign=1;;
         --ignore) ignoredpkgs+=("$2"); shift;;
         --color) color="$2"; auropts+=("$1=$2"); shift;;
         --literal) auropts+=("$1");;
-        --by|--searchby|--rsort|--sort) auropts+=("$1=$2"); shift;;
+        --@(by|searchby|rsort|sort)) auropts+=("$1=$2"); shift;;
         --nodeps) nodeps=1; makeopts+=("$1"); ((count++));;
         --assume-installed) assumeinstalled+=("$2"); shift;;
         --@(devel|needed|noconfirm|noedit|rebuild)) declare "${1/--}"=1;;
         --silent) silent=true; pacopts+=("--quiet"); makeopts+=("--log");;
         --overwrite) pacopts+=("$1=\\$2"); shift;;
         --version) echo "pacaur $version"; exit;;
-        -[DFQRSTU]|--@(database|files|query|remove|sync|deptest|upgrade)) pac=1;;
-        -h|--help) [[ $pac ]] && unset operation || Usage;;
+        -[DFRTUV]|--@(database|files|remove|deptest|upgrade)) pac=1;;
+        -h|--help) usage=1;;
+        -v|--version) ver=1;;
         -d) [[ $pacS ]] && nodeps=1 && makeopts+=("--nodeps") && ((count++));;
         -y) [[ $pacS ]] && operation=sync && refresh=1;;
         -u) [[ $pacQ ]] && operation=upgrades; [[ $pacS ]] && operation=sync && upgrade=1;;
         -e) [[ $pacQ ]] && pacopts+=("--explicit") && continue || edit=1; [[ ! $operation ]] && operation=edit;;
-        -v) [[ ! "${OPTRET[@]}" =~ [:SPACE:]*-[A-Z] ]] && echo "pacaur $version"; exit;;
         -w) [[ $pacS ]] && operation=sync && aur=1;;
         --) shift; break;;
     esac
     shift
 done
+
+# display pacaur usage or version if appropriate
+if [[ "$usage" ]]; then
+    [[ "$pac" ]] && unset operation || Usage
+fi
+
+if [[ "$ver" ]]; then
+    [[ ! "$pac" ]] && echo "pacaur $version" && exit 0
+fi
 
 # packages
 [[ -n "$@" ]] && pkgs+=("$@")
