@@ -1519,7 +1519,6 @@ CheckUpdates() {
             aurpkgsAver=($(GetJson "$json" "Version"))
             aurpkgsQver=($(expac -Q '%v' "${aurpkgsAname[@]}"))
             for i in "${!aurpkgsAname[@]}"; do
-                [[ " ${ignoredgrps[@]} " =~ " ${repopkgsAgrp[$i]} " ]] && aurpkgsQignore[$i]=$"[ignored]"
                 if [[ -n "$(grep -E "\-(cvs|svn|git|hg|bzr|darcs|daily.*|nightly.*)$" <<< ${aurpkgsAname[$i]})" ]]; then
                     [[ ! $needed ]] && aurpkgsAver[$i]=$"latest" || aurpkgsAver[$i]=${aurpkgsQoodAver[$i]}
                 fi
@@ -1531,7 +1530,9 @@ CheckUpdates() {
         exitaur=$?
         if [[ ! $quiet ]]; then
             for i in "${!aurpkgsAname[@]}"; do
-                printf "${colorW}%s${reset} ${colorR}%s${reset} -> ${colorG}%s${reset} ${colorY}%s${reset}\n" "${aurpkgsAname[$i]}" "${aurpkgsQver[$i]}" "${aurpkgsAver[$i]}" "${aurpkgsQignore[$i]}"
+                [[ "${ignoredpkgs[@]}" =~ "${aurpkgsAname[$i]}" ]] && aurpkgsQignore[$i]=$"[ignored]"
+                [[ "${ignoredgrps[@]}" =~ "$(GetJson "$json" "Groups" "${aurpkgsAname[$i]}")" ]] && aurpkgsQignore[$i]=$"[ignored]"
+                printf "${colorW}%s${reset} ${colorG}%s${reset} -> ${colorG}%s${reset} %s\n" "${aurpkgsAname[$i]}" "${aurpkgsQver[$i]}" "${aurpkgsAver[$i]}" "${aurpkgsQignore[$i]}"
             done
         else
             tr ' ' '\n' <<< ${aurpkgsQood[@]} | sort -u
@@ -1847,7 +1848,7 @@ dcount=0
 shortopts="DFQRSTUVacdefghiklmnopqrstuvwxy"
 longopts=('help' 'database' 'files' 'query' 'remove' 'sync' 'deptest' 'upgrade')
 longopts+=('asdep' 'asdeps' 'check' 'downloadonly' 'foreign' 'info' 'list'
-           'native' 'needed' 'noconfirm' 'nodeps' 'quiet' 'search'
+           'native' 'needed' 'noconfirm' 'nodeps' 'refresh' 'quiet' 'search'
            'sysupgrade' 'verbose')
 longopts_arg=('arch:' 'assume-installed:' 'cachedir:' 'color:' 'config:' 'dbpath:' 'gpgdir:' 'hookdir:'
               'ignore:' 'ignoregroup:' 'logfile:' 'print-format:' 'root:' 'sysroot:')
@@ -1880,10 +1881,10 @@ while true; do
         -S|--sync) [[ "$pacw" ]] && shift && continue || installpkg=1; [[ "$pacglp" ]] && unset operation;;
         -s|--search) [[ $pacS ]] && search=1 && auropts+=("search");;
         -i|--info) [[ $pacS ]] && info=1 && auropts+=("info");;
-        -u|--update) [[ $pacQ ]] && operation=upgrades; [[ $pacS ]] && operation=sync; upgrade=1; installpkg=1;;
-        --edit) edit=1; [[ ! $pacQ && ! $operation ]] && operation=edit;;
+        -u|--update) [[ $pacQ ]] && operation=upgrades; upgrade=1; installpkg=1;;
+        --edit) edit=1; [[ ! $operation ]] && operation=edit;;
         -q|--quiet) quiet=1; auropts+=("$1");;
-        -c|--clean) [[ $pacS ]] && cleancache=1 && ((ccount++));;
+        -c|--clean) cleancache=1 && ((ccount++));;
         -r|--repo) repo=1;;
         -a|--aur) aur=1;;
         --ignore) ignoredpkgs+=("$2"); shift;;
@@ -1894,11 +1895,11 @@ while true; do
         --assume-installed) assumeinstalled+=("$2"); shift;;
         --@(devel|needed|noconfirm|noedit|rebuild)) declare "${1/--}"=1;;
         --silent) silent=true; pacopts+=("--quiet"); makeopts+=("--log");;
+        -y|--refresh) refresh=1;;
         --overwrite) pacopts+=("$1=\\$2"); shift;;
         --version) echo "pacaur $version"; exit;;
         -h|--help) usage=1;;
         -v|--version) ver=1;;
-        -y) [[ $pacS ]] && refresh=1;;
         -u) [[ $pacQ ]] && operation=upgrades; [[ $pacS ]] && upgrade=1;;
         -e) [[ $pacQ ]] && pacopts+=("--explicit") && shift && continue || edit=1;
             [[ ! $pac ]] && operation=edit;;
