@@ -1816,9 +1816,10 @@ Usage() {
 # Main
 #
 
-ccount=0
-dcount=0
+# initialize counters
+ccount=0; dcount=0; pac=0
 
+# options
 shortopts="DFQRSTUVacdefghiklmnopqrstuvwxy"
 longopts=('help' 'database' 'files' 'query' 'remove' 'sync' 'deptest' 'upgrade')
 longopts+=('asdeps' 'asexplicit' 'cascade' 'changelog' 'check' 'confirm' 'dbonly' 'debug' 'deps'
@@ -1827,16 +1828,16 @@ longopts+=('asdeps' 'asexplicit' 'cascade' 'changelog' 'check' 'confirm' 'dbonly
            'noscriptlet' 'owns' 'print' 'recursive' 'refresh' 'regex' 'quiet' 'search' 'sysupgrade'
            'unneeded' 'unrequired' 'upgrades' 'verbose')
 longopts+=('arch:' 'assume-installed:' 'cachedir:' 'color:' 'config:' 'dbpath:' 'gpgdir:' 'hookdir:'
-           'ignore:' 'ignoregroup:' 'logfile:' 'print-format:' 'root:' 'sysroot:')
-longopts_aur=('aur' 'by:' 'devel' 'edit' 'literal' 'noedit' 'overwrite:' 'rebuild' 'repo' 'rsort:'
-              'searchby:' 'silent' 'sort:' 'update' 'version')
+           'ignore:' 'ignoregroup:' 'logfile:' 'overwrite:' 'print-format:' 'root:' 'sysroot:')
+longopts_aur=('aur' 'by:' 'devel' 'edit' 'literal' 'noedit' 'rebuild' 'repo' 'rsort:' 'searchby:'
+              'silent' 'sort:' 'update' 'version')
 parseopts "${shortopts}" "${longopts[@]}" "${longopts_aur[@]}" -- "$@" || exit 1
 set -- "${OPTRET[@]}"
 
 for i in "${OPTRET[@]}"; do
-    [[ "$i" =~ ^-(S|-sync) ]] && pac=1 && pacS=1 && operation=sync
-    [[ "$i" =~ ^-(Q|-query) ]] && pac=1 && pacQ=1
-    [[ "$i" =~ ^-([DFRTUV]|-database|-files|-remove|-deptest|-upgrade) ]] && pac=1
+    [[ "$i" =~ ^-(S|-sync) ]] && pacS=1 && operation=sync && ((pac++))
+    [[ "$i" =~ ^-(Q|-query) ]] && pacQ=1 && ((pac++))
+    [[ "$i" =~ ^-([DFRTUV]|-database|-files|-remove|-deptest|-upgrade) ]] && ((pac++))
     [[ "$i" =~ ^-(a|-aur) ]] && aur=1
     [[ "$i" =~ ^-(r|-repo) ]] && repo=1
     [[ "$i" =~ ^-(w|-downloadonly) ]] && pacw=1
@@ -1848,13 +1849,13 @@ while true; do
     [[ "$1" = -[cdf-qs-zDFQRSTUV] ]] && pacmanarg+=("$1")
     for i in "${longopts[@]}"; do
         [[ "$1" = "--$i" ]] && pacopts+=("$1")
-        [[ "$1": = "--$i" ]] && pacopts+=("$1 $2")
+        [[ "$1": = "--$i" ]] && pacopts+=("$1=$2")
     done
     case "$1" in
         -S|--sync) [[ "$pacw" ]] || installpkg=1 && [[ "$pacglp" ]] && unset operation;;
         -s|--search) search=1; auropts+=("search");;
         -i|--info) info=1; auropts+=("info");;
-        --edit) [[ ! "$pac" ]] && operation=edit; edit=1;;
+        --edit) [[ "$pac" -eq 0 ]] && operation=edit; edit=1;;
         -u|--upgrades|--sysupgrade) [[ "$pacQ" ]] && operation=upgrades; upgrade=1; installpkg=1;;
         -q|--quiet) quiet=1; auropts+=("$1");;
         -c|--clean) cleancache=1 && ((ccount++));;
@@ -1867,10 +1868,9 @@ while true; do
         --@(devel|needed|noconfirm|noedit|rebuild)) declare "${1/--}"=1;;
         --silent) silent=true; pacopts+=("--quiet"); auropts+=("--quiet") makeopts+=("--log");;
         -y|--refresh) [[ ! "$aur" ]] && refresh=1;;
-        --overwrite) pacopts+=("$1=\\$2"); shift;;
         -e) [[ "$pacQ" ]] && pacopts+=("--explicit"); edit=1; [[ "$pac" -eq 0 ]] && operation=edit;;
-        -h|--help) [[ "$pac" -eq 1 ]] && unset operation || Usage;;
-        -v|--version) [[ ! "$pac" -eq 1 || "$1" = --version ]] && echo "pacaur $version" && exit 0;;
+        -h|--help) [[ "$pac" -ge 1 ]] && unset operation || Usage;;
+        -v|--version) [[ ! "$pac" -ge 1 || "$1" = --version ]] && echo "pacaur $version" && exit 0;;
         --) shift; break;;
     esac
     shift
@@ -1881,7 +1881,7 @@ done
 
 # color
 if [[ ! "$color" ]]; then
-    [[ ! "$(pacman-conf Color)" || "$quiet" && "$search" || $operation = upgrades ]] && color=never || color=auto
+    [[ ! "$(pacman-conf Color)" ]] || [[ "$quiet" && "$search" || $operation = upgrades ]] && color=never || color=auto
 fi
 pacopts+=("--color=$color") && auropts+=("--color=$color")
 if [[ ! "$color" = never ]]; then
@@ -1890,6 +1890,7 @@ if [[ ! "$color" = never ]]; then
 fi
 
 # sanity check
+[[ "$pac" -gt 1 ]] && Note "e" $"only one operation may be used at a time"
 [[ $operation = sync && ! $search && ! $info && ! $cleancache && "$EUID" -eq 0 ]] && Note "e" $"you cannot perform this operation as root"
 [[ $pacS ]] && [[ $search && $info ]] && Note "e" $"invalid option: '--info' and '--search' may not be used together"
 [[ $pacS ]] && [[ $cleancache ]] && unset search info upgrade
@@ -1910,14 +1911,12 @@ case $operation in
     sync)
         # search (-Ss, -s) handling
         if [[ $search ]]; then
-            if [[ ! $aur ]]; then
-                if [[ $refresh ]]; then
-                    sudo $pacmanbin ${pacmanarg[@]} ${pacopts[@]} -- ${pkgs[@]}
-                else
-                    $pacmanbin ${pacmanarg[@]} ${pacopts[@]} -- ${pkgs[@]}
-                fi
-                exitrepo=$?
+            if [[ $refresh ]]; then
+                sudo $pacmanbin ${pacmanarg[@]} ${pacopts[@]} -- ${pkgs[@]}
+            else
+                $pacmanbin ${pacmanarg[@]} ${pacopts[@]} -- ${pkgs[@]}
             fi
+            exitrepo=$?
             if [[ ! $repo && $fallback = true || $aur ]]; then
                 auracle ${auropts[@]} -- $@ ${pkgs[@]}
                 exitaur=$?
@@ -1962,7 +1961,6 @@ case $operation in
                 (($? > 0)) && [[ $repo ]] && exit 1
                 [[ $repo ]] && exit 0
             fi
-            [[ ! $repo ]] && [[ $aur ]] && [[ $refresh ]] && [[ -z "${repopkgs[@]}" ]] && sudo $pacmanbin -Sy ${pacopts[@]}
             if [[ -n "${aurpkgs[@]}" ]] && [[ $fallback = true && ! $aur ]]; then
                 Note "w" $"Package(s) ${colorW}${aurpkgs[*]}${reset} not found in repositories, trying ${colorM}AUR${reset}..."
             fi
@@ -1984,7 +1982,7 @@ case $operation in
             fi
         fi
         exit;;
-    upgrades) CheckUpdates ${pkgs[@]};; # upgrades (-Qu) handling
+    upgrades) CheckUpdates "${pkgs[@]}";; # upgrades (-Qu) handling
     *)  # others operations handling
         if [[ -n "$(grep -e "-[F]" <<< ${pacmanarg[@]})" && -n "$(grep -e "-[y]" <<< ${pacmanarg[@]})" ]]; then
             sudo $pacmanbin ${pacmanarg[@]} ${pacopts[@]} "${pkgs[@]}"
