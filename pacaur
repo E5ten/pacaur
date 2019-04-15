@@ -15,7 +15,7 @@ shopt -s extglob
 
 # sanitize
 unset aur checkdeps cleancache ccount dcount devel edit info installpkg needed noconfirm nodeps noedit
-unset operation pac pacQ pacS pacglp pacn pacw quiet readline rebuild refresh repo search upgrade var
+unset operation pac pacQ pacS pacglp pacn pacw quiet readline rebuild refresh repo search upgrade
 
 # internationalization
 LC_COLLATE=C
@@ -35,10 +35,17 @@ usercachedir="${XDG_CACHE_HOME:-${HOME}/.cache}/pacaur"
 tmpdir="${XDG_RUNTIME_DIR:-/tmp}"
 
 # preserve environment variables
-var=('PACMAN' 'PKGDEST' 'SRCDEST' 'SRCPKGDEST' 'LOGDEST' 'BUILDDIR' 'PKGEXT' 'SRCEXT' 'GPGKEY' 'PACKAGER' 'CARCH')
-for i in "${var[@]}"; do
-    [[ -n "${!i}" ]] && declare "_${i}"="${!i}"
-done
+[[ -n ${PACMAN} ]] && _PACMAN=${PACMAN}
+[[ -n ${PKGDEST} ]] && _PKGDEST=${PKGDEST}
+[[ -n ${SRCDEST} ]] && _SRCDEST=${SRCDEST}
+[[ -n ${SRCPKGDEST} ]] && _SRCPKGDEST=${SRCPKGDEST}
+[[ -n ${LOGDEST} ]] && _LOGDEST=${LOGDEST}
+[[ -n ${BUILDDIR} ]] && _BUILDDIR=${BUILDDIR}
+[[ -n ${PKGEXT} ]] && _PKGEXT=${PKGEXT}
+[[ -n ${SRCEXT} ]] && _SRCEXT=${SRCEXT}
+[[ -n ${GPGKEY} ]] && _GPGKEY=${GPGKEY}
+[[ -n ${PACKAGER} ]] && _PACKAGER=${PACKAGER}
+[[ -n ${CARCH} ]] && _CARCH=${CARCH}
 
 # source makepkg variables
 if [[ -r "$MAKEPKG_CONF" ]]; then
@@ -53,9 +60,17 @@ else
 fi
 
 # restore environment variables
-for i in "${var[@]}"; do
-    j="_${i}"; declare "${i}"="${!j:-${!i}}" && unset j
-done
+PACMAN=${_PACMAN:-$PACMAN}
+PKGDEST=${_PKGDEST:-$PKGDEST}
+SRCDEST=${_SRCDEST:-$SRCDEST}
+SRCPKGDEST=${_SRCPKGDEST:-$SRCPKGDEST}
+LOGDEST=${_LOGDEST:-$LOGDEST}
+BUILDDIR=${_BUILDDIR:-$BUILDDIR}
+PKGEXT=${_PKGEXT:-$PKGEXT}
+SRCEXT=${_SRCEXT:-$SRCEXT}
+GPGKEY=${_GPGKEY:-$GPGKEY}
+PACKAGER=${_PACKAGER:-$PACKAGER}
+CARCH=${_CARCH:-$CARCH}
 
 # set default config variables
 editor="${VISUAL:-${EDITOR:-vi}}"           # build files editor
