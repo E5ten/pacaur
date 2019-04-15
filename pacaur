@@ -12,7 +12,7 @@ version="4.8.6"
 
 # sanitize
 unset aur checkdeps cleancache ccount dcount devel edit info installpkg needed noconfirm nodeps noedit
-unset operation pac pacQ pacS pacglp pacn pacw quiet rebuild refresh repo search upgrade usage ver
+unset operation pac pacQ pacS pacglp pacn pacw quiet readline rebuild refresh repo search upgrade usage ver
 
 # internationalization
 LC_COLLATE=C
@@ -1722,15 +1722,11 @@ CheckRequires() {
 }
 
 Proceed() {
-    local Y y N n answer readline ret
+    local Y y N n answer ret
     Y="Y"; y="${Y,,}";
     N="N"; n="${N,,}"
 
-    if [[ "$TERM" = dumb ]] || [[ $cleancache ]]; then
-        readline=1
-    else
-        readline=0
-    fi
+    [[ "$TERM" = dumb || "$cleancache" ]] && local readline=1
     case "$1" in
         y)  printf "${colorB}%s${reset} ${colorW}%s${reset}" "::" "$2 [$Y/$n] "
             if [[ $noconfirm ]]; then
@@ -1738,15 +1734,11 @@ Proceed() {
                 return 0
             fi
             while true; do
-                if (( readline )); then
-                    read -r answer
-                else
-                    read -s -r -n 1 answer
-                fi
+                [[ "$readline" ]] && read -r answer || read -s -r -n 1 answer
                 case $answer in
                     $Y|$y|'') ret=0; break;;
                     $N|$n) ret=1; break;;
-                    *) (( readline )) && ret=1 && break;;
+                    *) [[ "$readline" ]] && ret=1 && break;;
                 esac
             done;;
         n)  printf "${colorB}%s${reset} ${colorW}%s${reset}" "::" "$2 [$y/$N] "
@@ -1755,22 +1747,16 @@ Proceed() {
                 return 0
             fi
             while true; do
-                if (( readline )); then
-                    read -r answer
-                else
-                    read -s -r -n 1 answer
-                fi
+                [[ "$readline" ]] && read -r answer || read -s -r -n 1 answer
                 case $answer in
                     $N|$n|'') ret=0; break;;
                     $Y|$y) ret=1; break;;
-                    *) (( readline )) && ret=0 && break;;
+                    *) [[ "$readline" ]] && ret=0 && break;;
                 esac
             done;;
     esac
-    if ! (( readline )); then
-        echo "$answer"
-    fi
-    return $ret
+    [[ ! "$readline" ]] && echo "$answer"
+    return "$ret"
 }
 
 Note() {
