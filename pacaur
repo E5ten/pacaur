@@ -1115,8 +1115,7 @@ DownloadPkgs() {
 
     # clone
     if ! auracle -C "$clonedir" clone --quiet "$@"; then
-        Note "f" $"failed to retrieve packages"
-        exit 1
+        Note "e" $"failed to retrieve packages"
     fi
 }
 
@@ -1138,7 +1137,7 @@ EditPkgs() {
                     if [[ -n "$(eval "$diffcmd")" ]]; then
                         if Proceed "y" $"View $i build files diff?"; then
                             eval "$diffcmd"
-                            Note "s" $"${colorW}$i${reset} build files diff viewed"
+                            Note "i" $"${colorW}$i${reset} build files diff viewed"
                             viewed='true'
                             (($? > 0)) && erreditpkg+=($i)
                         fi
@@ -1149,7 +1148,7 @@ EditPkgs() {
                     # show pkgbuild
                     if Proceed "y" $"View $i PKGBUILD?"; then
                         if [[ -e "PKGBUILD" ]]; then
-                            $editor "PKGBUILD" && Note "s" $"${colorW}$i${reset} PKGBUILD viewed"
+                            $editor "PKGBUILD" && Note "i" $"${colorW}$i${reset} PKGBUILD viewed"
                             (($? > 0)) && erreditpkg+=($i)
                         else
                             Note "e" $"Could not open ${colorW}$i${reset} PKGBUILD"
@@ -1160,7 +1159,7 @@ EditPkgs() {
                         for j in "${installscripts[@]}"; do
                             if Proceed "y" $"View $j script?"; then
                                 if [[ -e "$j" ]]; then
-                                    $editor "$j" && Note "s" $"${colorW}$j${reset} script viewed"
+                                    $editor "$j" && Note "i" $"${colorW}$j${reset} script viewed"
                                     (($? > 0)) && erreditpkg+=($i)
                                 else
                                     Note "e" $"Could not open ${colorW}$j${reset} script"
@@ -1173,7 +1172,7 @@ EditPkgs() {
         else
             # show pkgbuild and install script
             if [[ -e "PKGBUILD" ]]; then
-                $editor "PKGBUILD" && Note "s" $"${colorW}$i${reset} PKGBUILD viewed"
+                $editor "PKGBUILD" && Note "i" $"${colorW}$i${reset} PKGBUILD viewed"
                 (($? > 0)) && erreditpkg+=($i)
             else
                 Note "e" $"Could not open ${colorW}$i${reset} PKGBUILD"
@@ -1181,7 +1180,7 @@ EditPkgs() {
             if [[ -n "${installscripts[@]}" ]]; then
                 for j in "${installscripts[@]}"; do
                     if [[ -e "$j" ]]; then
-                        $editor "$j" && Note "s" $"${colorW}$j${reset} script viewed"
+                        $editor "$j" && Note "i" $"${colorW}$j${reset} script viewed"
                         (($? > 0)) && erreditpkg+=($i)
                     else
                         Note "e" $"Could not open ${colorW}$j${reset} script"
@@ -1286,7 +1285,7 @@ MakePkgs() {
             Note "f" $"failed to verify integrity or prepare ${colorW}$i${reset} package"
         done
         # remove sudo lock
-        [[ -e "$tmpdir/pacaur.sudov.lck" ]] && rm "$tmpdir/pacaur.sudov.lck"
+        rm -f "$tmpdir/pacaur.sudov.lck"
         exit 1
     fi
 
@@ -1423,7 +1422,7 @@ MakePkgs() {
 
     # remove locks
     rm "$tmpdir/pacaur.build.lck"
-    [[ -e "$tmpdir/pacaur.sudov.lck" ]] && rm "$tmpdir/pacaur.sudov.lck"
+    rm -f "$tmpdir/pacaur.sudov.lck"
 
     # new orphan and optional packages check
     orphanpkgs=($($pacmanbin -Qdtq))
@@ -1746,12 +1745,10 @@ Proceed() {
 
 Note() {
     case "$1" in
-        i) echo -e "${colorB}::${reset} $2";;       # info
-        s) echo -e "${colorG}::${reset} $2";;       # success
-        w) echo -e "${colorY}::${reset} $2";;       # warn
-        f) echo -e "${colorR}::${reset} $2" >&2;;   # fail
-        e) echo -e "${colorR}error:${reset} $2" >&2;    # error
-           exit 1;;
+        i) echo -e "${colorB}::${reset} $2";;                    # info
+        w) echo -e "${colorY}warning:${reset} $2";;              # warn
+        f) echo -e "${colorR}error:${reset} $2" >&2;;            # fail
+        e) echo -e "${colorR}error:${reset} $2" >&2; exit 1;;    # error
     esac
 }
 
@@ -1779,8 +1776,7 @@ SudoV() {
 trap Cancel INT
 Cancel() {
     echo
-    [[ -e "$tmpdir/pacaur.build.lck" ]] && rm "$tmpdir/pacaur.build.lck"
-    [[ -e "$tmpdir/pacaur.sudov.lck" ]] && rm "$tmpdir/pacaur.sudov.lck"
+    rm -f "$tmpdir"/pacaur.{build,sudov}.lck
     exit
 }
 
