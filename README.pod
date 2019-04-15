@@ -44,8 +44,9 @@ repositories, or by users who prefer to keep their AUR frontend separated from p
 Pacaur wraps all B<pacman operations> and by default extends respectively its
 sync, search, info, download only, system upgrade, upgrades check, clean and
 clean all functions to the AUR. This extension behavior is optional and can be
-disabled with the I<fallback> variable in the config file. Pacaur will also pass
-any other pacman operations and their related options to the pacman binary.
+disabled with the I<fallback> variable in the config file, and used with the
+variable set with the I<-a/--aur> flag. Pacaur will also pass any other pacman
+operations and their related options to the pacman binary.
 
 =back
 
@@ -72,8 +73,7 @@ Display the help message and quit.
 =item B<-a, --aur>
 
 When used with pacman extended operations, only search, build, install, upgrade
-or clean I<target(s)> from the AUR. When combined with I<-Syu>, only the I<-Sy>
-operation is run for the repositories.
+or clean I<target(s)> from the AUR.
 
 =item B<-r, --repo>
 

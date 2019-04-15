@@ -10,9 +10,11 @@ version="4.8.6"
 # Config
 #
 
+shopt -s extglob
+
 # sanitize
 unset aur checkdeps cleancache ccount dcount devel edit info installpkg needed noconfirm nodeps noedit
-unset operation pac pacQ pacS pacglp pacn pacw quiet rebuild refresh repo search upgrade usage ver
+unset operation pac pacQ pacS pacglp pacn pacw quiet readline rebuild refresh repo search upgrade var
 
 # internationalization
 LC_COLLATE=C
@@ -32,17 +34,10 @@ usercachedir="${XDG_CACHE_HOME:-${HOME}/.cache}/pacaur"
 tmpdir="${XDG_RUNTIME_DIR:-/tmp}"
 
 # preserve environment variables
-[[ -n ${PACMAN} ]] && _PACMAN=${PACMAN}
-[[ -n ${PKGDEST} ]] && _PKGDEST=${PKGDEST}
-[[ -n ${SRCDEST} ]] && _SRCDEST=${SRCDEST}
-[[ -n ${SRCPKGDEST} ]] && _SRCPKGDEST=${SRCPKGDEST}
-[[ -n ${LOGDEST} ]] && _LOGDEST=${LOGDEST}
-[[ -n ${BUILDDIR} ]] && _BUILDDIR=${BUILDDIR}
-[[ -n ${PKGEXT} ]] && _PKGEXT=${PKGEXT}
-[[ -n ${SRCEXT} ]] && _SRCEXT=${SRCEXT}
-[[ -n ${GPGKEY} ]] && _GPGKEY=${GPGKEY}
-[[ -n ${PACKAGER} ]] && _PACKAGER=${PACKAGER}
-[[ -n ${CARCH} ]] && _CARCH=${CARCH}
+var=('PACMAN' 'PKGDEST' 'SRCDEST' 'SRCPKGDEST' 'LOGDEST' 'BUILDDIR' 'PKGEXT' 'SRCEXT' 'GPGKEY' 'PACKAGER' 'CARCH')
+for i in "${var[@]}"; do
+    [[ -n "${!i}" ]] && declare "_${i}"="${!i}"
+done
 
 # source makepkg variables
 if [[ -r "$MAKEPKG_CONF" ]]; then
@@ -57,17 +52,9 @@ else
 fi
 
 # restore environment variables
-PACMAN=${_PACMAN:-$PACMAN}
-PKGDEST=${_PKGDEST:-$PKGDEST}
-SRCDEST=${_SRCDEST:-$SRCDEST}
-SRCPKGDEST=${_SRCPKGDEST:-$SRCPKGDEST}
-LOGDEST=${_LOGDEST:-$LOGDEST}
-BUILDDIR=${_BUILDDIR:-$BUILDDIR}
-PKGEXT=${_PKGEXT:-$PKGEXT}
-SRCEXT=${_SRCEXT:-$SRCEXT}
-GPGKEY=${_GPGKEY:-$GPGKEY}
-PACKAGER=${_PACKAGER:-$PACKAGER}
-CARCH=${_CARCH:-$CARCH}
+for i in "${var[@]}"; do
+    j="_${i}"; declare "${i}"="${!j:-${!i}}" && unset j
+done
 
 # set default config variables
 editor="${VISUAL:-${EDITOR:-vi}}"           # build files editor
@@ -90,10 +77,8 @@ source "$configdir/config"
 [[ ! -d "$clonedir" ]] && mkdir -p "$clonedir" -m 700
 
 # source makepkg libraries
-source /usr/share/makepkg/util/option.sh
 source /usr/share/makepkg/util/parseopts.sh
-
-# only install CheckDepends if check is enabled
+source /usr/share/makepkg/util/option.sh
 check_buildoption "check" "y" && checkdeps=1
 
 # determine whether we have gettext; make it a no-op if we do not
@@ -102,9 +87,6 @@ if ! type -p gettext >/dev/null; then
 		printf "%s\n" "$@"
 	}
 fi
-
-# enable extglob for extended option matching e.g. --asd --> --asdeps
-shopt -s extglob
 
 #
 # Functions
@@ -165,7 +147,6 @@ UpgradeAur() {
     local foreignpkgs allaurpkgs allaurpkgsAver allaurpkgsQver aurforeignpkgs i json
     # global aurpkgs
     Note "i" $"${colorW}Starting AUR upgrade...${reset}"
-
     foreignpkgs=($($pacmanbin -Qmq))
     SetJson ${foreignpkgs[@]}
     allaurpkgs=($(GetJson "$json" "Name"))
@@ -1134,8 +1115,7 @@ DownloadPkgs() {
 
     # clone
     if ! auracle -C "$clonedir" clone --quiet "$@"; then
-        Note "f" $"failed to retrieve packages"
-        exit 1
+        Note "e" $"failed to retrieve packages"
     fi
 }
 
@@ -1157,7 +1137,7 @@ EditPkgs() {
                     if [[ -n "$(eval "$diffcmd")" ]]; then
                         if Proceed "y" $"View $i build files diff?"; then
                             eval "$diffcmd"
-                            Note "s" $"${colorW}$i${reset} build files diff viewed"
+                            Note "i" $"${colorW}$i${reset} build files diff viewed"
                             viewed='true'
                             (($? > 0)) && erreditpkg+=($i)
                         fi
@@ -1168,7 +1148,7 @@ EditPkgs() {
                     # show pkgbuild
                     if Proceed "y" $"View $i PKGBUILD?"; then
                         if [[ -e "PKGBUILD" ]]; then
-                            $editor "PKGBUILD" && Note "s" $"${colorW}$i${reset} PKGBUILD viewed"
+                            $editor "PKGBUILD" && Note "i" $"${colorW}$i${reset} PKGBUILD viewed"
                             (($? > 0)) && erreditpkg+=($i)
                         else
                             Note "e" $"Could not open ${colorW}$i${reset} PKGBUILD"
@@ -1179,7 +1159,7 @@ EditPkgs() {
                         for j in "${installscripts[@]}"; do
                             if Proceed "y" $"View $j script?"; then
                                 if [[ -e "$j" ]]; then
-                                    $editor "$j" && Note "s" $"${colorW}$j${reset} script viewed"
+                                    $editor "$j" && Note "i" $"${colorW}$j${reset} script viewed"
                                     (($? > 0)) && erreditpkg+=($i)
                                 else
                                     Note "e" $"Could not open ${colorW}$j${reset} script"
@@ -1192,7 +1172,7 @@ EditPkgs() {
         else
             # show pkgbuild and install script
             if [[ -e "PKGBUILD" ]]; then
-                $editor "PKGBUILD" && Note "s" $"${colorW}$i${reset} PKGBUILD viewed"
+                $editor "PKGBUILD" && Note "i" $"${colorW}$i${reset} PKGBUILD viewed"
                 (($? > 0)) && erreditpkg+=($i)
             else
                 Note "e" $"Could not open ${colorW}$i${reset} PKGBUILD"
@@ -1200,7 +1180,7 @@ EditPkgs() {
             if [[ -n "${installscripts[@]}" ]]; then
                 for j in "${installscripts[@]}"; do
                     if [[ -e "$j" ]]; then
-                        $editor "$j" && Note "s" $"${colorW}$j${reset} script viewed"
+                        $editor "$j" && Note "i" $"${colorW}$j${reset} script viewed"
                         (($? > 0)) && erreditpkg+=($i)
                     else
                         Note "e" $"Could not open ${colorW}$j${reset} script"
@@ -1305,7 +1285,7 @@ MakePkgs() {
             Note "f" $"failed to verify integrity or prepare ${colorW}$i${reset} package"
         done
         # remove sudo lock
-        [[ -e "$tmpdir/pacaur.sudov.lck" ]] && rm "$tmpdir/pacaur.sudov.lck"
+        rm -f "$tmpdir/pacaur.sudov.lck"
         exit 1
     fi
 
@@ -1442,7 +1422,7 @@ MakePkgs() {
 
     # remove locks
     rm "$tmpdir/pacaur.build.lck"
-    [[ -e "$tmpdir/pacaur.sudov.lck" ]] && rm "$tmpdir/pacaur.sudov.lck"
+    rm -f "$tmpdir/pacaur.sudov.lck"
 
     # new orphan and optional packages check
     orphanpkgs=($($pacmanbin -Qdtq))
@@ -1470,10 +1450,15 @@ CheckUpdates() {
     local foreignpkgs foreignpkgsbase
     local aurpkgsQood aurpkgsAname aurpkgsAver aurpkgsQver aurpkgsQignore i json
     local aurdevelpkgsAver aurdevelpkgsQver aurpkgsQoodAver
+    # global aur repo
+
+    if [[ ! "$aur" ]]; then
+        $pacmanbin ${pacmanarg[@]} ${pacopts[@]}; exitrepo=$?
+    fi
 
     GetIgnoredPkgs
 
-    if [[ ! "$pacn" && $fallback = true ]]; then
+    if [[ ! "$repo" && ! "$pacn" && $fallback = true ]]; then
         [[ -z "${pkgs[@]}" ]] && foreignpkgs=($($pacmanbin -Qmq)) || foreignpkgs=(${pkgs[@]})
         if [[ -n "${foreignpkgs[@]}" ]]; then
             SetJson ${foreignpkgs[@]}
@@ -1534,7 +1519,6 @@ CheckUpdates() {
         if [[ ! $quiet ]]; then
             for i in "${!aurpkgsAname[@]}"; do
                 [[ "${ignoredpkgs[@]}" =~ "${aurpkgsAname[$i]}" ]] && aurpkgsQignore[$i]=$"[ignored]"
-                [[ "${ignoredgrps[@]}" =~ "$(GetJson "$json" "Groups" "${aurpkgsAname[$i]}")" ]] && aurpkgsQignore[$i]=$"[ignored]"
                 printf "${colorW}%s${reset} ${colorG}%s${reset} -> ${colorG}%s${reset} %s\n" "${aurpkgsAname[$i]}" "${aurpkgsQver[$i]}" "${aurpkgsAver[$i]}" "${aurpkgsQignore[$i]}"
             done
         else
@@ -1722,15 +1706,11 @@ CheckRequires() {
 }
 
 Proceed() {
-    local Y y N n answer readline ret
+    local Y y N n answer ret
     Y="Y"; y="${Y,,}";
     N="N"; n="${N,,}"
 
-    if [[ "$TERM" = dumb ]] || [[ $cleancache ]]; then
-        readline=1
-    else
-        readline=0
-    fi
+    [[ "$TERM" = dumb || "$cleancache" ]] && local readline=1
     case "$1" in
         y)  printf "${colorB}%s${reset} ${colorW}%s${reset}" "::" "$2 [$Y/$n] "
             if [[ $noconfirm ]]; then
@@ -1738,15 +1718,11 @@ Proceed() {
                 return 0
             fi
             while true; do
-                if (( readline )); then
-                    read -r answer
-                else
-                    read -s -r -n 1 answer
-                fi
+                [[ "$readline" ]] && read -r answer || read -s -r -n 1 answer
                 case $answer in
                     $Y|$y|'') ret=0; break;;
                     $N|$n) ret=1; break;;
-                    *) (( readline )) && ret=1 && break;;
+                    *) [[ "$readline" ]] && ret=1 && break;;
                 esac
             done;;
         n)  printf "${colorB}%s${reset} ${colorW}%s${reset}" "::" "$2 [$y/$N] "
@@ -1755,32 +1731,24 @@ Proceed() {
                 return 0
             fi
             while true; do
-                if (( readline )); then
-                    read -r answer
-                else
-                    read -s -r -n 1 answer
-                fi
+                [[ "$readline" ]] && read -r answer || read -s -r -n 1 answer
                 case $answer in
                     $N|$n|'') ret=0; break;;
                     $Y|$y) ret=1; break;;
-                    *) (( readline )) && ret=0 && break;;
+                    *) [[ "$readline" ]] && ret=0 && break;;
                 esac
             done;;
     esac
-    if ! (( readline )); then
-        echo "$answer"
-    fi
-    return $ret
+    [[ ! "$readline" ]] && echo "$answer"
+    return "$ret"
 }
 
 Note() {
     case "$1" in
-        i) echo -e "${colorB}::${reset} $2";;       # info
-        s) echo -e "${colorG}::${reset} $2";;       # success
-        w) echo -e "${colorY}::${reset} $2";;       # warn
-        f) echo -e "${colorR}::${reset} $2" >&2;;   # fail
-        e) echo -e "${colorR}error:${reset} $2" >&2;    # error
-           exit 1;;
+        i) echo -e "${colorB}::${reset} $2";;                    # info
+        w) echo -e "${colorY}warning:${reset} $2";;              # warn
+        f) echo -e "${colorR}error:${reset} $2" >&2;;            # fail
+        e) echo -e "${colorR}error:${reset} $2" >&2; exit 1;;    # error
     esac
 }
 
@@ -1808,8 +1776,7 @@ SudoV() {
 trap Cancel INT
 Cancel() {
     echo
-    [[ -e "$tmpdir/pacaur.build.lck" ]] && rm "$tmpdir/pacaur.build.lck"
-    [[ -e "$tmpdir/pacaur.sudov.lck" ]] && rm "$tmpdir/pacaur.sudov.lck"
+    rm -f "$tmpdir"/pacaur.{build,sudov}.lck
     exit
 }
 
@@ -1845,9 +1812,10 @@ Usage() {
 # Main
 #
 
-ccount=0
-dcount=0
+# initialize counters
+ccount=0; dcount=0; pac=0
 
+# options
 shortopts="DFQRSTUVacdefghiklmnopqrstuvwxy"
 longopts=('help' 'database' 'files' 'query' 'remove' 'sync' 'deptest' 'upgrade')
 longopts+=('asdeps' 'asexplicit' 'cascade' 'changelog' 'check' 'confirm' 'dbonly' 'debug' 'deps'
@@ -1855,20 +1823,19 @@ longopts+=('asdeps' 'asexplicit' 'cascade' 'changelog' 'check' 'confirm' 'dbonly
            'list' 'machinereadable' 'native' 'needed' 'noconfirm' 'nodeps' 'noprogressbar' 'nosave'
            'noscriptlet' 'owns' 'print' 'recursive' 'refresh' 'regex' 'quiet' 'search' 'sysupgrade'
            'unneeded' 'unrequired' 'upgrades' 'verbose')
-longopts_arg=('arch:' 'assume-installed:' 'cachedir:' 'color:' 'config:' 'dbpath:' 'gpgdir:' 'hookdir:'
-              'ignore:' 'ignoregroup:' 'logfile:' 'print-format:' 'root:' 'sysroot:')
-longopts_aur=('aur' 'by:' 'devel' 'edit' 'literal' 'noedit' 'overwrite:' 'rebuild' 'repo' 'rsort:'
-              'searchby:' 'silent' 'sort:' 'update' 'version')
-
-if ! parseopts "${shortopts}" "${longopts[@]}" "${longopts_aur[@]}" "${longopts_arg[@]}" -- "$@"; then
-    exit 1
-fi
+longopts+=('arch:' 'assume-installed:' 'cachedir:' 'color:' 'config:' 'dbpath:' 'gpgdir:' 'hookdir:'
+           'ignore:' 'ignoregroup:' 'logfile:' 'overwrite:' 'print-format:' 'root:' 'sysroot:')
+longopts_aur=('aur' 'by:' 'devel' 'edit' 'literal' 'noedit' 'rebuild' 'repo' 'rsort:' 'searchby:'
+              'silent' 'sort:' 'update' 'version')
+parseopts "${shortopts}" "${longopts[@]}" "${longopts_aur[@]}" -- "$@" || exit 1
 set -- "${OPTRET[@]}"
 
 for i in "${OPTRET[@]}"; do
-    [[ "$i" =~ ^-(S|-sync) ]] && pac=1 && pacS=1 && operation=sync
-    [[ "$i" =~ ^-(Q|-query) ]] && pac=1 && pacQ=1
-    [[ "$i" =~ ^-([DFRTUV]|-database|-files|-remove|-deptest|-upgrade) ]] && pac=1
+    [[ "$i" =~ ^-(S|-sync) ]] && pacS=1 && operation=sync && ((pac++))
+    [[ "$i" =~ ^-(Q|-query) ]] && pacQ=1 && ((pac++))
+    [[ "$i" =~ ^-([DFRTUV]|-database|-files|-remove|-deptest|-upgrade) ]] && ((pac++))
+    [[ "$i" =~ ^-(a|-aur) ]] && aur=1
+    [[ "$i" =~ ^-(r|-repo) ]] && repo=1
     [[ "$i" =~ ^-(w|-downloadonly) ]] && pacw=1
     [[ "$i" =~ ^-(n|-native) ]] && pacn=1
     [[ "$i" =~ ^-([glp]|-groups|-list|-print) ]] && pacglp=1
@@ -1878,79 +1845,49 @@ while true; do
     [[ "$1" = -[cdf-qs-zDFQRSTUV] ]] && pacmanarg+=("$1")
     for i in "${longopts[@]}"; do
         [[ "$1" = "--$i" ]] && pacopts+=("$1")
-    done
-    for i in "${longopts_arg[@]//:}"; do
-        [[ "$1" = "--$i" ]] && pacopts+=("$1 $2")
+        [[ "$1": = "--$i" ]] && pacopts+=("$1=$2")
     done
     case "$1" in
         -S|--sync) [[ "$pacw" ]] || installpkg=1 && [[ "$pacglp" ]] && unset operation;;
-        -s|--search) [[ "$pacS" ]] && search=1 && auropts+=("search");;
-        -i|--info) [[ "$pacS" ]] && info=1 && auropts+=("info");;
-        -e|--edit) [[ "$pacQ" ]] && pacopts+=("-e") || edit=1; [[ ! "$pac" ]] && operation=edit;;
-        -u|--sysupgrade) [[ "$pacQ" ]] && operation=upgrades; upgrade=1; installpkg=1;;
+        -s|--search) search=1; auropts+=("search");;
+        -i|--info) info=1; auropts+=("info");;
+        --edit) [[ "$pac" -eq 0 ]] && operation=edit; edit=1;;
+        -u|--upgrades|--sysupgrade) [[ "$pacQ" ]] && operation=upgrades; upgrade=1; installpkg=1;;
         -q|--quiet) quiet=1; auropts+=("$1");;
         -c|--clean) cleancache=1 && ((ccount++));;
-        -r|--repo) repo=1;;
-        -a|--aur) aur=1;;
         --ignore) ignoredpkgs+=("$2"); shift;;
-        --color) color="$2"; auropts+=("$1=$2"); shift;;
+        --color) color="$2"; shift;;
         --literal) auropts+=("$1");;
         --@(by|searchby|rsort|sort)) auropts+=("$1=$2"); shift;;
         -d|--nodeps) nodeps=1; makeopts+=("$1"); ((dcount++));;
         --assume-installed) assumeinstalled+=("$2"); shift;;
         --@(devel|needed|noconfirm|noedit|rebuild)) declare "${1/--}"=1;;
-        --silent) silent=true; pacopts+=("--quiet"); makeopts+=("--log");;
-        -y|--refresh) refresh=1;;
-        --overwrite) pacopts+=("$1=\\$2"); shift;;
-        --version) echo "pacaur $version"; exit;;
-        -h|--help) usage=1;;
-        -v|--version) ver=1;;
+        --silent) silent=true; pacopts+=("--quiet"); auropts+=("--quiet") makeopts+=("--log");;
+        -y|--refresh) [[ ! "$aur" ]] && refresh=1;;
+        -e) [[ "$pacQ" ]] && pacopts+=("--explicit"); edit=1; [[ "$pac" -eq 0 ]] && operation=edit;;
+        -h|--help) [[ "$pac" -ge 1 ]] && unset operation || Usage;;
+        -v|--version) [[ ! "$pac" -ge 1 || "$1" = --version ]] && echo "pacaur $version" && exit 0;;
         --) shift; break;;
     esac
     shift
 done
 
-# display pacaur usage or version if appropriate
-if [[ "$usage" ]]; then
-    [[ "$pac" ]] && unset operation || Usage
-fi
-
-if [[ "$ver" ]]; then
-    [[ ! "$pac" ]] && echo "pacaur $version" && exit 0
-fi
-
 # packages
 [[ -n "$@" ]] && pkgs+=("$@")
 
 # color
-[[ "$quiet" ]] && [[ $search || $operation = upgrades ]] && color=never
-if [[ -n "$(pacman-conf Color)" && $color != 'never' ]]; then
-    [[ $color = 'always' ]] && auropts+=("--color=always") || auropts+=("--color=auto")
-    reset="\e[0m"
-    colorR="\e[1;31m"
-    colorG="\e[1;32m"
-    colorY="\e[1;33m"
-    colorB="\e[1;34m"
-    colorM="\e[1;35m"
-    colorC="\e[1;36m"
-    colorW="\e[1;39m"
-elif [[ -z "$(pacman-conf Color)" && ($color = 'always' || $color = 'auto') ]]; then
-    pacopts+=("--color $color") && auropts+=("--color=$color")
-    reset="\e[0m"
-    colorR="\e[1;31m"
-    colorG="\e[1;32m"
-    colorY="\e[1;33m"
-    colorB="\e[1;34m"
-    colorM="\e[1;35m"
-    colorC="\e[1;36m"
-    colorW="\e[1;39m"
-else
-    [[ $color != 'always' && $color != 'auto' ]] && makeopts+=("--nocolor") && auropts+=("--color=never")
+if [[ ! "$color" ]]; then
+    [[ ! "$(pacman-conf Color)" ]] || [[ "$quiet" && "$search" || $operation = upgrades ]] && color=never || color=auto
+fi
+pacopts+=("--color=$color") && auropts+=("--color=$color")
+if [[ ! "$color" = never ]]; then
+    reset="\e[0m"; colorR="\e[1;31m"; colorG="\e[1;32m"; colorY="\e[1;33m"
+    colorB="\e[1;34m"; colorM="\e[1;35m"; colorC="\e[1;36m"; colorW="\e[1;39m"
 fi
 
 # sanity check
+[[ "$pac" -gt 1 ]] && Note "e" $"only one operation may be used at a time"
 [[ $operation = sync && ! $search && ! $info && ! $cleancache && "$EUID" -eq 0 ]] && Note "e" $"you cannot perform this operation as root"
-[[ $pacS ]] && pacmanarg=(${pacmanarg[@]/-e/})
 [[ $pacS ]] && [[ $search && $info ]] && Note "e" $"invalid option: '--info' and '--search' may not be used together"
 [[ $pacS ]] && [[ $cleancache ]] && unset search info upgrade
 [[ ! $(command -v "${editor%% *}") ]] && Note "e" $"${colorW}\$VISUAL${reset} and ${colorW}\$EDITOR${reset} environment variables not set or defined ${colorW}editor${reset} not found"
@@ -1958,7 +1895,7 @@ fi
 [[ ! -w "$clonedir" ]] && Note "e" $"${colorW}$clonedir${reset} does not have write permission"
 [[ -z "${pkgs[@]}" ]] && [[ $operation = sync || $operation = edit ]] && [[ ! $refresh && ! $upgrade && ! $cleancache ]] && Note "e" $"no targets specified (use -h for help)"
 [[ -z "${pkgs[@]}" && -n "$(grep -e "-[RU]" <<< ${pacmanarg[@]})" && -z "$(grep -e "-[h]" <<< ${pacmanarg[@]})" ]] && Note "e" $"no targets specified (use -h for help)"
-[[ $repo && $aur ]] && Note "e" $"target not found"
+[[ $repo && $aur ]] && Note "e" $"invalid option: '--repo' and '--aur' may not be used together"
 
 # operations
 case $operation in
@@ -1970,15 +1907,13 @@ case $operation in
     sync)
         # search (-Ss, -s) handling
         if [[ $search ]]; then
-            if [[ ! $aur ]]; then
-                if [[ $refresh ]]; then
-                    sudo $pacmanbin ${pacmanarg[@]} ${pacopts[@]} -- ${pkgs[@]}
-                else
-                    $pacmanbin ${pacmanarg[@]} ${pacopts[@]} -- ${pkgs[@]}
-                fi
-                exitrepo=$?
+            if [[ $refresh ]]; then
+                sudo $pacmanbin ${pacmanarg[@]} ${pacopts[@]} -- ${pkgs[@]}
+            else
+                $pacmanbin ${pacmanarg[@]} ${pacopts[@]} -- ${pkgs[@]}
             fi
-            if [[ ! $repo && ($fallback = true || $aur) ]]; then
+            exitrepo=$?
+            if [[ ! $repo && $fallback = true || $aur ]]; then
                 auracle ${auropts[@]} -- $@ ${pkgs[@]}
                 exitaur=$?
             fi
@@ -2006,11 +1941,7 @@ case $operation in
             if [[ -n "${aurpkgs[@]}" ]]; then
                 [[ $refresh ]] && [[ -z "${repopkgs[@]}" ]] && sudo $pacmanbin -Sy ${pacopts[@]}
                 if [[ $fallback = true && ! $aur ]]; then
-                    if [[ "${#aurpkgs[@]}" -gt 1 ]]; then
-                        Note "w" $"Packages ${colorW}${aurpkgs[*]}${reset} not found in repositories, trying ${colorM}AUR${reset}..."
-                    else
-                        Note "w" $"Package ${colorW}${aurpkgs[*]}${reset} not found in repositories, trying ${colorM}AUR${reset}..."
-                    fi
+                    Note "w" $"Package(s) ${colorW}${aurpkgs[*]}${reset} not found in repositories, trying ${colorM}AUR${reset}..."
                 fi
                 auracle ${auropts[@]} -- $@ ${aurpkgs[@]}
             fi
@@ -2026,13 +1957,8 @@ case $operation in
                 (($? > 0)) && [[ $repo ]] && exit 1
                 [[ $repo ]] && exit 0
             fi
-            [[ ! $repo ]] && [[ $aur ]] && [[ $refresh ]] && [[ -z "${repopkgs[@]}" ]] && sudo $pacmanbin -Sy ${pacopts[@]}
             if [[ -n "${aurpkgs[@]}" ]] && [[ $fallback = true && ! $aur ]]; then
-                if [[ "${#aurpkgs[@]}" -gt 1 ]]; then
-                    Note "w" $"Packages ${colorW}${aurpkgs[*]}${reset} not found in repositories, trying ${colorM}AUR${reset}..."
-                else
-                    Note "w" $"Package ${colorW}${aurpkgs[*]}${reset} not found in repositories, trying ${colorM}AUR${reset}..."
-                fi
+                Note "w" $"Package(s) ${colorW}${aurpkgs[*]}${reset} not found in repositories, trying ${colorM}AUR${reset}..."
             fi
             [[ ! $repo ]] && [[ $fallback = true || $aur ]] && Core
         # sync (-S, -y), downloadonly (-Sw, -m), refresh (-Sy)
@@ -2046,25 +1972,17 @@ case $operation in
             if [[ -n "${aurpkgs[@]}" ]]; then
                 [[ $refresh ]] && [[ -z "${repopkgs[@]}" ]] && sudo $pacmanbin -Sy ${pacopts[@]}
                 if [[ $fallback = true && ! $aur ]]; then
-                    if [[ "${#aurpkgs[@]}" -gt 1 ]]; then
-                        Note "w" $"Packages ${colorW}${aurpkgs[*]}${reset} not found in repositories, trying ${colorM}AUR${reset}..."
-                    else
-                        Note "w" $"Package ${colorW}${aurpkgs[*]}${reset} not found in repositories, trying ${colorM}AUR${reset}..."
-                    fi
+                    Note "w" $"Package(s) ${colorW}${aurpkgs[*]}${reset} not found in repositories, trying ${colorM}AUR${reset}..."
                 fi
                 Core
             fi
         fi
         exit;;
-    upgrades)
-        # upgrades (-Qu) handling
-        $pacmanbin ${pacmanarg[@]} ${pacopts[@]}; exitrepo=$?
-        [[ ! $repo ]] && CheckUpdates ${pkgs[@]}
-        exit;;
+    upgrades) CheckUpdates "${pkgs[@]}";; # upgrades (-Qu) handling
     *)  # others operations handling
         if [[ -n "$(grep -e "-[F]" <<< ${pacmanarg[@]})" && -n "$(grep -e "-[y]" <<< ${pacmanarg[@]})" ]]; then
             sudo $pacmanbin ${pacmanarg[@]} ${pacopts[@]} "${pkgs[@]}"
-        elif [[ -z "${pkgs[@]}" || -n "$(grep -e "-[DFQTglp]" <<< ${pacmanarg[@]})" ]] && [[ ! " ${pacopts[@]} " =~ --(asdep|asdeps) && ! " ${pacopts[@]} " =~ --(asexp|asexplicit) ]]; then
+        elif [[ -z "${pkgs[@]}" || -n "$(grep -e "-[DFQTglp]" <<< ${pacmanarg[@]})" ]] && [[ ! " ${pacopts[@]} " =~ --(asdeps|asexplicit) ]]; then
             $pacmanbin ${pacmanarg[@]} ${pacopts[@]} "${pkgs[@]}"
         else
             sudo $pacmanbin ${pacmanarg[@]} ${pacopts[@]} "${pkgs[@]}"
