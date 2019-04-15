@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2199
 
 #
 # pacaur: an AUR helper that minimizes user interaction
@@ -153,7 +154,7 @@ UpgradeAur() {
     allaurpkgsAver=($(GetJson "$json" "Version"))
     allaurpkgsQver=($(expac -Q '%v' ${allaurpkgs[@]}))
     for i in "${!allaurpkgs[@]}"; do
-        [[ $(vercmp "${allaurpkgsAver[$i]}" "${allaurpkgsQver[$i]}") -gt 0 ]] && aurpkgs+=(${allaurpkgs[$i]});
+        [[ $(vercmp "${allaurpkgsAver[$i]}" "${allaurpkgsQver[$i]}") -gt 0 ]] && aurpkgs+=("${allaurpkgs[$i]}");
     done
 
     # foreign packages check
@@ -170,7 +171,7 @@ UpgradeAur() {
     fi
 
     # avoid possible duplicate
-    aurpkgs=($(tr ' ' '\n' <<< ${aurpkgs[@]} | sort -u))
+    aurpkgs=($(tr ' ' '\n' <<< "${aurpkgs[@]}" | sort -u))
 
     NothingToDo ${aurpkgs[@]}
 }
@@ -477,7 +478,7 @@ FindDepsAur() {
     fi
 
     # dependency cycle check
-    [[ -n "${prevdepspkgsaur[@]}" ]] && [[ "${prevdepspkgsaur[*]}" = "${depspkgsaur[*]}" ]] && Note "e" $"dependency cycle detected (${depspkgsaur[@]})"
+    [[ -n "${prevdepspkgsaur[@]}" ]] && [[ "${prevdepspkgsaur[*]}" = "${depspkgsaur[*]}" ]] && Note "e" $"dependency cycle detected (${depspkgsaur[*]})"
 
     if [[ -n "${depspkgsaur[@]}" ]]; then
         # store for AUR version check
@@ -1211,8 +1212,8 @@ MakePkgs() {
     # global deps basepkgs sudoloop pkgsbase pkgsdeps aurpkgs aurdepspkgs depsAver builtpkg errmakepkg repoprovidersconflictingpkgs aurprovidersconflictingpkgs json
 
     # download
-    DownloadPkgs ${deps[@]}
-    EditPkgs ${basepkgs[@]}
+    DownloadPkgs "${deps[@]}"
+    EditPkgs "${basepkgs[@]}"
 
     # current orphan and optional packages
     oldorphanpkgs=($("$pacmanbin" -Qdtq))
@@ -1466,7 +1467,7 @@ CheckUpdates() {
             aurpkgsAver=($(GetJson "$json" "Version"))
             aurpkgsQver=($(expac -Q '%v' ${aurpkgsAname[@]}))
             for i in "${!aurpkgsAname[@]}"; do
-                [[ $(vercmp "${aurpkgsAver[$i]}" "${aurpkgsQver[$i]}") -gt 0 ]] && aurpkgsQood+=(${aurpkgsAname[$i]});
+                [[ "$(vercmp "${aurpkgsAver[$i]}" "${aurpkgsQver[$i]}")" -gt 0 ]] && aurpkgsQood+=("${aurpkgsAname[$i]}");
             done
         fi
 
@@ -1643,7 +1644,7 @@ GetInstallScripts() {
     [[ ! -d "$clonedir/$1" ]] && return
     unset installscriptspath installscripts
     installscriptspath=($(find "$clonedir/$1/" -maxdepth 1 -name "*.install"))
-    [[ -n "${installscriptspath[@]}" ]] && installscripts=($(basename -a ${installscriptspath[@]}))
+    [[ -n "${installscriptspath[@]}" ]] && installscripts=($(basename -a "${installscriptspath[@]}"))
 }
 
 GetBuiltPkg() {
@@ -1679,7 +1680,7 @@ SetJson() {
     else
         # global json
         if [[ -z "${jsoncache[$@]}" ]]; then
-            jsoncache[$@]="$(auracle rawinfo -- $@)"
+            jsoncache[$@]="$(auracle rawinfo -- "$@")"
         fi
         json="${jsoncache[$@]}"
     fi
@@ -1887,18 +1888,18 @@ fi
 
 # sanity check
 [[ "$pac" -gt 1 ]] && Note "e" $"only one operation may be used at a time"
-[[ $operation = sync && ! $search && ! $info && ! $cleancache && "$EUID" -eq 0 ]] && Note "e" $"you cannot perform this operation as root"
-[[ $pacS ]] && [[ $search && $info ]] && Note "e" $"invalid option: '--info' and '--search' may not be used together"
-[[ $pacS ]] && [[ $cleancache ]] && unset search info upgrade
-[[ ! $(command -v "${editor%% *}") ]] && Note "e" $"${colorW}\$VISUAL${reset} and ${colorW}\$EDITOR${reset} environment variables not set or defined ${colorW}editor${reset} not found"
+[[ "$operation" = sync && ! "$search" && ! "$info" && ! "$cleancache" && "$EUID" -eq 0 ]] && Note "e" $"you cannot perform this operation as root"
+[[ "$pacS" ]] && [[ "$search" && "$info" ]] && Note "e" $"invalid option: '--info' and '--search' may not be used together"
+[[ "$pacS" ]] && [[ "$cleancache" ]] && unset search info upgrade
+[[ ! "$(command -v "${editor%% *}")" ]] && Note "e" $"${colorW}\$VISUAL${reset} and ${colorW}\$EDITOR${reset} environment variables not set or defined ${colorW}editor${reset} not found"
 [[ "$PACMAN" = $(basename "$0") ]] && Note "e" $"you cannot use ${colorW}pacaur${reset} as PACMAN environment variable"
 [[ ! -w "$clonedir" ]] && Note "e" $"${colorW}$clonedir${reset} does not have write permission"
-[[ -z "${pkgs[@]}" ]] && [[ $operation = sync || $operation = edit ]] && [[ ! $refresh && ! $upgrade && ! $cleancache ]] && Note "e" $"no targets specified (use -h for help)"
+[[ -z "${pkgs[@]}" ]] && [[ "$operation" = sync || "$operation" = edit ]] && [[ ! "$refresh" && ! "$upgrade" && ! "$cleancache" ]] && Note "e" $"no targets specified (use -h for help)"
 [[ -z "${pkgs[@]}" ]] && grep -qe "-[RU]" <<< "${pacmanarg[@]}" && ! grep -qe "-[h]" <<< "${pacmanarg[@]}" && Note "e" $"no targets specified (use -h for help)"
-[[ $repo && $aur ]] && Note "e" $"invalid option: '--repo' and '--aur' may not be used together"
+[[ "$repo" && "$aur" ]] && Note "e" $"invalid option: '--repo' and '--aur' may not be used together"
 
 # operations
-case $operation in
+case "$operation" in
     edit)
         # edit (-e) handling
         GetPkgbase "${pkgs[@]}"
@@ -1939,27 +1940,27 @@ case $operation in
                 [[ ! $refresh ]] && "$pacmanbin" "${pacmanarg[@]}" "${pacopts[@]}" "${repopkgs[@]}"
             fi
             if [[ -n "${aurpkgs[@]}" ]]; then
-                [[ $refresh ]] && [[ -z "${repopkgs[@]}" ]] && sudo "$pacmanbin" -Sy "${pacopts[@]}"
-                if [[ $fallback = true && ! $aur ]]; then
+                [[ "$refresh" ]] && [[ -z "${repopkgs[@]}" ]] && sudo "$pacmanbin" -Sy "${pacopts[@]}"
+                if [[ "$fallback" = true && ! $aur ]]; then
                     Note "w" $"Package(s) ${colorW}${aurpkgs[*]}${reset} not found in repositories, trying ${colorM}AUR${reset}..."
                 fi
                 auracle "${auropts[@]}" -- "$@" "${aurpkgs[@]}"
             fi
         # clean (-Sc) handling
         elif [[ $cleancache ]]; then
-            [[ ! $aur ]] && sudo "$pacmanbin" "${pacmanarg[@]}" "${pacopts[@]}" "${repopkgs[@]}"
-            [[ ! $repo ]] && [[ $fallback = true || $aur ]] && CleanCache "${pkgs[@]}"
+            [[ ! "$aur" ]] && sudo "$pacmanbin" "${pacmanarg[@]}" "${pacopts[@]}" "${repopkgs[@]}"
+            [[ ! "$repo" ]] && [[ "$fallback" = true || "$aur" ]] && CleanCache "${pkgs[@]}"
         # sysupgrade (-Su, -u) handling
         elif [[ $upgrade ]]; then
             [[ -n "${pkgs[@]}" ]] && ClassifyPkgs "${pkgs[@]}"
-            if [[ ! $aur ]]; then
+            if [[ ! "$aur" ]]; then
                 sudo "$pacmanbin" "${pacmanarg[@]}" "${pacopts[@]}" "${repopkgs[@]}" || [[ $repo ]] && exit 1
                 [[ $repo ]] && exit 0
             fi
-            if [[ -n "${aurpkgs[@]}" ]] && [[ $fallback = true && ! $aur ]]; then
+            if [[ -n "${aurpkgs[@]}" ]] && [[ "$fallback" = true && ! "$aur" ]]; then
                 Note "w" $"Package(s) ${colorW}${aurpkgs[*]}${reset} not found in repositories, trying ${colorM}AUR${reset}..."
             fi
-            [[ ! $repo ]] && [[ $fallback = true || $aur ]] && Core
+            [[ ! "$repo" ]] && [[ "$fallback" = true || "$aur" ]] && Core
         # sync (-S, -y), downloadonly (-Sw, -m), refresh (-Sy)
         else
             if [[ -z "${pkgs[@]}" ]]; then
@@ -1969,8 +1970,8 @@ case $operation in
             fi
             [[ "${repopkgs[@]}" ]] && sudo "$pacmanbin" "${pacmanarg[@]}" "${pacopts[@]}" "${repopkgs[@]}"
             if [[ "${aurpkgs[@]}" ]]; then
-                [[ $refresh ]] && [[ ! "${repopkgs[@]}" ]] && sudo "$pacmanbin" -Sy "${pacopts[@]}"
-                if [[ $fallback = true && ! $aur ]]; then
+                [[ "$refresh" ]] && [[ ! "${repopkgs[@]}" ]] && sudo "$pacmanbin" -Sy "${pacopts[@]}"
+                if [[ "$fallback" = true && ! "$aur" ]]; then
                     Note "w" $"Package(s) ${colorW}${aurpkgs[*]}${reset} not found in repositories, trying ${colorM}AUR${reset}..."
                 fi
                 Core
