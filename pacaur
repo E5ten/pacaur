@@ -1,5 +1,5 @@
 #!/bin/bash
-# shellcheck disable=SC2199
+# shellcheck disable=SC2199 disable=SC1090 disable=1091
 
 #
 # pacaur: an AUR helper that minimizes user interaction
@@ -15,7 +15,7 @@ shopt -s extglob
 
 # sanitize
 unset aur checkdeps cleancache ccount dcount devel edit info installpkg needed noconfirm nodeps noedit
-unset operation pac pacQ pacS pacglp pacn pacw quiet readline rebuild refresh repo search upgrade
+unset operation pac pacQ pacS pacglp pacn pacw quiet readline rebuild refresh repo search upgrade var
 
 # internationalization
 LC_COLLATE=C
@@ -35,17 +35,10 @@ usercachedir="${XDG_CACHE_HOME:-${HOME}/.cache}/pacaur"
 tmpdir="${XDG_RUNTIME_DIR:-/tmp}"
 
 # preserve environment variables
-[[ -n ${PACMAN} ]] && _PACMAN=${PACMAN}
-[[ -n ${PKGDEST} ]] && _PKGDEST=${PKGDEST}
-[[ -n ${SRCDEST} ]] && _SRCDEST=${SRCDEST}
-[[ -n ${SRCPKGDEST} ]] && _SRCPKGDEST=${SRCPKGDEST}
-[[ -n ${LOGDEST} ]] && _LOGDEST=${LOGDEST}
-[[ -n ${BUILDDIR} ]] && _BUILDDIR=${BUILDDIR}
-[[ -n ${PKGEXT} ]] && _PKGEXT=${PKGEXT}
-[[ -n ${SRCEXT} ]] && _SRCEXT=${SRCEXT}
-[[ -n ${GPGKEY} ]] && _GPGKEY=${GPGKEY}
-[[ -n ${PACKAGER} ]] && _PACKAGER=${PACKAGER}
-[[ -n ${CARCH} ]] && _CARCH=${CARCH}
+var=('PACMAN' 'PKGDEST' 'SRCDEST' 'SRCPKGDEST' 'LOGDEST' 'BUILDDIR' 'PKGEXT' 'SRCEXT' 'GPGKEY' 'PACKAGER' 'CARCH')
+for i in "${var[@]}"; do
+    [[ "${!i}" ]] && declare "_$i"="${!i}"
+done
 
 # source makepkg variables
 if [[ -r "$MAKEPKG_CONF" ]]; then
@@ -60,17 +53,9 @@ else
 fi
 
 # restore environment variables
-PACMAN=${_PACMAN:-$PACMAN}
-PKGDEST=${_PKGDEST:-$PKGDEST}
-SRCDEST=${_SRCDEST:-$SRCDEST}
-SRCPKGDEST=${_SRCPKGDEST:-$SRCPKGDEST}
-LOGDEST=${_LOGDEST:-$LOGDEST}
-BUILDDIR=${_BUILDDIR:-$BUILDDIR}
-PKGEXT=${_PKGEXT:-$PKGEXT}
-SRCEXT=${_SRCEXT:-$SRCEXT}
-GPGKEY=${_GPGKEY:-$GPGKEY}
-PACKAGER=${_PACKAGER:-$PACKAGER}
-CARCH=${_CARCH:-$CARCH}
+for i in "${var[@]}"; do
+    j="_$i" && declare "$i"="${!j:-${!i}}" && unset j
+done
 
 # set default config variables
 editor="${VISUAL:-${EDITOR:-vi}}"           # build files editor
@@ -78,7 +63,7 @@ displaybuildfiles=diff                      # display build files (none|diff|ful
 fallback=true                               # pacman fallback to the AUR
 silent=false                                # silence output
 sortby=name	                                # sort method (name|votes|popularity)
-sortorder=descending                        # sort order (ascending|descending)
+sortorder=ascending                         # sort order (ascending|descending)
 sudoloop=true                               # prevent sudo timeout
 
 # set variables
@@ -111,32 +96,32 @@ fi
 ClassifyPkgs() {
     local noaurpkgs norepopkgs
     # global aurpkgs repopkgs
-    if [[ $fallback = true ]]; then
-        [[ $repo ]] && repopkgs=(${pkgs[@]})
-        if [[ $aur ]]; then
+    if [[ "$fallback" = true ]]; then
+        [[ "$repo" ]] && repopkgs=("${pkgs[@]}")
+        if [[ "$aur" ]]; then
             for i in "${pkgs[@]}"; do
-                [[ $i == aur/* ]] && aurpkgs+=(${i:4}) && continue # search aur/pkgs in AUR
+                [[ "$i" = aur/* ]] && aurpkgs+=("${i:4}") && continue # search aur/pkgs in AUR
                 aurpkgs+=("$i")
             done
         fi
-        if [[ ! $repo && ! $aur ]]; then
+        if [[ ! "$repo" && ! "$aur" ]]; then
             unset noaurpkgs
             for i in "${pkgs[@]}"; do
-                [[ $i == aur/* ]] && aurpkgs+=(${i:4}) && continue # search aur/pkgs in AUR
+                [[ "$i" = aur/* ]] && aurpkgs+=("${i:4}") && continue # search aur/pkgs in AUR
                 noaurpkgs+=("$i")
             done
             [[ -n "${noaurpkgs[@]}" ]] && norepopkgs=($(LC_ALL=C "$pacmanbin" -Sp "${noaurpkgs[@]}" 2>&1 >/dev/null | awk '{print $NF}'))
             for i in "${norepopkgs[@]}"; do
-                [[ ! " ${noaurpkgs[@]} " =~ [a-zA-Z0-9\.\+-]+\/$i[^a-zA-Z0-9\.\+-] ]] && aurpkgs+=("$i") # do not search repo/pkgs in AUR
+                [[ ! " ${noaurpkgs[@]} " =~ [a-zA-Z0-9\.\+-]+\/"$i"[^a-zA-Z0-9\.\+-] ]] && aurpkgs+=("$i") # do not search repo/pkgs in AUR
             done
             repopkgs=($(grep -xvf <(printf '%s\n' "${aurpkgs[@]}") <(printf '%s\n' "${noaurpkgs[@]}")))
         fi
     else
-        if [[ ! $aur ]]; then
-            repopkgs=(${pkgs[@]})
+        if [[ ! "$aur" ]]; then
+            repopkgs=("${pkgs[@]}")
         else
             for i in "${pkgs[@]}"; do
-                [[ $i == aur/* ]] && aurpkgs+=(${i:4}) && continue # search aur/pkgs in AUR
+                [[ "$i" = aur/* ]] && aurpkgs+=("${i:4}") && continue # search aur/pkgs in AUR
                 aurpkgs+=("$i")
             done
         fi
@@ -146,7 +131,7 @@ ClassifyPkgs() {
 Core() {
     GetIgnoredPkgs
     GetIgnoredGrps
-    [[ $upgrade ]] && UpgradeAur
+    [[ "$upgrade" ]] && UpgradeAur
     IgnoreChecks
     DepsSolver
     IgnoreDepsChecks
@@ -164,10 +149,10 @@ UpgradeAur() {
     # global aurpkgs
     Note "i" $"${colorW}Starting AUR upgrade...${reset}"
     foreignpkgs=($($pacmanbin -Qmq))
-    SetJson ${foreignpkgs[@]}
+    SetJson "${foreignpkgs[@]}"
     allaurpkgs=($(GetJson "$json" "Name"))
     allaurpkgsAver=($(GetJson "$json" "Version"))
-    allaurpkgsQver=($(expac -Q '%v' ${allaurpkgs[@]}))
+    allaurpkgsQver=($(expac -Q '%v' "${allaurpkgs[@]}"))
     for i in "${!allaurpkgs[@]}"; do
         [[ $(vercmp "${allaurpkgsAver[$i]}" "${allaurpkgsQver[$i]}") -gt 0 ]] && aurpkgs+=("${allaurpkgs[$i]}");
     done
@@ -188,7 +173,7 @@ UpgradeAur() {
     # avoid possible duplicate
     aurpkgs=($(tr ' ' '\n' <<< "${aurpkgs[@]}" | sort -u))
 
-    NothingToDo ${aurpkgs[@]}
+    NothingToDo "${aurpkgs[@]}"
 }
 
 IgnoreChecks() {
@@ -202,7 +187,7 @@ IgnoreChecks() {
     done
 
     # check targets
-    SetJson ${aurpkgsnover[@]}
+    SetJson "${aurpkgsnover[@]}"
     checkaurpkgs=($(GetJson "$json" "Name"))
     errdeps+=($(grep -xvf <(printf '%s\n' "${aurpkgsnover[@]}") <(printf '%s\n' "${checkaurpkgs[@]}")))
     errdeps+=($(grep -xvf <(printf '%s\n' "${checkaurpkgs[@]}") <(printf '%s\n' "${aurpkgsnover[@]}")))
@@ -251,8 +236,8 @@ IgnoreChecks() {
         aurpkgsnover+=(${checkaurpkgs[$i]})
     done
 
-    aurpkgs=(${aurpkgsnover[@]})
-    NothingToDo ${aurpkgs[@]}
+    aurpkgs=("${aurpkgsnover[@]}")
+    NothingToDo "${aurpkgs[@]}"
 }
 
 DepsSolver() {
@@ -266,7 +251,7 @@ DepsSolver() {
     done
 
     # set unversioned json
-    SetJson ${aurpkgsnover[@]}
+    SetJson "${aurpkgsnover[@]}"
 
     # set targets providers
     aurpkgsproviders=(${aurpkgsnover[@]})
@@ -293,19 +278,19 @@ DepsSolver() {
         done
     fi
 
-    deps=(${aurpkgsnover[@]})
+    deps=("${aurpkgsnover[@]}")
 
     [[ -z "${foreignpkgs[@]}" ]] && foreignpkgs=($("$pacmanbin" -Qmq))
-    FindDepsAur ${aurpkgsnover[@]}
+    FindDepsAur "${aurpkgsnover[@]}"
 
     # avoid possible duplicate
     deps=($(grep -xvf <(printf '%s\n' "${aurdepspkgs[@]}") <(printf '%s\n' "${deps[@]}")))
-    deps+=(${aurdepspkgs[@]})
+    deps+=("${aurdepspkgs[@]}")
 
     # ensure correct dependency order
-    SetJson ${deps[@]}
-    SortDepsAur ${aurpkgs[@]}
-    deps=($(tsort <<< ${tsortdeps[@]}))
+    SetJson "${deps[@]}"
+    SortDepsAur "${aurpkgs[@]}"
+    deps=($(tsort <<< "${tsortdeps[@]}"))
 
     # error check
     if (($? > 0)); then
@@ -337,8 +322,8 @@ DepsSolver() {
                 done
                 # reverse deps order
                 tsorterrdeps=($(awk '{for (i=NF;i>=1;i--) print $i}' <<< ${tsorterrdeps[@]} | awk -F "\n" '{print}'))
-                errdepslist+=(${tsorterrdeps[0]})
-                FindDepsAurError ${tsorterrdeps[@]}
+                errdepslist+=("${tsorterrdeps[0]}")
+                FindDepsAurError "${tsorterrdeps[@]}"
                 errdepslist=($(awk '{for (i=NF;i>=1;i--) print $i}' <<< ${errdepslist[@]} | awk -F "\n" '{print}'))
                 Note "f" $"no results found for ${errdeps[$i]} (dependency tree: ${errdepslist[*]})"
             fi
@@ -1375,7 +1360,7 @@ MakePkgs() {
         # install then remove binary deps
         makeopts=(${makeopts[@]/-r/})
 
-        if [[ ! $installpkg ]]; then
+        if [[ ! "$installpkg" ]]; then
             unset isaurdeps
             for j in "${pkgsdepslist[@]}"; do
                 [[ " ${aurdepspkgs[@]} " =~ " $j " ]] && isaurdeps=true
@@ -1881,7 +1866,9 @@ while true; do
         --ignore) ignoredpkgs+=("$2"); shift;;
         --color) color="$2"; shift;;
         --literal) auropts+=("$1");;
-        --@(by|searchby|rsort|sort)) auropts+=("$1=$2"); shift;;
+        --@(by|searchby)) auropts+=("$1=$2"); shift;;
+        --sort) sortorder="ascending"; sortby="$2"; shift;;
+        --rsort) sortorder="descending"; sortby="$2"; shift;;
         -d|--nodeps) nodeps=1; makeopts+=("$1"); ((dcount++));;
         --assume-installed) assumeinstalled+=("$2"); shift;;
         --@(devel|needed|noconfirm|noedit|rebuild)) declare "${1/--}"=1;;
@@ -1894,6 +1881,10 @@ while true; do
     esac
     shift
 done
+
+# sorting
+[[ "$sortorder" = ascending ]] && auropts+=("--sort=$sortby")
+[[ "$sortorder" = descending ]] && auropts+=("--rsort=$sortby")
 
 # packages
 [[ -n "$@" ]] && pkgs+=("$@")
