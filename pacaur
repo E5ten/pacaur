@@ -10,9 +10,11 @@ version="4.8.6"
 # Config
 #
 
+shopt -s extglob
+
 # sanitize
 unset aur checkdeps cleancache ccount dcount devel edit info installpkg needed noconfirm nodeps noedit
-unset operation pac pacQ pacS pacglp pacn pacw quiet readline rebuild refresh repo search upgrade
+unset operation pac pacQ pacS pacglp pacn pacw quiet readline rebuild refresh repo search upgrade var
 
 # internationalization
 LC_COLLATE=C
@@ -32,17 +34,10 @@ usercachedir="${XDG_CACHE_HOME:-${HOME}/.cache}/pacaur"
 tmpdir="${XDG_RUNTIME_DIR:-/tmp}"
 
 # preserve environment variables
-[[ -n ${PACMAN} ]] && _PACMAN=${PACMAN}
-[[ -n ${PKGDEST} ]] && _PKGDEST=${PKGDEST}
-[[ -n ${SRCDEST} ]] && _SRCDEST=${SRCDEST}
-[[ -n ${SRCPKGDEST} ]] && _SRCPKGDEST=${SRCPKGDEST}
-[[ -n ${LOGDEST} ]] && _LOGDEST=${LOGDEST}
-[[ -n ${BUILDDIR} ]] && _BUILDDIR=${BUILDDIR}
-[[ -n ${PKGEXT} ]] && _PKGEXT=${PKGEXT}
-[[ -n ${SRCEXT} ]] && _SRCEXT=${SRCEXT}
-[[ -n ${GPGKEY} ]] && _GPGKEY=${GPGKEY}
-[[ -n ${PACKAGER} ]] && _PACKAGER=${PACKAGER}
-[[ -n ${CARCH} ]] && _CARCH=${CARCH}
+var=('PACMAN' 'PKGDEST' 'SRCDEST' 'SRCPKGDEST' 'LOGDEST' 'BUILDDIR' 'PKGEXT' 'SRCEXT' 'GPGKEY' 'PACKAGER' 'CARCH')
+for i in "${var[@]}"; do
+    [[ -n "${!i}" ]] && declare "_${i}"="${!i}"
+done
 
 # source makepkg variables
 if [[ -r "$MAKEPKG_CONF" ]]; then
@@ -57,17 +52,9 @@ else
 fi
 
 # restore environment variables
-PACMAN=${_PACMAN:-$PACMAN}
-PKGDEST=${_PKGDEST:-$PKGDEST}
-SRCDEST=${_SRCDEST:-$SRCDEST}
-SRCPKGDEST=${_SRCPKGDEST:-$SRCPKGDEST}
-LOGDEST=${_LOGDEST:-$LOGDEST}
-BUILDDIR=${_BUILDDIR:-$BUILDDIR}
-PKGEXT=${_PKGEXT:-$PKGEXT}
-SRCEXT=${_SRCEXT:-$SRCEXT}
-GPGKEY=${_GPGKEY:-$GPGKEY}
-PACKAGER=${_PACKAGER:-$PACKAGER}
-CARCH=${_CARCH:-$CARCH}
+for i in "${var[@]}"; do
+    j="_${i}"; declare "${i}"="${!j:-${!i}}" && unset j
+done
 
 # set default config variables
 editor="${VISUAL:-${EDITOR:-vi}}"           # build files editor
@@ -90,10 +77,8 @@ source "$configdir/config"
 [[ ! -d "$clonedir" ]] && mkdir -p "$clonedir" -m 700
 
 # source makepkg libraries
-source /usr/share/makepkg/util/option.sh
 source /usr/share/makepkg/util/parseopts.sh
-
-# only install CheckDepends if check is enabled
+source /usr/share/makepkg/util/option.sh
 check_buildoption "check" "y" && checkdeps=1
 
 # determine whether we have gettext; make it a no-op if we do not
@@ -102,9 +87,6 @@ if ! type -p gettext >/dev/null; then
 		printf "%s\n" "$@"
 	}
 fi
-
-# enable extglob for extended option matching e.g. --asd --> --asdeps
-shopt -s extglob
 
 #
 # Functions
@@ -1848,7 +1830,6 @@ longopts+=('arch:' 'assume-installed:' 'cachedir:' 'color:' 'config:' 'dbpath:' 
            'ignore:' 'ignoregroup:' 'logfile:' 'print-format:' 'root:' 'sysroot:')
 longopts_aur=('aur' 'by:' 'devel' 'edit' 'literal' 'noedit' 'overwrite:' 'rebuild' 'repo' 'rsort:'
               'searchby:' 'silent' 'sort:' 'update' 'version')
-
 parseopts "${shortopts}" "${longopts[@]}" "${longopts_aur[@]}" -- "$@" || exit 1
 set -- "${OPTRET[@]}"
 
@@ -2007,7 +1988,7 @@ case $operation in
     *)  # others operations handling
         if [[ -n "$(grep -e "-[F]" <<< ${pacmanarg[@]})" && -n "$(grep -e "-[y]" <<< ${pacmanarg[@]})" ]]; then
             sudo $pacmanbin ${pacmanarg[@]} ${pacopts[@]} "${pkgs[@]}"
-        elif [[ -z "${pkgs[@]}" || -n "$(grep -e "-[DFQTglp]" <<< ${pacmanarg[@]})" ]] && [[ ! " ${pacopts[@]} " =~ --(asdep|asdeps) && ! " ${pacopts[@]} " =~ --(asexp|asexplicit) ]]; then
+        elif [[ -z "${pkgs[@]}" || -n "$(grep -e "-[DFQTglp]" <<< ${pacmanarg[@]})" ]] && [[ ! " ${pacopts[@]} " =~ --(asdeps|asexplicit) ]]; then
             $pacmanbin ${pacmanarg[@]} ${pacopts[@]} "${pkgs[@]}"
         else
             sudo $pacmanbin ${pacmanarg[@]} ${pacopts[@]} "${pkgs[@]}"
