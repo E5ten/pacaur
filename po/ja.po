@@ -431,10 +431,6 @@ msgstr "   -y, --sync       パッケージをダウンロードして、ビル�
 msgid "   -k, --check      check for AUR update(s)"
 msgstr "   -k, --check      AURパッケージにアップデートがあるか確認"
 
-#: pacaur:1350
-msgid "   -u, --update     update AUR package(s)"
-msgstr "   -u, --update     AURパッケージをアップデート"
-
 #: pacaur:1351 pacaur:1359
 msgid " general"
 msgstr " 一般"

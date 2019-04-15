@@ -438,10 +438,6 @@ msgstr "   -y, --sync       baixa, fes i instal·la objectiu(s)"
 msgid "   -k, --check      check for AUR update(s)"
 msgstr "   -k, --check      cerca actualització(ons) AUR"
 
-#: pacaur:1322
-msgid "   -u, --update     update AUR package(s)"
-msgstr "   -u, --update     actualitza paquet(s) AUR"
-
 #: pacaur:1323 pacaur:1331
 msgid " general"
 msgstr " general"

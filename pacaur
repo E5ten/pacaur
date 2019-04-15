@@ -103,6 +103,9 @@ if ! type -p gettext >/dev/null; then
 	}
 fi
 
+# enable extglob for extended option matching e.g. --asd --> --asdeps
+shopt -s extglob
+
 #
 # Functions
 #
@@ -1776,7 +1779,7 @@ Note() {
         s) echo -e "${colorG}::${reset} $2";;       # success
         w) echo -e "${colorY}::${reset} $2";;       # warn
         f) echo -e "${colorR}::${reset} $2" >&2;;   # fail
-        e) echo -e "${colorR}::${reset} $2" >&2;    # error
+        e) echo -e "${colorR}error:${reset} $2" >&2;    # error
            exit 1;;
     esac
 }
@@ -1847,9 +1850,11 @@ dcount=0
 
 shortopts="DFQRSTUVacdefghiklmnopqrstuvwxy"
 longopts=('help' 'database' 'files' 'query' 'remove' 'sync' 'deptest' 'upgrade')
-longopts+=('asdep' 'asdeps' 'check' 'downloadonly' 'foreign' 'info' 'list'
-           'native' 'needed' 'noconfirm' 'nodeps' 'refresh' 'quiet' 'search'
-           'sysupgrade' 'verbose')
+longopts+=('asdeps' 'asexplicit' 'cascade' 'changelog' 'check' 'confirm' 'dbonly' 'debug' 'deps'
+           'disable-download-timeout' 'downloadonly' 'explicit' 'file' 'foreign' 'groups' 'info'
+           'list' 'machinereadable' 'native' 'needed' 'noconfirm' 'nodeps' 'noprogressbar' 'nosave'
+           'noscriptlet' 'owns' 'print' 'recursive' 'refresh' 'regex' 'quiet' 'search' 'sysupgrade'
+           'unneeded' 'unrequired' 'upgrades' 'verbose')
 longopts_arg=('arch:' 'assume-installed:' 'cachedir:' 'color:' 'config:' 'dbpath:' 'gpgdir:' 'hookdir:'
               'ignore:' 'ignoregroup:' 'logfile:' 'print-format:' 'root:' 'sysroot:')
 longopts_aur=('aur' 'by:' 'devel' 'edit' 'literal' 'noedit' 'overwrite:' 'rebuild' 'repo' 'rsort:'
@@ -1878,11 +1883,11 @@ while true; do
         [[ "$1" = "--$i" ]] && pacopts+=("$1 $2")
     done
     case "$1" in
-        -S|--sync) [[ "$pacw" ]] && shift && continue || installpkg=1; [[ "$pacglp" ]] && unset operation;;
-        -s|--search) [[ $pacS ]] && search=1 && auropts+=("search");;
-        -i|--info) [[ $pacS ]] && info=1 && auropts+=("info");;
-        -u|--update) [[ $pacQ ]] && operation=upgrades; upgrade=1; installpkg=1;;
-        --edit) edit=1; [[ ! $operation ]] && operation=edit;;
+        -S|--sync) [[ "$pacw" ]] || installpkg=1 && [[ "$pacglp" ]] && unset operation;;
+        -s|--search) [[ "$pacS" ]] && search=1 && auropts+=("search");;
+        -i|--info) [[ "$pacS" ]] && info=1 && auropts+=("info");;
+        -e|--edit) [[ "$pacQ" ]] && pacopts+=("-e") || edit=1; [[ ! "$pac" ]] && operation=edit;;
+        -u|--sysupgrade) [[ "$pacQ" ]] && operation=upgrades; upgrade=1; installpkg=1;;
         -q|--quiet) quiet=1; auropts+=("$1");;
         -c|--clean) cleancache=1 && ((ccount++));;
         -r|--repo) repo=1;;
@@ -1900,10 +1905,6 @@ while true; do
         --version) echo "pacaur $version"; exit;;
         -h|--help) usage=1;;
         -v|--version) ver=1;;
-        -u) [[ $pacQ ]] && operation=upgrades; [[ $pacS ]] && upgrade=1;;
-        -e) [[ $pacQ ]] && pacopts+=("--explicit") && shift && continue || edit=1;
-            [[ ! $pac ]] && operation=edit;;
-        -w) [[ $pacS ]] && aur=1;;
         --) shift; break;;
     esac
     shift
@@ -1950,7 +1951,7 @@ fi
 # sanity check
 [[ $operation = sync && ! $search && ! $info && ! $cleancache && "$EUID" -eq 0 ]] && Note "e" $"you cannot perform this operation as root"
 [[ $pacS ]] && pacmanarg=(${pacmanarg[@]/-e/})
-[[ $pacS ]] && [[ $search && $info ]] && auropts=(${auropts[@]/-i/})
+[[ $pacS ]] && [[ $search && $info ]] && Note "e" $"invalid option: '--info' and '--search' may not be used together"
 [[ $pacS ]] && [[ $cleancache ]] && unset search info upgrade
 [[ ! $(command -v "${editor%% *}") ]] && Note "e" $"${colorW}\$VISUAL${reset} and ${colorW}\$EDITOR${reset} environment variables not set or defined ${colorW}editor${reset} not found"
 [[ "$PACMAN" = $(basename "$0") ]] && Note "e" $"you cannot use ${colorW}pacaur${reset} as PACMAN environment variable"

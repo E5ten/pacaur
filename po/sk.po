@@ -433,10 +433,6 @@ msgstr "   -y, --sync       stiahni, vytvor a nainštaluj cieľ(e)"
 msgid "   -k, --check      check for AUR update(s)"
 msgstr "   -k, --check      skontroluj aktualizácie z AUR"
 
-#: pacaur:1350
-msgid "   -u, --update     update AUR package(s)"
-msgstr "   -u, --update     aktualizuj balíček(y) z AUR"
-
 #: pacaur:1351 pacaur:1359
 msgid " general"
 msgstr " všeobecné"

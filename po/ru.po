@@ -430,10 +430,6 @@ msgstr "   -y, --sync       загрузить, собрать и установ
 msgid "   -k, --check      check for AUR update(s)"
 msgstr "   -k, --check      проверить обновления в AUR"
 
-#: pacaur:1350
-msgid "   -u, --update     update AUR package(s)"
-msgstr "   -u, --update     обновить пакет(ы) из AUR"
-
 #: pacaur:1351 pacaur:1359
 msgid " general"
 msgstr " общие"

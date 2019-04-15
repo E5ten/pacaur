@@ -431,10 +431,6 @@ msgstr "   -y, --sync       преузима, гради и инсталира �
 msgid "   -k, --check      check for AUR update(s)"
 msgstr "   -k, --check      потражује надоградње у АУР-у"
 
-#: pacaur:1368
-msgid "   -u, --update     update AUR package(s)"
-msgstr "   -u, --update     надограђује пакет(е) из АУР-а"
-
 #: pacaur:1369 pacaur:1377
 msgid " general"
 msgstr "Опште"

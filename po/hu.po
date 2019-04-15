@@ -432,10 +432,6 @@ msgstr "   -y, --sync       csomag(ok) letöltése, make és telepítés futtat�
 msgid "   -k, --check      check for AUR update(s)"
 msgstr "   -k, --check      AUR frissítések keresése"
 
-#: pacaur:1350
-msgid "   -u, --update     update AUR package(s)"
-msgstr "   -u, --update     AUR frissítések telepítése"
-
 #: pacaur:1351 pacaur:1359
 msgid " general"
 msgstr " általános"

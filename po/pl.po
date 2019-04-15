@@ -434,10 +434,6 @@ msgstr "   -y, --sync       pobiera, buduje i instaluje pakiety"
 msgid "   -k, --check      check for AUR update(s)"
 msgstr "   -k, --check      sprawdza aktualność pakietów z AUR"
 
-#: pacaur:1369
-msgid "   -u, --update     update AUR package(s)"
-msgstr "   -u, --update     aktualizuje pakiety z AUR"
-
 #: pacaur:1370 pacaur:1378
 msgid " general"
 msgstr " ogólne"
