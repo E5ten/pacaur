@@ -4,8 +4,35 @@
 
 VERSION = $(shell git describe --always | sed 's%-%.%g')
 
-PREFIX ?= /usr/local
-MANPREFIX ?= $(PREFIX)/share/man
+PREFIX = /usr/local
+
+BINDIR = $(PREFIX)/bin
+DATAROOTDIR = $(PREFIX)/share
+DOCDIR = $(DATAROOTDIR)/doc/pacaur
+MANPREFIX = $(DATAROOTDIR)/man
+MSGFMT = $(shell command -v msgfmt 2>/dev/null)
+
+TRANSLATIONS = \
+	ca \
+	da \
+	de \
+	es \
+	fi \
+	fr \
+	hu \
+	it \
+	ja \
+	nb \
+	nl \
+	pl \
+	pt \
+	ru \
+	sk \
+	sl \
+	sr \
+	sr@latin \
+	tr \
+	zh_CN
 
 # default target
 all: doc
@@ -19,27 +46,30 @@ doc:
 # aux
 install: doc
 	@echo "Installing..."
-	@install -Dm644 ./config $(DESTDIR)/etc/xdg/pacaur/config
-	@install -Dm755 ./pacaur -t $(DESTDIR)$(PREFIX)/bin
-	@install -Dm644 ./bash.completion $(DESTDIR)$(PREFIX)/share/bash-completion/completions/pacaur
-	@install -Dm644 ./zsh.completion $(DESTDIR)$(PREFIX)/share/zsh/site-functions/_pacaur
+	@install -Dm644 ./config $(DESTDIR)$(DOCDIR)/config.example
+	@install -Dm755 ./pacaur -t $(DESTDIR)$(BINDIR)
+	@sed -i "s%^version=.*%version=\"$(VERSION)\"%" $(DESTDIR)$(BINDIR)/pacaur
+	@install -Dm644 ./completions/bash.completion $(DESTDIR)$(DATAROOTDIR)/bash-completion/completions/pacaur
+	@install -Dm644 ./completions/zsh.completion $(DESTDIR)$(DATAROOTDIR)/zsh/site-functions/_pacaur
+	@install -Dm644 ./LICENSE -t $(DESTDIR)$(DATAROOTDIR)/licenses/pacaur
 	@install -Dm644 ./pacaur.8 -t $(DESTDIR)$(MANPREFIX)/man8
-	@install -Dm644 ./LICENSE -t $(DESTDIR)$(PREFIX)/share/licenses/pacaur
-	@for i in ca da de es fi fr hu it ja nb nl pl pt ru sk sl sr sr@latin tr zh_CN; do \
-		mkdir -p "$(DESTDIR)$(PREFIX)/share/locale/$$i/LC_MESSAGES/"; \
-		msgfmt ./po/$$i.po -o "$(DESTDIR)$(PREFIX)/share/locale/$$i/LC_MESSAGES/pacaur.mo"; \
+ifneq ($(MSGFMT),)
+	for i in $(TRANSLATIONS); do \
+		mkdir -p "$(DESTDIR)$(DATAROOTDIR)/locale/$$i/LC_MESSAGES/"; \
+		$(MSGFMT) ./po/$$i.po -o "$(DESTDIR)$(DATAROOTDIR)/locale/$$i/LC_MESSAGES/pacaur.mo"; \
 	done
+endif
 
 uninstall:
 	@echo "Uninstalling..."
-	@$(RM) $(DESTDIR)/etc/xdg/pacaur/config
-	@$(RM) $(DESTDIR)$(PREFIX)/bin/pacaur
-	@$(RM) $(DESTDIR)$(PREFIX)/share/bash-completion/completions/pacaur
-	@$(RM) $(DESTDIR)$(PREFIX)/share/zsh/site-functions/_pacaur
+	@$(RM) $(DESTDIR)$(DOCDIR)/config.example
+	@$(RM) $(DESTDIR)$(BINDIR)/pacaur
+	@$(RM) $(DESTDIR)$(DATAROOTDIR)/bash-completion/completions/pacaur
+	@$(RM) $(DESTDIR)$(DATAROOTDIR)/zsh/site-functions/_pacaur
+	@$(RM) $(DESTDIR)$(DATAROOTDIR)/licenses/pacaur/LICENSE
 	@$(RM) $(DESTDIR)$(MANPREFIX)/man8/pacaur.8
-	@$(RM) $(DESTDIR)$(PREFIX)/share/licenses/pacaur/LICENSE
-	@for i in ca da de es fi fr hu it ja nb nl pl pt ru sk sl sr sr@latin tr zh_CN; do \
-		$(RM) "$(DESTDIR)$(PREFIX)/share/locale/$$i/LC_MESSAGES/pacaur.mo"; \
+	@for i in $(TRANSLATIONS); do \
+		$(RM) "$(DESTDIR)$(DATAROOTDIR)/locale/$$i/LC_MESSAGES/pacaur.mo"; \
 	done
 
 clean:
