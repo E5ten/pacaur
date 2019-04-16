@@ -247,7 +247,7 @@ DepsSolver() {
 
     # remove AUR pkgs versioning
     for i in "${!aurpkgs[@]}"; do
-        aurpkgsnover[$i]=$(awk -F ">|<|=" '{print $1}' <<< "${aurpkgs[$i]}")
+        aurpkgsnover[$i]="$(awk -F ">|<|=" '{print $1}' <<< "${aurpkgs[$i]}")"
     done
 
     # set unversioned json
@@ -1470,7 +1470,7 @@ CheckUpdates() {
                 for i in "${!foreignpkgsbase[@]}"; do
                     if grep -qE "\-(cvs|svn|git|hg|bzr|darcs|daily.*|nightly.*)$" <<< "${foreignpkgsbase[$i]}"; then
                         [[ ! -d "$clonedir/${foreignpkgsbase[$i]}" ]] && DownloadPkgs "${foreignpkgsbase[$i]}" &>/dev/null
-                        cd "$clonedir/${foreignpkgsbase[$i]}"
+                        cd "$clonedir/${foreignpkgsbase[$i]}" || exit 1
                         # silent extraction and pkgver update only
                         makepkg -od --noprepare --skipinteg &>/dev/null
                         # retrieve updated version
@@ -1563,7 +1563,7 @@ CleanCache() {
         fi
     fi
     if [[ -d "$clonedir" ]]; then
-        cd "$clonedir"
+        cd "$clonedir" || exit 1
         if [[ "$ccount" -eq 1 ]]; then
             if [[ -z "${pkgs[*]}" ]]; then
                 printf "\n%s\n %s\n" $"Clones to keep:" $"All locally installed clones"
@@ -1889,7 +1889,7 @@ fi
 [[ "$pacS" ]] && [[ "$search" && "$info" ]] && Note "e" $"invalid option: '--info' and '--search' may not be used together"
 [[ "$pacS" ]] && [[ "$cleancache" ]] && unset search info upgrade
 [[ ! "$(command -v "${editor%% *}")" ]] && Note "e" $"${colorW}\$VISUAL${reset} and ${colorW}\$EDITOR${reset} environment variables not set or defined ${colorW}editor${reset} not found"
-[[ "$PACMAN" = "$(basename "$0")" ]] && Note "e" $"you cannot use ${colorW}pacaur${reset} as PACMAN environment variable"
+[[ "$PACMAN" = "${0##*/}" ]] && Note "e" $"you cannot use ${colorW}pacaur${reset} as PACMAN environment variable"
 [[ ! -w "$clonedir" ]] && Note "e" $"${colorW}$clonedir${reset} does not have write permission"
 [[ -z "${pkgs[*]}" ]] && [[ "$operation" = sync || "$operation" = edit ]] && [[ ! "$refresh" && ! "$upgrade" && ! "$cleancache" ]] && Note "e" $"no targets specified (use -h for help)"
 [[ -z "${pkgs[*]}" ]] && grep -qe "-[RU]" <<< "${pacmanarg[@]}" && ! grep -qe "-[h]" <<< "${pacmanarg[@]}" && Note "e" $"no targets specified (use -h for help)"
