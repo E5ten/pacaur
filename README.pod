@@ -44,9 +44,9 @@ repositories, or by users who prefer to keep their AUR frontend separated from p
 Pacaur wraps all B<pacman operations> and by default extends respectively its
 sync, search, info, download only, system upgrade, upgrades check, clean and
 clean all functions to the AUR. This extension behavior is optional and can be
-disabled with the I<fallback> variable in the config file, and used with the
-variable set with the I<-a/--aur> flag. Pacaur will also pass any other pacman
-operations and their related options to the pacman binary.
+disabled with the I<-r/--repo> flag, and used with the variable set with the
+I<-a/--aur> flag. Pacaur will also pass any other pacman operations and their
+related options to the pacman binary.
 
 =back
 
@@ -208,10 +208,6 @@ Display PKGBUILD and install script viewing prompt. Possible values are I<full>
 to always display the full build files, I<diff> to only display the difference
 since last build, and I<none> to disable the viewing prompt. Default is B<diff>.
 
-=item B<fallback>
-
-Extend pacman commands to the AUR. Default is B<true>.
-
 =item B<silent>
 
 Enable silent output. The makepkg output will be collected in the clone directory
@@ -322,14 +318,6 @@ To allow build files comparison, the I<displaybuildfiles> default config option
 is set to I<diff>. Although the clone directory (set by default to
 I<$XDG_CACHE_HOME/pacaur>) can be changed through the alternative I<$AURDEST>
 environment variable, it should always be set to a persistent location.
-
-=item B<fallback>
-
-By default, any operation will be applied on the binary repositories, then the
-AUR if necessary. This behavior is optional and can be disabled with the
-I<fallback> config option. When disabled, any operation will be restricted to
-the binary repositories similarly to pacman, while AUR operations can be
-applied explicitly with the I<--aur> option.
 
 =item B<interactive PKGBUILDs>
 

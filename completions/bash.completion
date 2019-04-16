@@ -30,7 +30,7 @@ _pacaur() {
         esac
     else
         case "$op" in
-            S) _pacman_pkg Slq; _aur_pkg;; # No fallback var support.
+            S) _pacman_pkg Slq; _aur_pkg;;
             info|buildonly|sync) _aur_pkg;;
             upgrade|check) _pacman_pkg Qqm;;
         esac

@@ -12,7 +12,6 @@
 # The makepkg environment variables are also fully honored.
 #editor="${VISUAL:-${EDITOR:-vi}}"     # build files editor
 #displaybuildfiles=diff                # display build files (none|diff|full)
-#fallback=true                         # pacman fallback to the AUR
 #silent=false                          # silence output
 #sortby=name                           # sort method (name|votes|popularity)
 #sortorder=ascending                   # sort order (ascending|descending)
