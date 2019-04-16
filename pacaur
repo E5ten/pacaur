@@ -113,7 +113,7 @@ ClassifyPkgs() {
             [[ ! " ${noaurpkgs[*]} " =~ [a-zA-Z0-9\.\+-]+\/"$i"[^a-zA-Z0-9\.\+-] ]] && aurpkgs+=("$i")
             # do not search repo/pkgs in AUR
         done
-        read -rd\  -arepopkgs <<< "$(grep -xvf <(printf '%s\n' "${aurpkgs[@]}") <(printf '%s\n' "${noaurpkgs[@]}"))"
+        repopkgs=($(grep -xvf <(printf '%s\n' "${aurpkgs[@]}") <(printf '%s\n' "${noaurpkgs[@]}")))
     fi
 }
 
@@ -137,7 +137,7 @@ UpgradeAur() {
     local foreignpkgs allaurpkgs allaurpkgsAver allaurpkgsQver aurforeignpkgs i json
     # global aurpkgs
     Note "i" $"${colorW}Starting AUR upgrade...${reset}"
-    foreignpkgs=($($pacmanbin -Qmq))
+    foreignpkgs=($("$pacmanbin" -Qmq))
     SetJson "${foreignpkgs[@]}"
     allaurpkgs=($(GetJson "$json" "Name"))
     allaurpkgsAver=($(GetJson "$json" "Version"))
@@ -1430,7 +1430,7 @@ CheckUpdates() {
     GetIgnoredPkgs
 
     if [[ ! "$repo" && ! "$pacn" ]]; then
-        [[ ! "${pkgs[*]}" ]] && read -rd\  -aforeignpkgs <<< "$("$pacmanbin" -Qmq)" || foreignpkgs=("${pkgs[@]}")
+        [[ ! "${pkgs[*]}" ]] && foreignpkgs=($("$pacmanbin" -Qmq)) || foreignpkgs=("${pkgs[@]}")
         if [[ "${foreignpkgs[*]}" ]]; then
             SetJson "${foreignpkgs[@]}"
             aurpkgsAname=($(GetJson "$json" "Name"))
@@ -1952,7 +1952,7 @@ case "$operation" in
             fi
             [[ "${repopkgs[*]}" ]] && sudo "$pacmanbin" "${pacmanarg[@]}" "${pacopts[@]}" "${repopkgs[@]}"
             if [[ "${aurpkgs[*]}" ]]; then
-                [[ "$refresh" ]] && [[ ! "${repopkgs[*]}" ]] && sudo "$pacmanbin" -Sy "${pacopts[@]}"
+                [[ "$refresh" && ! "${repopkgs[*]}" ]] && sudo "$pacmanbin" -Sy "${pacopts[@]}"
                 if [[ ! "$aur" ]]; then
                     Note "w" $"Package(s) ${colorW}${aurpkgs[*]}${reset} not found in repositories, trying ${colorM}AUR${reset}..."
                 fi
