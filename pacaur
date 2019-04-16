@@ -1,5 +1,5 @@
 #!/bin/bash
-# shellcheck disable=SC2076
+# shellcheck disable=SC2076,SC2207
 
 #
 # pacaur: an AUR helper that minimizes user interaction
@@ -75,7 +75,7 @@ source "$configdir/config"
 [[ -r "$userconfigdir/config" ]] && source "$userconfigdir/config"
 
 # set up directories
-[[ ! -d "$clonedir" ]] && mkdir -p "$clonedir" -m 700
+[[ ! -d "$clonedir" ]] && install -dm700 "$clonedir"
 
 # source makepkg libraries
 source /usr/share/makepkg/util/parseopts.sh
@@ -595,7 +595,7 @@ FindDepsRepo() {
     repodeps=($(tr ' ' '\n' <<< "${repodeps[@]}" | sort -u))
 
     # add initial repodeps
-    [[ -z "${repodepspkgs[*]}" ]] && repodepspkgs=(${repodeps[@]})
+    [[ -z "${repodepspkgs[*]}" ]] && repodepspkgs=("${repodeps[@]}")
 
     # get non installed repo deps
     unset allrepodepspkgs repodepspkgstmp
@@ -714,7 +714,7 @@ IgnoreDepsChecks() {
 }
 
 ProviderChecks() {
-    local allproviders providersdeps providersdepsnover providers repodepspkgsprovided providerspkgs provided nb providersnb
+    local providersdeps providersdepsnover providers repodepspkgsprovided providerspkgs provided nb providersnb
     # global repodepspkgs repoprovidersconflictingpkgs repodepsSver repodepsSrepo repodepsQver
     [[ -z "${repodepspkgs[*]}" ]] && return
 
@@ -978,7 +978,7 @@ ReinstallChecks() {
             else
                 Note "w" $"${colorW}${depsAname[$i]}-${depsQver[$i]}${reset} is up to date -- skipping"
                 deps=($(tr ' ' '\n' <<< "${deps[@]}" | sed "s/^${depsAname[$i]}$//g"))
-                unset depsAname[$i] depsQver[$i] depsAver[$i] depsAood[$i] depsAmain[$i]
+                unset "depsAname[$i]" "depsQver[$i]" "depsAver[$i]" "depsAood[$i]" "depsAmain[$i]"
             fi
         fi
     done
@@ -1004,7 +1004,7 @@ OrphanChecks() {
 }
 
 Prompt() {
-    local i binaryksize sumk summ builtpkg cachedpkgs strname stroldver strnewver strsize action
+    local i binaryksize sumk summ builtpkg cachedpkgs stroldver strnewver strsize action
     local depsver repodepspkgsver strrepodlsize strrepoinsize strsumk strsumm lreposizelabel lreposize
     # global repodepspkgs repodepsSver depsAname depsAver depsArepo depsAcached lname lver lsize deps depsQver repodepspkgs repodepsSrepo repodepsQver repodepsSver
     # compute binary size
@@ -1083,7 +1083,7 @@ Prompt() {
 }
 
 DownloadPkgs() {
-    local i errgit
+    local i
     # global basepkgs
     Note "i" $"${colorW}Retrieving package(s)...${reset}"
     GetPkgbase "$@"
@@ -1111,14 +1111,13 @@ DownloadPkgs() {
 }
 
 EditPkgs() {
-    local viewed timestamp i j erreditpkg action
+    local viewed i j erreditpkg action
     # global cachedpkgs installscripts editor
     [[ "$noedit" ]] && return
     unset viewed
     for i in "$@"; do
         [[ " ${cachedpkgs[*]} " =~ " $i " ]] && continue
         cd "$clonedir/$i" || exit 1
-        unset timestamp
         GetInstallScripts "$i"
         if [[ ! "$edit" ]]; then
             if [[ ! "$displaybuildfiles" = none ]]; then
