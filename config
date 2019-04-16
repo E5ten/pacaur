@@ -1,7 +1,8 @@
 #!/hint/bash
 
 #
-# /etc/xdg/pacaur/config
+# copy to /etc/xdg/pacaur/config to configure pacaur system-wide or to
+# ~/.config/pacaur/config to configure it for your user
 #
 
 # The following options are commented out with their default values listed.
@@ -17,3 +18,4 @@
 #sortorder=ascending                   # sort order (ascending|descending)
 #sudoloop=true                         # prevent sudo timeout
 
+# vim:set ts=4 sw=4 et:
