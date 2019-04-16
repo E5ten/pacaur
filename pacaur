@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2076
 
 #
 # pacaur: an AUR helper that minimizes user interaction
@@ -1426,7 +1427,7 @@ MakePkgs() {
     done
 
     # makepkg and install failure check
-    if [[ -n "${errmakepkg[*]}" || -n "${errinstall[@]}" ]]; then
+    if [[ -n "${errmakepkg[*]}" || -n "${errinstall[*]}" ]]; then
         for i in "${errmakepkg[@]}"; do
             Note "f" $"failed to build ${colorW}$i${reset} package(s)"
         done
