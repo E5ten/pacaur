@@ -1,5 +1,4 @@
 #!/bin/bash
-# shellcheck disable=SC1090 disable=1091 disable=2076 disable=SC2199 disable=2207
 
 #
 # pacaur: an AUR helper that minimizes user interaction
@@ -564,9 +563,9 @@ FindDepsAurError() {
 
         if [[ " ${nextallerrdeps[@]} " =~ " $currenterrdep " ]]; then
             errdepslist+=("$nexterrdep")
-            currenterrdep=${tsorterrdeps[0]}
+            currenterrdep="${tsorterrdeps[0]}"
         fi
-        tsorterrdeps=(${tsorterrdeps[@]:1})
+        tsorterrdeps=("${tsorterrdeps[@]:1}")
         FindDepsAurError "${tsorterrdeps[@]}"
     else
         for i in "${!aurpkgs[@]}"; do
@@ -767,7 +766,7 @@ ProviderChecks() {
 
         # skip if already provided
         if [[ -n "${providerspkgs[@]}" ]]; then
-            providerspkgs=($(tr ' ' '|' <<< ${providerspkgs[@]}))
+            providerspkgs=($(tr ' ' '|' <<< "${providerspkgs[@]}"))
             provided+=($(expac -Ss '%S' "^(${providerspkgs[*]})$"))
             [[ " ${provided[@]} " =~ " ${providersdeps[$i]} " ]] && continue
         fi
@@ -858,7 +857,7 @@ ConflictChecks() {
 
         for j in "${aurAconflicts[@]}"; do
             unset k Aprovides
-            k=$(expac -Qs '%n %P' "^$i$" | head -1 | grep -E "([^a-zA-Z0-9_@\.\+-]$i|^$i)" | grep -E "($i[^a-zA-Z0-9\.\+-]|$i$)" | awk '{print $1}')
+            k=$(expac -Qs '%n %P' "^$i$" | head -1 | grep -E "([^a-zA-Z0-9_@\.\+-]$i|^$i)" | grep -E "(${i}[^a-zA-Z0-9\.\+-]|$i$)" | awk '{print $1}')
             [[ ! "$installpkg" && ! " ${aurdepspkgs[@]} " =~ " $j " ]] && continue # skip if downloading only
             [[ "$j" = "$k" || -z "$k" ]] && continue # skip if reinstalling or if no conflict exists
 
@@ -932,9 +931,9 @@ ConflictChecks() {
 
     for i in "${repoconflicts[@]}"; do
         unset Qprovides
-        repoSconflicts=($(expac -S -1 '%n %C %S' "${repodepspkgs[@]}" | grep -E "[^a-zA-Z0-9_@\.\+-]$i" | grep -E "($i[^a-zA-Z0-9\.\+-]|$i$)" | awk '{print $1}'))
+        repoSconflicts=($(expac -S -1 '%n %C %S' "${repodepspkgs[@]}" | grep -E "[^a-zA-Z0-9_@\.\+-]$i" | grep -E "(${i}[^a-zA-Z0-9\.\+-]|$i$)" | awk '{print $1}'))
         for j in "${repoSconflicts[@]}"; do
-            unset k && k=$(expac -Qs '%n %P' "^$i$" | head -1 | grep -E "([^a-zA-Z0-9_@\.\+-]$i|^$i)" | grep -E "($i[^a-zA-Z0-9\.\+-]|$i$)" | awk '{print $1}')
+            unset k && k=$(expac -Qs '%n %P' "^$i$" | head -1 | grep -E "([^a-zA-Z0-9_@\.\+-]$i|^$i)" | grep -E "(${i}[^a-zA-Z0-9\.\+-]|$i$)" | awk '{print $1}')
             [[ "$j" = "$k" || -z "$k" ]] && continue # skip when no conflict with repopkgs
 
             if [[ ! "$noconfirm" && ! " ${repoconflictingpkgs[@]} " =~ " $k " ]]; then
@@ -977,7 +976,7 @@ ReinstallChecks() {
                 Note "w" $"${colorW}${depsAname[$i]}-${depsQver[$i]}${reset} is up to date -- reinstalling"
             else
                 Note "w" $"${colorW}${depsAname[$i]}-${depsQver[$i]}${reset} is up to date -- skipping"
-                deps=($(tr ' ' '\n' <<< ${deps[@]} | sed "s/^${depsAname[$i]}$//g"))
+                deps=($(tr ' ' '\n' <<< "${deps[@]}" | sed "s/^${depsAname[$i]}$//g"))
                 unset depsAname[$i] depsQver[$i] depsAver[$i] depsAood[$i] depsAmain[$i]
             fi
         fi
@@ -1528,8 +1527,7 @@ CheckUpdates() {
 
 CleanCache() {
     cachedir=($(pacman-conf CacheDir))
-    [[ "$cachedir" ]] && cachedir="${cachedir[@]%/}" && PKGDEST="${PKGDEST%/}"
-
+    [[ "${cachedir[@]}" ]] && cachedir=("${cachedir[@]%/}") && PKGDEST="${PKGDEST%/}"
     if [[ "$PKGDEST" && ! " ${cachedir[@]} " =~ " $PKGDEST " ]]; then
         [[ "$ccount" -eq 1 ]] && printf "\n%s\n %s\n" $"Packages to keep:" $"All locally installed packages"
         printf "\n%s %s\n" $"AUR cache directory:" "$PKGDEST"
@@ -1617,13 +1615,13 @@ CleanCache() {
 GetIgnoredPkgs() {
     # global ignoredpkgs
     ignoredpkgs+=($(pacman-conf IgnorePkg))
-    ignoredpkgs=(${ignoredpkgs[@]//,/ })
+    ignoredpkgs=("${ignoredpkgs[@]//,/ }")
 }
 
 GetIgnoredGrps() {
     # global ignoredgrps
     ignoredgrps+=($(pacman-conf IgnoreGroup))
-    ignoredgrps=(${ignoredgrps[@]//,/ })
+    ignoredgrps=("${ignoredgrps[@]//,/ }")
 }
 
 GetInstallScripts() {
@@ -1684,7 +1682,7 @@ GetJson() {
 
 CheckRequires() {
     local Qrequires
-    Qrequires=($(expac -Q '%n %D' | grep -E " $@[\+]*[^a-zA-Z0-9_@\.\+-]+" | awk '{print $1}' | tr '\n' ' '))
+    Qrequires=($(expac -Q '%n %D' | grep -E " $*[\+]*[^a-zA-Z0-9_@\.\+-]+" | awk '{print $1}' | tr '\n' ' '))
     if [[ -n "${Qrequires[@]}" ]]; then
         Note "f" $"failed to prepare transaction (could not satisfy dependencies)"
         Note "e" $"${Qrequires[@]}: requires $@"
