@@ -71,7 +71,7 @@ pacmanbin="${PACMAN:-pacman}"               # pacman binary
 clonedir="${AURDEST:-$usercachedir}"        # clone directory
 
 # source xdg config
-source "$configdir/config"
+[[ -r "$configdir/config" ]] && source "$configdir/config"
 [[ -r "$userconfigdir/config" ]] && source "$userconfigdir/config"
 
 # set up directories
@@ -1843,7 +1843,7 @@ while true; do
         -S|--sync) [[ "$pacw" ]] || installpkg=1 && [[ "$pacglp" ]] && unset operation;;
         -s|--search) search=1; auropts+=("search");;
         -i|--info) info=1; auropts+=("info");;
-        --edit) [[ "$pac" -eq 0 ]] && operation=edit; edit=1;;
+        --edit) (("$pac" == 0)) && operation=edit; edit=1;;
         -u|--upgrades|--sysupgrade) [[ "$pacQ" ]] && operation=upgrades; upgrade=1; installpkg=1;;
         -q|--quiet) quiet=1; auropts+=("$1");;
         -c|--clean) cleancache=1 && ((ccount++));;
@@ -1860,7 +1860,7 @@ while true; do
         -y|--refresh) [[ ! "$aur" ]] && refresh=1;;
         -e) [[ "$pacQ" ]] && pacopts+=("--explicit"); edit=1; [[ "$pac" -eq 0 ]] && operation=edit;;
         -h|--help) unset operation; [[ "$pac" -eq 0 ]] && Usage;;
-        -v|--version) [[ ! "$pac" -ge 1 || "$1" = --version ]] && echo "pacaur $version" && exit 0;;
+        -v|--version) (("$pac" < 1)) || [[ "$1" = --version ]] && echo "pacaur $version" && exit 0;;
         --) shift; break;;
     esac
     shift
@@ -1884,7 +1884,7 @@ if [[ ! "$color" = never ]]; then
 fi
 
 # sanity check
-[[ "$pac" -gt 1 ]] && Note "e" $"only one operation may be used at a time"
+(("$pac" > 1 )) && Note "e" $"only one operation may be used at a time"
 [[ "$operation" = sync && ! "$search" && ! "$info" && ! "$cleancache" && "$EUID" -eq 0 ]] && Note "e" $"you cannot perform this operation as root"
 [[ "$pacS" ]] && [[ "$search" && "$info" ]] && Note "e" $"invalid option: '--info' and '--search' may not be used together"
 [[ "$pacS" ]] && [[ "$cleancache" ]] && unset search info upgrade
