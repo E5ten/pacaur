@@ -340,7 +340,13 @@ correctly configured to improve name lookups. Using Google's primary DNS
 
 B<auracle>(1), B<pacman>(8), B<makepkg>(8), B<sudoers>(5)
 
-=head1 AUTHOR
+=head1 CURRENT MAINTAINER
+
+E5ten E<lt>e5ten.arch@gmail.comE<gt>
+
+https://github.com/E5ten/pacaur
+
+=head1 ORIGINAL AUTHOR
 
 Remy Marquis E<lt>remy.marquis@gmail.comE<gt>
 
