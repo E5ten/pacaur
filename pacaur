@@ -290,7 +290,7 @@ DepsSolver() {
     for i in "${!depsAname[@]}"; do
         depsQver[$i]="$(expac -Qs '%v' "^${depsAname[$i]}$" | head -1)"
         [[ ! "${depsQver[$i]}" ]] && depsQver[$i]="#"  # avoid empty elements shift
-        [[ "${depsAname[$i]}" =~ -(cvs|svn|git|hg|bzr|darcs|daily.*|nightly.*) ]] && depsAver[$i]=$"latest"
+        [[ "${depsAname[$i]}" =~ -(cvs|svn|git|hg|bzr|darcs|daily.*|nightly.*)$ ]] && depsAver[$i]=$"latest"
     done
 
     # no results check
@@ -960,7 +960,7 @@ ReinstallChecks() {
         [[ ! " ${aurpkgs[*]} " =~ " ${depsAname[$i]} " || " ${aurconflictingpkgs[*]} " =~ " ${depsAname[$i]} " ]] && continue
         [[ ! "${depsQver[$i]}" || "${depsQver[$i]}" = '#' || $(vercmp "${depsAver[$i]}" "${depsQver[$i]}") -gt 0 ]] && continue
         [[ ! $installpkg && ! " ${aurdepspkgs[*]} " =~ " ${depsAname[$i]} " ]] && continue
-        if [[ "${depsAname[$i]}" =~ -(cvs|svn|git|hg|bzr|darcs|daily.*|nightly.*) ]]; then
+        if [[ "${depsAname[$i]}" =~ -(cvs|svn|git|hg|bzr|darcs|daily.*|nightly.*)$ ]]; then
             Note "w" $"${colorW}${depsAname[$i]}${reset} latest revision -- fetching"
         else
             if [[ ! $needed ]]; then
@@ -1216,7 +1216,7 @@ MakePkgs() {
 
         # cache check
         unset builtpkg
-        if [[ ! "${basepkgs[$i]}" =~ -(bzr|git|hg|svn|daily.*|nightly.*) ]]; then
+        if [[ ! "${basepkgs[$i]}" =~ -(bzr|git|hg|svn|daily.*|nightly.*)$ ]]; then
             for j in "${pkgsdepslist[@]}"; do
                 depsAver="$(GetJson "$json" "Version" "$j")"
                 [[ "$PKGDEST" && ! "$rebuild" ]] && GetBuiltPkg "$j-$depsAver" "$PKGDEST"
@@ -1285,7 +1285,7 @@ MakePkgs() {
         # retrieve updated version
         aurdevelpkgsAver="$(makepkg --packagelist | awk -F "-" '{print $(NF-2)"-"$(NF-1)}' | head -1)"
         # build devel if necessary only (supported protocols only)
-        if [[ "${basepkgs[$i]}" =~ -(bzr|git|hg|svn|daily.*|nightly.*) ]]; then
+        if [[ "${basepkgs[$i]}" =~ -(bzr|git|hg|svn|daily.*|nightly.*)$ ]]; then
             # check split packages update
             unset basepkgsupdate checkpkgsdepslist
             for j in "${pkgsdepslist[@]}"; do
@@ -1445,13 +1445,13 @@ CheckUpdates() {
         if [[ "$devel" ]]; then
             if [[ ! "$needed" ]]; then
                 for i in "${foreignpkgs[@]}"; do
-                    [[ "$i" =~ -(cvs|svn|git|hg|bzr|darcs|daily.*|nightly.*) ]]&& aurpkgsQood+=("$i")
+                    [[ "$i" =~ -(cvs|svn|git|hg|bzr|darcs|daily.*|nightly.*)$ ]]&& aurpkgsQood+=("$i")
                 done
             else
                 foreignpkgsbase=($(expac -Q '%n %e' "${foreignpkgs[@]}" | awk '{if ($2 == "(null)") print $1; else print $2}'))
                 foreignpkgsnobase=($(expac -Q '%n' "${foreignpkgs[@]}"))
                 for i in "${!foreignpkgsbase[@]}"; do
-                    if [[ "${foreignpkgsbase[$i]}" =~ -(cvs|svn|git|hg|bzr|darcs|daily.*|nightly.*) ]]; then
+                    if [[ "${foreignpkgsbase[$i]}" =~ -(cvs|svn|git|hg|bzr|darcs|daily.*|nightly.*)$ ]]; then
                         [[ ! -d "$clonedir/${foreignpkgsbase[$i]}" ]] && DownloadPkgs "${foreignpkgsbase[$i]}" &>/dev/null
                         cd "$clonedir/${foreignpkgsbase[$i]}" || exit 1
                         # silent extraction and pkgver update only
@@ -1477,7 +1477,7 @@ CheckUpdates() {
             aurpkgsAver=($(GetJson "$json" "Version"))
             aurpkgsQver=($(expac -Q '%v' "${aurpkgsAname[@]}"))
             for i in "${!aurpkgsAname[@]}"; do
-                if [[ "${aurpkgsAname[$i]}" =~ -(cvs|svn|git|hg|bzr|darcs|daily.*|nightly.*) ]]; then
+                if [[ "${aurpkgsAname[$i]}" =~ -(cvs|svn|git|hg|bzr|darcs|daily.*|nightly.*)$ ]]; then
                     [[ ! "$needed" ]] && aurpkgsAver[$i]=$"latest" || aurpkgsAver[$i]="${aurpkgsQoodAver[$i]}"
                 fi
             done
