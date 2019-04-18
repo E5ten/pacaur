@@ -1009,8 +1009,8 @@ Prompt() {
             sumk="$((sumk + "${binaryksize[$i]}"))"
             summ="$((summ + "${binarymsize[$i]}"))"
         done
-        sumk= "$(awk '{ printf("%.2f\n", $1/$2) }' <<< "$sumk 1048576")"
-        summ= "$(awk '{ printf("%.2f\n", $1/$2) }' <<< "$summ 1048576")"
+        sumk="$(awk '{ printf("%.2f\n", $1/$2) }' <<< "$sumk 1048576")"
+        summ="$(awk '{ printf("%.2f\n", $1/$2) }' <<< "$summ 1048576")"
     fi
 
     # cached packages check
