@@ -161,7 +161,7 @@ UpgradeAur() {
     fi
 
     # avoid possible duplicate
-    aurpkgs=($(tr ' ' '\n' <<< "${aurpkgs[@]}" | sort -u))
+    aurpkgs=($(printf '%s\n' "${aurpkgs[@]}" | sort -u))
 
     NothingToDo "${aurpkgs[@]}"
 }
@@ -258,7 +258,7 @@ DepsSolver() {
         done
 
         aurpkgsconflicts=($(DiffArr 'aurpkgsproviders' 'aurpkgsconflicts'))
-        aurpkgsconflicts=($(tr ' ' '\n' <<< "${aurpkgsconflicts[@]}" | sort -u))
+        aurpkgsconflicts=($(printf '%s\n' "${aurpkgsconflicts[@]}" | sort -u))
 
         for i in "${aurpkgsconflicts[@]}"; do
             [[ ! " ${aurpkgsnover[*]} " =~ " $i " ]] && continue
@@ -320,7 +320,7 @@ DepsSolver() {
     FindDepsRepo "${repodeps[@]}"
 
     # avoid possible duplicate
-    repodepspkgs=($(tr ' ' '\n' <<< "${repodepspkgs[@]}" | sort -u))
+    repodepspkgs=($(printf '%s\n' "${repodepspkgs[@]}" | sort -u))
 }
 
 FindDepsAur() {
@@ -399,7 +399,7 @@ FindDepsAur() {
     if [[ "${CARCH}" == 'i686' ]]; then
         depspkgstmp=("${depspkgs[@]}")
         for i in "${!depspkgstmp[@]}"; do
-            [[ "${depspkgstmp[$i]}" =~ ^(lib32-|gcc-multilib) ]] && depspkgs=($(tr ' ' '\n' <<< "${depspkgs[@]}" | sed "s%^${depspkgstmp[$i]}$%%g"))
+            [[ "${depspkgstmp[$i]}" =~ ^(lib32-|gcc-multilib) ]] && depspkgs=($(printf '%s\n' "${depspkgs[@]}" | sed "s%^${depspkgstmp[$i]}$%%g"))
         done
     fi
 
@@ -424,7 +424,7 @@ FindDepsAur() {
             depspkgs=($("$pacmanbin" -T "${depspkgs[@]}" | sort -u))
             depspkgstmp=($(DiffArr 'depspkgs' 'vcsdepspkgs' 'unique'))
             depspkgstmp+=($(DiffArr 'vcsdepspkgs' 'depspkgs' 'unique'))
-            depspkgs=($(tr ' ' '\n' <<< "${depspkgstmp[@]}" | sort -u))
+            depspkgs=($(printf '%s\n' "${depspkgstmp[@]}" | sort -u))
         fi
     fi
 
@@ -474,7 +474,7 @@ FindDepsAur() {
         done
 
         # remove duplicate
-        depspkgsaur=($(tr ' ' '\n' <<< "${depspkgsaur[@]}" | sort -u))
+        depspkgsaur=($(printf '%s\n' "${depspkgsaur[@]}" | sort -u))
     fi
 
     if [[ "${depspkgsaur[*]}" ]]; then
@@ -523,11 +523,11 @@ SortDepsAur() {
         if [[ "${sortdepspkgsaur[*]}" ]]; then
             checkedsortdepspkgsaur+=("${sortdepspkgsaur[@]}")
             allcheckedsortdepspkgsaur+=("${sortdepspkgsaur[@]}")
-            allcheckedsortdepspkgsaur=($(tr ' ' '\n' <<< "${allcheckedsortdepspkgsaur[@]}" | sort -u))
+            allcheckedsortdepspkgsaur=($(printf '%s\n' "${allcheckedsortdepspkgsaur[@]}" | sort -u))
         fi
     done
     if [[ "${checkedsortdepspkgsaur[*]}" ]]; then
-        checkedsortdepspkgsaur=($(tr ' ' '\n' <<< "${checkedsortdepspkgsaur[@]}" | sort -u))
+        checkedsortdepspkgsaur=($(printf '%s\n' "${checkedsortdepspkgsaur[@]}" | sort -u))
         SortDepsAur "${checkedsortdepspkgsaur[@]}"
     fi
 }
@@ -582,7 +582,7 @@ FindDepsRepo() {
     [[ ! "${repodeps[*]}" ]] && return
 
     # reduce root binary deps
-    repodeps=($(tr ' ' '\n' <<< "${repodeps[@]}" | sort -u))
+    repodeps=($(printf '%s\n' "${repodeps[@]}" | sort -u))
 
     # add initial repodeps
     [[ ! "${repodepspkgs[*]}" ]] && repodepspkgs=("${repodeps[@]}")
@@ -611,7 +611,7 @@ FindDepsRepoProvider() {
     [[ ! "${providerspkgs[*]}" ]] && return
 
     # reduce root binary deps
-    providerspkgs=($(tr ' ' '\n' <<< "${providerspkgs[@]}" | sort -u))
+    providerspkgs=($(printf '%s\n' "${providerspkgs[@]}" | sort -u))
 
     # get non installed repo deps
     unset allproviderrepodepspkgs providerrepodepspkgstmp
@@ -837,7 +837,7 @@ ConflictChecks() {
     done
     aurconflicts=($(DiffArr 'Aprovides' 'allQconflicts'))
     aurconflicts+=($(DiffArr 'Aconflicts' 'allQprovides'))
-    aurconflicts=($(tr ' ' '\n' <<< "${aurconflicts[@]}" | sort -u))
+    aurconflicts=($(printf '%s\n'"${aurconflicts[@]}" | sort -u))
 
     for i in "${aurconflicts[@]}"; do
         unset aurAconflicts
@@ -917,7 +917,7 @@ ConflictChecks() {
 
         repoconflicts+=($(DiffArr 'repodepsprovides' 'allQconflicts'))
         repoconflicts+=($(DiffArr 'checkedrepodepsconflicts' 'allQprovides'))
-        repoconflicts=($(tr ' ' '\n' <<< "${repoconflicts[@]}" | sort -u))
+        repoconflicts=($(printf '%s\n' "${repoconflicts[@]}" | sort -u))
     fi
 
     for i in "${repoconflicts[@]}"; do
@@ -967,7 +967,7 @@ ReinstallChecks() {
                 Note "w" $"${colorW}${depsAname[$i]}-${depsQver[$i]}${reset} is up to date -- reinstalling"
             else
                 Note "w" $"${colorW}${depsAname[$i]}-${depsQver[$i]}${reset} is up to date -- skipping"
-                deps=($(tr ' ' '\n' <<< "${deps[@]}" | sed "s/^${depsAname[$i]}$//g"))
+                deps=($(printf '%s\n' "${deps[@]}" | sed "s/^${depsAname[$i]}$//g"))
                 unset "depsAname[$i]" "depsQver[$i]" "depsAver[$i]" "depsAood[$i]" "depsAmain[$i]"
             fi
         fi
@@ -1318,7 +1318,7 @@ MakePkgs() {
                 else
                     Note "w" $"Package ${colorW}$j${reset} already available in cache"
                 fi
-                pkgsdeps=($(tr ' ' '\n' <<< "${pkgsdeps[@]}" | sed "s/^$j,//g;s/,$j$//g;s/,$j,/,/g;s/^$j$/#/g"))
+                pkgsdeps=($(printf '%s\n' "${pkgsdeps[@]}" | sed "s/^$j,//g;s/,$j$//g;s/,$j,/,/g;s/^$j$/#/g"))
                 continue
             fi
         done
@@ -1492,7 +1492,7 @@ CheckUpdates() {
                 printf "${colorW}%s${reset} ${colorG}%s${reset} -> ${colorG}%s${reset} %s\n" "${aurpkgsAname[$i]}" "${aurpkgsQver[$i]}" "${aurpkgsAver[$i]}" "${aurpkgsQignore[$i]}"
             done
         else
-            tr ' ' '\n' <<< "${aurpkgsQood[@]}" | sort -u
+            printf '%s\n' "${aurpkgsQood[@]}" | sort -u
         fi
     fi
     # exit code
