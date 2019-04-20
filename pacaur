@@ -1,5 +1,5 @@
 #!/bin/bash
-# shellcheck disable=SC1090,SC2034,SC2076,SC2154,SC2207
+# shellcheck disable=SC1090,SC2034,SC2076,SC2153,SC2154,SC2207
 
 #
 # pacaur: an AUR helper that minimizes user interaction
@@ -360,11 +360,11 @@ FindDepsAur() {
                 *">"*|*"<"*|*"="*)
                     # found in AUR but version not correct
                     case "${aurversionpkgs[$i]}" in
-                        *">="*) [[ $(vercmp "$aurversionpkgsaurver" "$aurversionpkgsver") -ge 0 ]] && continue;;
-                        *"<="*) [[ $(vercmp "$aurversionpkgsaurver" "$aurversionpkgsver") -le 0 ]] && continue;;
-                        *">"*)  [[ $(vercmp "$aurversionpkgsaurver" "$aurversionpkgsver") -gt 0 ]] && continue;;
-                        *"<"*)  [[ $(vercmp "$aurversionpkgsaurver" "$aurversionpkgsver") -lt 0 ]] && continue;;
-                        *"="*)  [[ $(vercmp "$aurversionpkgsaurver" "$aurversionpkgsver") -eq 0 ]] && continue;;
+                        *">="*) [[ "$(vercmp "$aurversionpkgsaurver" "$aurversionpkgsver")" -ge 0 ]] && continue;;
+                        *"<="*) [[ "$(vercmp "$aurversionpkgsaurver" "$aurversionpkgsver")" -le 0 ]] && continue;;
+                        *">"*)  [[ "$(vercmp "$aurversionpkgsaurver" "$aurversionpkgsver")" -gt 0 ]] && continue;;
+                        *"<"*)  [[ "$(vercmp "$aurversionpkgsaurver" "$aurversionpkgsver")" -lt 0 ]] && continue;;
+                        *"="*)  [[ "$(vercmp "$aurversionpkgsaurver" "$aurversionpkgsver")" -eq 0 ]] && continue;;
                     esac
                     [[ ! " ${errdeps[*]} " =~ " ${aurversionpkgs[$i]} " ]] && errdeps+=("${aurversionpkgs[$i]}")
                 ;;
@@ -840,7 +840,7 @@ ConflictChecks() {
     done
     aurconflicts=($(DiffArr 'Aprovides' 'allQconflicts'))
     aurconflicts+=($(DiffArr 'Aconflicts' 'allQprovides'))
-    aurconflicts=($(printf '%s\n'"${aurconflicts[@]}" | sort -u))
+    aurconflicts=($(printf '%s\n' "${aurconflicts[@]}" | sort -u))
 
     for i in "${aurconflicts[@]}"; do
         unset aurAconflicts
@@ -997,7 +997,7 @@ OrphanChecks() {
 }
 
 Prompt() {
-    local i binaryksize sumk summ builtpkg cachedpkgs stroldver strnewver strsize action
+    local i binaryksize sumk summ builtpkg cachedpkgs stroldver strnewver strsize
     local depsver repodepspkgsver strrepodlsize strrepoinsize strsumk strsumm lreposizelabel lreposize
     # global repodepspkgs repodepsSver depsAname depsAver depsArepo depsAcached lname lver lsize deps depsQver repodepspkgs repodepsSrepo repodepsQver repodepsSver
     # compute binary size
@@ -1071,8 +1071,11 @@ Prompt() {
     fi
 
     echo
-    [[ "$installpkg" ]] && action=$"installation" || action=$"download"
-    Proceed "y" $"Proceed with $action?" || exit
+    if [[ "$installpkg" ]]; then
+        Proceed "y" $"Proceed with installation?" || exit
+    else
+        Proceed "y" $"Proceed with download?" || exit
+    fi
 }
 
 DownloadPkgs() {
@@ -1104,7 +1107,7 @@ DownloadPkgs() {
 }
 
 EditPkgs() {
-    local viewed i j erreditpkg action
+    local viewed i j erreditpkg
     # global cachedpkgs installscripts editor
     [[ "$noedit" ]] && return
     unset viewed
@@ -1175,8 +1178,11 @@ EditPkgs() {
     fi
 
     if [[ "$displaybuildfiles" = diff && "$viewed" ]]; then
-        [[ "$installpkg" ]] && action=$"installation" || action=$"download"
-        Proceed "y" $"Proceed with $action?" || exit
+        if [[ "$installpkg" ]]; then
+            Proceed "y" $"Proceed with installation?" || exit
+        else
+            Proceed "y" $"Proceed with download?" || exit
+        fi
     fi
 }
 
@@ -1228,7 +1234,7 @@ MakePkgs() {
 
         # install vcs clients (checking pkgbase extension only does not take fetching specific commit into account)
         unset vcsclients
-        vcsclients=($(grep -E "makedepends = $vcs" "$clonedir/${basepkgs[$i]}/.SRCINFO" | awk -F " " '{print $NF}'))
+        vcsclients=($(GetJson "$json" "MakeDepends" "${basepkgs[$i]}" | grep -E "$vcs"))
         for j in "${vcsclients[@]}"; do
             if [[ ! "${vcschecked[*]}" =~ "$j" ]]; then
                 [[ ! "$(expac -Qs '%n' "^$j$")" ]] && sudo "$pacmanbin" -S "$j" --asdeps --noconfirm
@@ -1720,10 +1726,11 @@ Proceed() {
 
 Note() {
     case "$1" in
-        i) echo -e "${colorB}::${reset} $2";;                    # info
-        w) echo -e "${colorY}warning:${reset} $2";;              # warn
-        f) echo -e "${colorR}error:${reset} $2" >&2;;            # fail
-        e) echo -e "${colorR}error:${reset} $2" >&2; exit 1;;    # error
+        i) echo -e "${colorB}::${reset} $2";;            # info
+        w) echo -e "${colorY}warning:${reset} $2";;      # warn
+        f) echo -e "${colorR}error:${reset} $2" >&2;;    # fail
+        e) echo -e "${colorR}error:${reset} $2" >&2;     # error
+            exit 1;;
     esac
 }
 
@@ -1834,7 +1841,7 @@ while true; do
         -c|--clean) cleancache=1 && ((ccount++));;
         -n|--native) pacn=1;;
         -r|--repo) repo=1;;
-        -a|--aur) repo=1;;
+        -a|--aur) aur=1;;
         --ignore) ignoredpkgs+=("$2"); shift;;
         --color) color="$2"; shift;;
         --literal) auropts+=("$1");;
