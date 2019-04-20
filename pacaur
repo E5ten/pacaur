@@ -170,7 +170,7 @@ UpgradeAur() {
 }
 
 IgnoreChecks() {
-    local checkaurpkgs checkaurpkgsAver checkaurpkgsAgrp checkaurpkgsQver checkaurpkgsQgrp i json
+    local checkaurpkgs checkaurpkgsAver checkaurpkgsQver checkaurpkgsgrp i json
     # global aurpkgs rmaurpkgs
     [[ ! "${ignoredpkgs[*]}" && ! "${ignoredgrps[*]}" ]] && return
 
@@ -196,13 +196,10 @@ IgnoreChecks() {
         if [[ " ${ignoredpkgs[*]} " =~ " ${checkaurpkgs[$i]} " ]]; then
             isignored=1
         elif [[ "${ignoredgrps[*]}" ]]; then
-            unset checkaurpkgsAgrp checkaurpkgsQgrp
-            checkaurpkgsAgrp=($(GetJson "$json" "Groups" "${checkaurpkgs[$i]}"))
-            for j in "${checkaurpkgsAgrp[@]}"; do
-                [[ " ${ignoredgrps[*]} " =~ " $j " ]] && isignored=1
-            done
-            checkaurpkgsQgrp=($(expac -Q '%G' "${checkaurpkgs[$i]}"))
-            for j in "${checkaurpkgsQgrp[@]}"; do
+            unset checkaurpkgsgrp
+            checkaurpkgsgrp=($(GetJson "$json" "Groups" "${checkaurpkgs[$i]}"))
+            checkaurpkgsgrp+=($(expac -Q '%G' "${checkaurpkgs[$i]}"))
+            for j in "${checkaurpkgsgrp[@]}"; do
                 [[ " ${ignoredgrps[*]} " =~ " $j " ]] && isignored=1
             done
         fi
