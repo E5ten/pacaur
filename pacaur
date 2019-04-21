@@ -850,8 +850,10 @@ ConflictChecks() {
 
         for j in "${aurAconflicts[@]}"; do
             unset k Aprovides
-            k="$(expac -Qs '%n %P' "^$i$" | head -1 | grep -E "([^a-zA-Z0-9_@\.\+-]$i|^$i)" | grep -E "(${i}[^a-zA-Z0-9\.\+-]|$i$)" | awk '{print $1}')"
-            [[ ! "$installpkg" && ! " ${aurdepspkgs[*]} " =~ " $j " ]] && continue # skip if downloading only
+            k="$(expac -Qs '%n %P' "^$i$" | head -1 | grep -E "([^a-zA-Z0-9_@\.\+-]$i|^$i)" |
+                grep -E "(${i}[^a-zA-Z0-9\.\+-]|$i$)" | awk '{print $1}')"
+            [[ ! "$installpkg" && ! " ${aurdepspkgs[*]} " =~ " $j " ]] && continue
+            # skip if downloading only
             [[ "$j" = "$k" || ! "$k" ]] && continue # skip if reinstalling or if no conflict exists
 
             Aprovides=("$j")
@@ -867,7 +869,8 @@ ConflictChecks() {
                     for l in "${!Aprovides[@]}"; do
                         Aprovides[$l]="${Aprovides[$l]%%[><=]*}"
                     done
-                    [[ ! " ${Aprovides[*]} " =~ " $k " && ! " ${aurconflictingpkgsrm[*]} " =~ " $k " ]] && CheckRequires "$k"
+                    [[ ! " ${Aprovides[*]} ${aurconflictingpkgsrm[*]} " =~ " $k " ]] &&
+                        CheckRequires "$k"
                     break
                 else
                     Note "f" $"unresolvable package conflicts detected"
@@ -885,7 +888,7 @@ ConflictChecks() {
             for l in "${!Aprovides[@]}"; do
                 Aprovides[$l]="${Aprovides[$l]%%[><=]*}"
             done
-            [[ ! " ${Aprovides[*]} " =~ " $k " && ! " ${aurconflictingpkgsrm[*]} " =~ " $k " ]] && CheckRequires "$k"
+            [[ ! " ${Aprovides[*]} ${aurconflictingpkgsrm[*]} " =~ " $k " ]] && CheckRequires "$k"
         done
     done
 
@@ -936,7 +939,8 @@ ConflictChecks() {
                     repoconflictingpkgsrm+=("$k")
                     repoprovidersconflictingpkgs+=("$j")
                     Qprovides=($(expac -Ss '%S' "^$k$"))
-                    [[ ! " ${Qprovides[*]} " =~ " $k " && ! " ${repoconflictingpkgsrm[*]} " =~ " $k " ]] && CheckRequires "$k"
+                    [[ ! " ${Qprovides[*]} ${repoconflictingpkgsrm[*]} " =~ " $k " ]] &&
+                        CheckRequires "$k"
                     break
                 else
                     Note "f" $"unresolvable package conflicts detected"
@@ -1096,7 +1100,7 @@ DownloadPkgs() {
 
     # reset
     for i in "${basepkgs[@]}"; do
-        if [[ -d "$i" ]]; then
+        if [[ -d "$clonedir/$i" ]]; then
             git -C "$clonedir/$i" reset --hard HEAD -q # updated pkgver of vcs packages block pull
             [[ "$displaybuildfiles" = diff ]] &&
                 git -C "$clonedir/$i" rev-parse HEAD > "$clonedir/$i/.git/HEAD.prev"
@@ -1104,9 +1108,7 @@ DownloadPkgs() {
     done
 
     # clone
-    if ! auracle -C "$clonedir" clone --quiet "$@"; then
-        Note "e" $"failed to retrieve packages"
-    fi
+    auracle -C "$clonedir" clone "$@" >/dev/null || Note "e" $"failed to retrieve packages"
 }
 
 EditPkgs() {
@@ -1116,18 +1118,19 @@ EditPkgs() {
     unset viewed
     for i in "$@"; do
         [[ " ${cachedpkgs[*]} " =~ " $i " ]] && continue
-        local prevcomm="$(<"$clonedir/$i/.git/HEAD.prev")"
+        local prev="$(<"$clonedir/$i/.git/HEAD.prev")"
         GetInstallScripts "$i"
         if [[ ! "$edit" ]]; then
             if [[ "$displaybuildfiles" = diff && -e "$clonedir/$i/.git/HEAD.prev" ]]; then
                 # show diff
-                if ! git diff --quiet --no-ext-diff "$prevcomm" -- . ':!\.SRCINFO'; then
+                if git -C "$clonedir/$i" diff --quiet --no-ext-diff "$prev" -- . ':!\.SRCINFO'; then
+                    Note "w" $"${colorW}$i${reset} build files are up-to-date -- skipping"
+                else
                     if Proceed "y" $"View $i build files diff?"; then
-                        git diff --no-ext-diff "$prevcomm" -- . ':!\.SRCINFO' || erreditpkg+=("$i")
+                        git -C "$clonedir/$i" diff --no-ext-diff "$prev" -- . ':!\.SRCINFO' ||
+                            erreditpkg+=("$i")
                         Note "i" $"${colorW}$i${reset} build files diff viewed"; viewed=1
                     fi
-                else
-                    Note "w" $"${colorW}$i${reset} build files are up-to-date -- skipping"
                 fi
             elif [[ ! "$displaybuildfiles" = none ]]; then
                 # show pkgbuild
@@ -1622,13 +1625,13 @@ GetInstallScripts() {
 }
 
 GetBuiltPkg() {
-    local pkgext
+    local ext
     # global builtpkg
-    # check PKGEXT suffixe first, then default .xz suffixe for repository packages in pacman cache
+    # check PKGEXT suffixe first, then default .xz suffix for repository packages in pacman cache
     # and lastly all remaining suffixes in case PKGEXT is locally overridden
-    for pkgext in "$PKGEXT" .pkg.tar{.xz,,.gz,.bz2,.lzo,.lrz,.Z}; do
-        builtpkg="$2/$1-${CARCH}$pkgext"
-        [[ -f "$builtpkg" ]] && break || builtpkg="$2/$1-any$pkgext"
+    for ext in "$PKGEXT" .pkg.tar{.xz,,.gz,.bz2,.lzo,.lrz,.Z}; do
+        builtpkg="$2/$1-${CARCH}$ext"
+        [[ -f "$builtpkg" ]] && break || builtpkg="$2/$1-any$ext"
     done
     [[ ! -f "$builtpkg" ]] && unset builtpkg
 }
@@ -1669,7 +1672,8 @@ GetJson() {
 
 CheckRequires() {
     local Qrequires
-    Qrequires=($(expac -Q '%n %D' | grep -E " $*[\+]*[^a-zA-Z0-9_@\.\+-]+" | awk '{print $1}' | tr '\n' ' '))
+    Qrequires=($(expac -Q '%n %D' | grep -E " $1[\+]*[^a-zA-Z0-9_@\.\+-]+" | awk '{print $1}' |
+        tr '\n' ' '))
     if [[ "${Qrequires[*]}" ]]; then
         Note "f" $"failed to prepare transaction (could not satisfy dependencies)"
         Note "e" $"${Qrequires[@]}: requires $@"
@@ -1964,9 +1968,10 @@ case "$operation" in
         fi
         exit;;
     upgrades) CheckUpdates "${pkgs[@]}";; # upgrades (-Qu) handling
-    *) if [[ "${pkgs[*]}" || " ${pacmanarg[*]} " =~ ' -F ' && " ${pacmanarg[*]} " =~ ' -y ' ]]; then
+    *) if [[ " ${pacmanarg[*]} " =~ ' -F ' && " ${pacmanarg[*]} " =~ ' -y ' ]]; then
             sudo "$pacmanbin" "${pacmanarg[@]}" "${pacopts[@]}" -- "${pkgs[@]}"
-        elif [[ " ${pacmanarg[*]} " =~ ' '-[DFQTglp]' ' && ! "${asdeps}${asexplicit}" ]]; then
+        elif [[ ! "${pkgs[*]}" ]] ||
+            [[ " ${pacmanarg[*]} " =~ ' '-[DFQTglp]' ' && ! "${asdeps}${asexplicit}" ]]; then
             "$pacmanbin" "${pacmanarg[@]}" "${pacopts[@]}" -- "${pkgs[@]}"
         else
             sudo "$pacmanbin" "${pacmanarg[@]}" "${pacopts[@]}" -- "${pkgs[@]}"
