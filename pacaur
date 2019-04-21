@@ -1673,9 +1673,7 @@ GetJson() {
 }
 
 CheckRequires() {
-    local Qrequires
-    Qrequires=($(expac -Q '%n %D' | grep -E " $1[\+]*[^a-zA-Z0-9_@\.\+-]+" | awk '{print $1}' |
-        tr '\n' ' '))
+    local Qrequires=($(expac -Q '%N'))
     if [[ "${Qrequires[*]}" ]]; then
         Note "f" $"failed to prepare transaction (could not satisfy dependencies)"
         Note "e" $"${Qrequires[@]}: requires $@"
