@@ -1,22 +1,19 @@
 #!/bin/bash
-# shellcheck disable=SC1090,SC2034,SC2076,SC2153,SC2154,SC2207
-
 #
 # pacaur: an AUR helper that minimizes user interaction
 #
 
+shopt -s extglob
 version="4.8.6"
 
 #
 # Config
 #
 
-shopt -s extglob
-
 # sanitize
-unset aur asdeps asexplicit checkdeps cleancache ccount dcount devel edit info
-unset installpkg needed noconfirm nodeps noedit operation optret pac pacQ pacS
-unset pacg pacn pacw quiet readline rebuild refresh repo search upgrade var vcs
+unset aur asdeps asexplicit checkdeps cleancache ccount dcount devel edit info installpkg needed
+unset noconfirm nodeps noedit operation optret pac pacQ pacS pacg pacn pacw quiet readline rebuild
+unset refresh repo search upgrade vars vcs
 
 # internationalization
 LC_COLLATE=C
@@ -36,8 +33,9 @@ usercachedir="${XDG_CACHE_HOME:-${HOME}/.cache}/pacaur"
 tmpdir="${XDG_RUNTIME_DIR:-/tmp}"
 
 # preserve environment variables
-var=('PACMAN' 'PKGDEST' 'SRCDEST' 'SRCPKGDEST' 'LOGDEST' 'BUILDDIR' 'PKGEXT' 'SRCEXT' 'GPGKEY' 'PACKAGER' 'CARCH')
-for i in "${var[@]}"; do
+vars=('PACMAN' 'PKGDEST' 'SRCDEST' 'SRCPKGDEST' 'LOGDEST' 'BUILDDIR' 'PKGEXT'
+      'SRCEXT' 'GPGKEY' 'PACKAGER' 'CARCH')
+for i in "${vars[@]}"; do
     [[ "${!i}" ]] && declare _"$i"="${!i}"
 done
 
@@ -54,7 +52,7 @@ else
 fi
 
 # restore environment variables
-for i in "${var[@]}"; do
+for i in "${vars[@]}"; do
     j="_$i" && declare "$i"="${!j:-${!i}}" && unset j
 done
 
@@ -232,7 +230,8 @@ IgnoreChecks() {
 
 DepsSolver() {
     local i aurpkgsconflicts
-    # global aurpkgs aurpkgsnover aurpkgsproviders aurdeps deps json errdeps errdepsnover foreignpkgs repodeps depsAname depsAver depsAood depsQver
+    # global aurpkgs aurpkgsnover aurpkgsproviders aurdeps deps json errdeps
+    # global errdepsnover foreignpkgs repodeps depsAname depsAver depsAood depsQver
     Note "i" $"resolving dependencies..."
 
     # remove AUR pkgs versioning
@@ -324,9 +323,9 @@ DepsSolver() {
 }
 
 FindDepsAur() {
-    local depspkgs depspkgstmp depspkgsaurtmp builtpkg vcsdepspkgs assumedepspkgs
-    local aurversionpkgs aurversionpkgsname aurversionpkgsver aurversionpkgsaurver i j json
-    # global aurpkgsnover depspkgsaur errdeps depsAname depsAver repodeps aurdepspkgs prevdepspkgsaur foreignpkgs
+    local depspkgs depspkgstmp depspkgsaurtmp builtpkg vcsdepspkgs assumedepspkgs aurversionpkgs
+    local aurversionpkgsname aurversionpkgsver aurversionpkgsaurver i j json
+    # global aurpkgsnover depspkgsaur errdeps repodeps aurdepspkgs prevdepspkgsaur foreignpkgs
     [[ "$nodeps" && "$dcount" -ge 2 ]] && return
 
     # set json
@@ -379,9 +378,7 @@ FindDepsAur() {
     else
         [[ ! "${depspkgsaur[*]}" ]] && depspkgsaurtmp=("${aurpkgs[@]}") || depspkgsaurtmp=("${depspkgsaur[@]}")
         for i in "${!depspkgsaurtmp[@]}"; do
-            depsAname="$(GetJson "$json" "Name" "${depspkgsaurtmp[$i]}")"
-            depsAver="$(GetJson "$json" "Version" "${depspkgsaurtmp[$i]}")"
-            GetBuiltPkg "$depsAname-$depsAver" "$PKGDEST"
+            GetBuiltPkg "$(GetJson "$json" "Name" "${depspkgsaurtmp[$i]}")-$(GetJson "$json" "Version" "${depspkgsaurtmp[$i]}")" "$PKGDEST"
             if [[ ! "$builtpkg" ]]; then
                 depspkgs+=($(GetJson "$json" "MakeDepends" "${depspkgsaurtmp[$i]}"))
                 [[ "$checkdeps" ]] && depspkgs+=($(GetJson "$json" "CheckDepends"))
@@ -589,8 +586,10 @@ FindDepsRepo() {
 
     # get non installed repo deps
     unset allrepodepspkgs repodepspkgstmp
-    [[ "${repodeps[*]}" ]] && allrepodepspkgs=($(expac -S -1 '%E' "${repodeps[@]}")) # no version check needed as all deps are binary
-    [[ "${allrepodepspkgs[*]}" ]] && repodepspkgstmp=($("$pacmanbin" -T -- "${allrepodepspkgs[@]}" | sort -u))
+    # no version check needed as all deps are binary
+    [[ "${repodeps[*]}" ]] && allrepodepspkgs=($(expac -S -1 '%E' "${repodeps[@]}"))
+    [[ "${allrepodepspkgs[*]}" ]] && \
+        repodepspkgstmp=($("$pacmanbin" -T -- "${allrepodepspkgs[@]}" | sort -u))
 
     # remove duplicate
     if [[ "${repodepspkgstmp[*]}" ]]; then
@@ -632,7 +631,8 @@ FindDepsRepoProvider() {
 
 IgnoreDepsChecks() {
     local i
-    # global ignoredpkgs aurpkgs aurdepspkgs aurdepspkgsAgrp aurdepspkgsQgrp repodepspkgsSgrp repodepspkgsQgrp rmaurpkgs deps repodepspkgs
+    # global ignoredpkgs aurpkgs aurdepspkgs aurdepspkgsAgrp aurdepspkgsQgrp repodepspkgsSgrp
+    # global repodepspkgsQgrp rmaurpkgs deps repodepspkgs
     [[ ! "${ignoredpkgs[*]}" && ! "${ignoredgrps[*]}" ]] && return
 
     # add checked targets and preserve tsorted order
@@ -704,7 +704,8 @@ IgnoreDepsChecks() {
 }
 
 ProviderChecks() {
-    local providersdeps providersdepsnover providers repodepspkgsprovided providerspkgs provided nb providersnb
+    local providersdeps providersdepsnover providers repodepspkgsprovided providerspkgs provided
+    local nb providersnb
     # global repodepspkgs repoprovidersconflictingpkgs repodepsSver repodepsSrepo repodepsQver
     [[ ! "${repodepspkgs[*]}" ]] && return
 
@@ -766,7 +767,7 @@ ProviderChecks() {
             Note "i" $"${colorW}There are ${#providers[@]} providers available for ${providersdeps[$i]}:${reset}"
             expac -S -1 '   %!) %n (%r) ' "${providers[@]}"
 
-            local nb=-1
+            nb=-1
             providersnb="$(( "${#providers[@]}" -1 ))" # count from 0
             while [[ "$nb" -lt 0 || "$nb" -ge "${#providers}" ]]; do
                 printf "\n%s " $"Enter a number (default=0):"
@@ -792,7 +793,7 @@ ProviderChecks() {
                 esac
             done
         else
-            local nb=0
+            nb=0
         fi
         providerspkgs+=("${providers[$nb]}")
     done
@@ -815,9 +816,11 @@ ProviderChecks() {
 }
 
 ConflictChecks() {
-    local allQprovides allQconflicts Aprovides Aconflicts aurconflicts aurAconflicts Qrequires i j k
-    local repodepsprovides repodepsconflicts checkedrepodepsconflicts repodepsconflictsname repodepsconflictsver localver repoconflictingpkgs
-    # global deps depsAname json aurdepspkgs aurconflictingpkgs aurconflictingpkgsrm depsQver repodepspkgs repoconflictingpkgsrm repoprovidersconflictingpkgs
+    local allQprovides allQconflicts Aprovides Aconflicts aurconflicts aurAconflicts Qrequires i j
+    local k repodepsprovides repodepsconflicts checkedrepodepsconflicts repodepsconflictsname
+    local repodepsconflictsver localver repoconflictingpkgs
+    # global deps depsAname json aurdepspkgs aurconflictingpkgs aurconflictingpkgsrm depsQver
+    # global repodepspkgs repoconflictingpkgsrm repoprovidersconflictingpkgs
     Note "i" $"looking for inter-conflicts..."
 
     allQprovides=($(expac -Q '%n'))
@@ -954,7 +957,8 @@ ConflictChecks() {
 
 ReinstallChecks() {
     local i depsAtmp
-    # global aurpkgs aurdepspkgs deps aurconflictingpkgs depsAname depsQver depsAver depsAood depsAmain
+    # global aurpkgs aurdepspkgs deps aurconflictingpkgs depsAname depsQver depsAver depsAood
+    # global depsAmain
     depsAtmp=("${depsAname[@]}")
     for i in "${!depsAtmp[@]}"; do
         [[ ! " ${aurpkgs[*]} " =~ " ${depsAname[$i]} " || " ${aurconflictingpkgs[*]} " =~ " ${depsAname[$i]} " ]] && continue
@@ -994,9 +998,10 @@ OrphanChecks() {
 }
 
 Prompt() {
-    local i binaryksize sumk summ builtpkg cachedpkgs stroldver strnewver strsize
-    local depsver repodepspkgsver strrepodlsize strrepoinsize strsumk strsumm lreposizelabel lreposize
-    # global repodepspkgs repodepsSver depsAname depsAver depsArepo depsAcached lname lver lsize deps depsQver repodepspkgs repodepsSrepo repodepsQver repodepsSver
+    local i binaryksize sumk summ builtpkg cachedpkgs stroldver strnewver strsize depsver
+    local repodepspkgsver strrepodlsize strrepoinsize strsumk strsumm lreposizelabel lreposize
+    # global repodepspkgs repodepsSver depsAname depsAver depsArepo depsAcached lname lver lsize
+    # global deps depsQver repodepspkgs repodepsSrepo repodepsQver repodepsSver
     # compute binary size
     if [[ "${repodepspkgs[*]}" ]]; then
         binaryksize=($(expac -S -1 '%k' "${repodepspkgs[@]}"))
@@ -1184,9 +1189,11 @@ EditPkgs() {
 }
 
 MakePkgs() {
-    local oldorphanpkgs neworphanpkgs orphanpkgs oldoptionalpkgs newoptionalpkgs optionalpkgs errinstall
-    local pkgsdepslist vcsclients vcschecked aurdevelpkgsAver aurdevelpkgsQver basepkgsupdate checkpkgsdepslist isaurdeps builtpkgs builtdepspkgs i j
-    # global deps basepkgs sudoloop pkgsbase pkgsdeps aurpkgs aurdepspkgs depsAver builtpkg errmakepkg repoprovidersconflictingpkgs aurprovidersconflictingpkgs json
+    local i j oldorphanpkgs neworphanpkgs orphanpkgs oldoptionalpkgs newoptionalpkgs optionalpkgs
+    local errinstall pkgsdepslist vcsclients vcschecked aurdevelpkgsAver aurdevelpkgsQver builtpkgs
+    local builtdepspkgs basepkgsupdate checkpkgsdepslist isaurdeps
+    # global deps basepkgs sudoloop pkgsbase pkgsdeps aurpkgs aurdepspkgs builtpkg errmakepkg json
+    # global repoprovidersconflictingpkgs
 
     # download
     DownloadPkgs "${deps[@]}"
@@ -1224,8 +1231,7 @@ MakePkgs() {
         unset builtpkg
         if [[ ! "${basepkgs[$i]}" =~ -$vcs ]]; then
             for j in "${pkgsdepslist[@]}"; do
-                depsAver="$(GetJson "$json" "Version" "$j")"
-                [[ "$PKGDEST" && ! "$rebuild" ]] && GetBuiltPkg "$j-$depsAver" "$PKGDEST"
+                [[ "$PKGDEST" && ! "$rebuild" ]] && GetBuiltPkg "$j-$(GetJson "$json" "Version" "$j")" "$PKGDEST"
             done
         fi
 
@@ -1314,8 +1320,7 @@ MakePkgs() {
         # check package cache
         for j in "${pkgsdepslist[@]}"; do
             unset builtpkg
-            depsAver="$aurdevelpkgsAver"
-            [[ "$PKGDEST" && ! "$rebuild" ]] && GetBuiltPkg "$j-$depsAver" "$PKGDEST"
+            [[ "$PKGDEST" && ! "$rebuild" ]] && GetBuiltPkg "$j-$aurdevelpkgsAver" "$PKGDEST"
             if [[ "$builtpkg" ]]; then
                 if [[ " ${aurdepspkgs[*]} " =~ " $j " || "$installpkg" ]]; then
                     Note "i" $"Installing ${colorW}$j${reset} cached package..."
@@ -1360,11 +1365,10 @@ MakePkgs() {
         unset builtpkgs builtdepspkgs
         for j in "${pkgsdepslist[@]}"; do
             unset builtpkg
-            depsAver="$aurdevelpkgsAver"
             if [[ $PKGDEST ]]; then
-                GetBuiltPkg "$j-$depsAver" "$PKGDEST"
+                GetBuiltPkg "$j-$aurdevelpkgsAver" "$PKGDEST"
             else
-                GetBuiltPkg "$j-$depsAver" "$clonedir/${basepkgs[$i]}"
+                GetBuiltPkg "$j-$aurdevelpkgsAver" "$clonedir/${basepkgs[$i]}"
             fi
             [[ " ${aurdepspkgs[*]} " =~ " $j " ]] && builtdepspkgs+=("$builtpkg") || builtpkgs+=("$builtpkg")
         done
@@ -1424,9 +1428,8 @@ MakePkgs() {
 }
 
 CheckUpdates() {
-    local foreignpkgs foreignpkgsbase
-    local aurpkgsQood aurpkgsAname aurpkgsAver aurpkgsQver aurpkgsQignore i json
-    local aurdevelpkgsAver aurdevelpkgsQver aurpkgsQoodAver
+    local i json foreignpkgs foreignpkgsbase aurpkgsQood aurpkgsAname aurpkgsAver aurpkgsQver
+    local aurpkgsQignore aurdevelpkgsAver aurdevelpkgsQver aurpkgsQoodAver
     # global aur repo
 
     if [[ ! "$aur" ]]; then
@@ -1755,7 +1758,7 @@ SudoV() {
 DiffArr() {
     # args are names of 2 arrays and outputs elements that are only in the 2nd
     local array1="$1[@]" array2="$2[@]"
-    grep -xf <(printf '%s\n' "${!array1}") <(printf '%s\n' "${!array2}") $3
+    grep -Fxf <(printf '%s\n' "${!array1}") <(printf '%s\n' "${!array2}") $3
 }
 
 trap Cancel INT
@@ -1815,7 +1818,7 @@ longopts_aur=('aur' 'by:' 'devel' 'edit' 'literal' 'noedit' 'rebuild' 'repo' 'rs
 parseopts "${shortopts}" "${longopts[@]}" "${longopts_aur[@]}" -- "$@" || exit 1
 set -- "${OPTRET[@]}"
 
-optret="${OPTRET[@]}"; optret="${optret%%--[[:space:]]*}"
+optret="${OPTRET[*]}"; optret="${optret%%--[[:space:]]*}"
 [[ " ${optret} " =~ ' '-(S|-sync)' ' ]] && pacS=1 && operation=sync && ((pac++))
 [[ " ${optret} " =~ ' '-(Q|-query)' ' ]] && pacQ=1 && ((pac++))
 [[ " ${optret} " =~ ' '-([DFRTUV]|-database|-files|-remove|-deptest|-upgrade)' ' ]] && ((pac++))
@@ -1916,7 +1919,7 @@ case "$operation" in
             fi
             exitrepo=$?
             if [[ ! "$repo" ]]; then
-                auracle search "${auropts[@]}" -- "$@" "${pkgs[@]}"
+                auracle search "${auropts[@]}" -- "${pkgs[@]}"
                 exitaur=$?
             fi
             # exit code
@@ -1945,7 +1948,7 @@ case "$operation" in
                 if [[ ! "$aur" ]]; then
                     Note "w" $"Package(s) ${colorW}${aurpkgs[*]}${reset} not found in repositories, trying ${colorM}AUR${reset}..."
                 fi
-                auracle info "${auropts[@]}" -- "$@" "${aurpkgs[@]}"
+                auracle info "${auropts[@]}" -- "${aurpkgs[@]}"
             fi
         # clean (-Sc) handling
         elif [[ "$cleancache" ]]; then
