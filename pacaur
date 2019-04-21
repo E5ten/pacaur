@@ -862,7 +862,8 @@ ConflictChecks() {
                     aurconflictingpkgs+=("$j" "$k")
                     aurconflictingpkgsrm+=("$k")
                     for l in "${!depsAname[@]}"; do
-                        [[ " ${depsAname[$l]} " =~ "$k" ]] && depsQver[$l]="$(expac -Qs '%v' "^$k$" | head -1)"
+                        [[ " ${depsAname[$l]} " =~ "$k" ]] &&
+                            depsQver[$l]="$(expac -Qs '%v' "^$k$" | head -1)"
                     done
                     Aprovides+=($(GetJson "$json" "Provides" "$j"))
                     # remove AUR versioning
@@ -1118,10 +1119,10 @@ EditPkgs() {
     unset viewed
     for i in "$@"; do
         [[ " ${cachedpkgs[*]} " =~ " $i " ]] && continue
-        local prev="$(<"$clonedir/$i/.git/HEAD.prev")"
         GetInstallScripts "$i"
         if [[ ! "$edit" ]]; then
             if [[ "$displaybuildfiles" = diff && -e "$clonedir/$i/.git/HEAD.prev" ]]; then
+                local prev="$(<"$clonedir/$i/.git/HEAD.prev")"
                 # show diff
                 if git -C "$clonedir/$i" diff --quiet --no-ext-diff "$prev" -- . ':!\.SRCINFO'; then
                     Note "w" $"${colorW}$i${reset} build files are up-to-date -- skipping"
@@ -1631,7 +1632,8 @@ GetBuiltPkg() {
     # and lastly all remaining suffixes in case PKGEXT is locally overridden
     for ext in "$PKGEXT" .pkg.tar{.xz,,.gz,.bz2,.lzo,.lrz,.Z}; do
         builtpkg="$2/$1-${CARCH}$ext"
-        [[ -f "$builtpkg" ]] && break || builtpkg="$2/$1-any$ext"
+        [[ ! -f "$builtpkg" ]] && builtpkg="$2/$1-any$ext"
+        [[ -f "$builtpkg" ]] && break
     done
     [[ ! -f "$builtpkg" ]] && unset builtpkg
 }
