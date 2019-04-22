@@ -190,7 +190,6 @@ IgnoreChecks() {
 
     checkaurpkgsAver=($(GetJson "$json" "Version"))
     checkaurpkgsQver=($(expac -Q '%v' "${checkaurpkgs[@]}"))
-    # set the latest rev for devel packages always since the RPC doesn't stay with upstream
     for i in "${!checkaurpkgs[@]}"; do
         [[ "${checkaurpkgs[$i]}" =~ $vcs ]] && checkaurpkgsAver[$i]=$"latest"
     done
@@ -198,7 +197,6 @@ IgnoreChecks() {
         unset isignored
         if [[ " ${ignoredpkgs[*]} " =~ " ${checkaurpkgs[$i]} " ]]; then
             isignored=1
-        # check ignored groups
         elif [[ "${ignoredgrps[*]}" ]]; then
             unset checkaurpkgsgrp
             checkaurpkgsgrp=($(GetJson "$json" "Groups" "${checkaurpkgs[$i]}"))
@@ -210,7 +208,6 @@ IgnoreChecks() {
 
         if [[ "$isignored" ]] ; then
             if [[ ! "$upgrade" ]]; then
-                # ask for installing ignored package
                 if [[ ! "$noconfirm" ]]; then
                     if ! Proceed "y" $"${checkaurpkgs[$i]} is in IgnorePkg/IgnoreGroup. Install anyway?"; then
                         Note "w" $"skipping target: ${colorW}${checkaurpkgs[$i]}${reset}"
@@ -324,7 +321,7 @@ DepsSolver() {
         exit 1
     fi
 
-    # return all repo deps
+    # return all binary deps
     FindDepsRepo "${repodeps[@]}"
 
     # avoid possible duplicate
@@ -586,13 +583,13 @@ FindDepsRepo() {
     # global repodeps repodepspkgs
     [[ "${repodeps[*]}" ]] || return
 
-    # reduce root repo deps
+    # reduce root binary deps
     repodeps=($(sort -u <<< "$(printf '%s\n' "${repodeps[@]}")"))
 
     # add initial repodeps
     [[ "${repodepspkgs[*]}" ]] || repodepspkgs=("${repodeps[@]}")
 
-    # get non installed repo deps
+    # get non installed binary deps
     unset allrepodepspkgs repodepspkgstmp
     # no version check needed as all deps are repo deps
     [[ "${repodeps[*]}" ]] && allrepodepspkgs=($(expac -S1 '%E' "${repodeps[@]}"))
@@ -612,14 +609,14 @@ FindDepsRepoProvider() {
     # global repodeps repodepspkgs
     [[ "${providerspkgs[*]}" ]] || return
 
-    # reduce root repo deps
+    # reduce root binary deps
     providerspkgs=($(printf '%s\n' "${providerspkgs[@]}" | sort -u))
 
     # get non installed repo deps
     unset allproviderrepodepspkgs providerrepodepspkgstmp
     [[ "${providerspkgs[*]}" ]] &&
         allproviderrepodepspkgs=($(expac -S1 '%E' "${providerspkgs[@]}"))
-    # no version check needed as all deps are repo deps
+    # no version check needed as all deps are binary
     [[ "${allproviderrepodepspkgs[*]}" ]] &&
         providerrepodepspkgstmp=($("$pacmanbin" -T -- "${allproviderrepodepspkgs[@]}" | sort -u))
 
@@ -643,12 +640,11 @@ IgnoreDepsChecks() {
     # add checked targets and preserve tsorted order
     deps=("${deps[@]:0:${#aurpkgs[@]}}")
 
-    # check repo dependencies
+    # check dependencies
     for i in "${repodepspkgs[@]}"; do
         unset isignored
         if [[ " ${ignoredpkgs[*]} " =~ " $i " ]]; then
             isignored=1
-        # check ignored groups
         elif [[ "${ignoredgrps[*]}" ]]; then
             unset repodepspkgsSgrp repodepspkgsQgrp
             repodepspkgsSgrp=($(expac -S1 '%G' "$i"))
@@ -658,14 +654,12 @@ IgnoreDepsChecks() {
             done
         fi
 
-        # check unresolved ignored dependencies
         if [[ "$isignored" ]]; then
             [[ ! "$upgrade" ]] && Note "w" $"skipping target: ${colorW}$i${reset}" ||
                 Note "w" $"${colorW}$i${reset}: ignoring package upgrade"
             Note "e" $"Unresolved dependency '${colorW}$i${reset}'"
         fi
     done
-    # check AUR dependencies
     for i in "${aurdepspkgs[@]}"; do
         # skip already checked dependencies
         [[ " ${aurpkgs[*]} " =~ " $i " ]] && continue
@@ -675,7 +669,6 @@ IgnoreDepsChecks() {
         unset isignored
         if [[ " ${ignoredpkgs[*]} " =~ " $i " ]]; then
             isignored=1
-        # check ignored groups
         elif [[ "${ignoredgrps[*]}" ]]; then
             unset aurdepspkgsAgrp aurdepspkgsQgrp
             aurdepspkgsAgrp=($(GetJson "$json" "Groups" "$i"))
@@ -685,9 +678,7 @@ IgnoreDepsChecks() {
             done
         fi
 
-        # check unresolved ignored dependencies
         if [[ "$isignored" ]]; then
-            # ask to install ignored dependencies
             if [[ ! "$noconfirm" ]]; then
                 if ! Proceed "y" $"$i dependency is in IgnorePkg/IgnoreGroup. Install anyway?"; then
                     Note "w" $"skipping target: ${colorW}$i${reset}"
@@ -765,7 +756,6 @@ ProviderChecks() {
             [[ " ${provided[*]} " =~ " ${providersdeps[$i]} " ]] && continue
         fi
 
-        # select providers, select default provider=0 if noconfirm option is set
         if [[ ! "$noconfirm" && "${#providers[*]}" -gt 1 ]]; then
             Note "i" $"${colorW}There are ${#providers[@]} providers available for ${providersdeps[$i]}:${reset}"
             expac -S1 '   %!) %n (%r) ' "${providers[@]}"
@@ -811,7 +801,7 @@ ProviderChecks() {
 
     FindDepsRepoProvider "${providerspkgs[@]}"
 
-    # get repo packages info
+    # get binary packages info
     if [[ "${repodepspkgs[*]}" ]]; then
         repodepspkgs=($(expac -S1 '%n' "${repodepspkgs[@]}" | sort -u))
         repodepsSver=($(expac -S1 '%v' "${repodepspkgs[@]}"))
@@ -967,14 +957,11 @@ ReinstallChecks() {
     # global depsAmain
     depsAtmp=("${depsAname[@]}")
     for i in "${!depsAtmp[@]}"; do
-        # check and skip packages with conflicts to avoid false positives
         [[ ! " ${aurpkgs[*]} " =~ " ${depsAname[$i]} " ]] ||
             [[ " ${aurconflictingpkgs[*]} " =~ " ${depsAname[$i]} " ]] && continue
         [[ ! "${depsQver[$i]}" || "${depsQver[$i]}" = '#' ]] ||
             [[ "$(vercmp "${depsAver[$i]}" "${depsQver[$i]}")" -gt 0 ]] && continue
         [[ ! $installpkg && ! " ${aurdepspkgs[*]} " =~ " ${depsAname[$i]} " ]] && continue
-        # devel packages are not considered, VCS packages version is not checked by design since
-        # it is a slow operation
         if [[ "${depsAname[$i]}" =~ $vcs ]]; then
             Note "w" $"${colorW}${depsAname[$i]}${reset} latest revision -- fetching"
         else
@@ -1015,7 +1002,6 @@ Prompt() {
     local repodepspkgsver strrepodlsize strrepoinsize strsumk strsumm lreposizelabel lreposize
     # global repodepspkgs repodepsSver depsAname depsAver depsArepo depsAcached lname lver lsize
     # global deps depsQver repodepspkgs repodepsSrepo repodepsQver repodepsSver
-
     # compute binary size
     if [[ "${repodepspkgs[*]}" ]]; then
         binaryksize=($(expac -S1 '%k' "${repodepspkgs[@]}"))
@@ -1041,7 +1027,6 @@ Prompt() {
         unset builtpkg
     done
 
-    # use output verbosity options from pacman config file
     if [[ "$(pacman-conf VerbosePkgLists)" ]]; then
         straurname=$"AUR Packages  (${#deps[@]})"
 		strreponame=$"Repo Packages (${#repodepspkgs[@]})"
@@ -1061,7 +1046,6 @@ Prompt() {
             printf "%-${lname}s  ${colorR}%-${lver}s${reset}  ${colorG}%-${lver}s${reset}  %${lsize}s\n" "${depsArepo[$i]}" "${depsQver[$i]}" "${depsAver[$i]}" "${depsAcached[$i]}";
         done
 
-        # show total download and installed size of the operation
         if [[ "${repodepspkgs[*]}" ]]; then
             for i in "${!repodepspkgs[@]}"; do
                 binarysize[$i]="$(awk '{ printf("%.2f\n", $1/$2) }' <<< "${binaryksize[$i]} 1048576")"
@@ -1129,7 +1113,6 @@ EditPkgs() {
     for i in "$@"; do
         [[ " ${cachedpkgs[*]} " =~ " $i " ]] && continue
         GetInstallScripts "$i"
-        # ask to show files and diff when the edit argument isn't used
         if [[ ! "$edit" ]]; then
             if [[ "$displaybuildfiles" = diff && -e "$clonedir/$i/.git/HEAD.prev" ]]; then
                 local prev="$(<"$clonedir/$i/.git/HEAD.prev")"
@@ -1189,7 +1172,6 @@ EditPkgs() {
         fi
     done
 
-    # handle errors on viewing package .install script and PKGBUILD
     if [[ "${erreditpkg[*]}" ]]; then
         for i in "${erreditpkg[@]}"; do
             Note "f" $"${colorW}$i${reset} errored on exit"
@@ -1271,7 +1253,6 @@ MakePkgs() {
             fi
         done
 
-        # verify source integrity
         if [[ ! "$builtpkg" || "$rebuild" ]]; then
             cd "$clonedir/${basepkgs[$i]}" || exit 1
             Note "i" $"Checking ${colorW}${pkgsdeps[$i]}${reset} integrity..."
@@ -1291,8 +1272,6 @@ MakePkgs() {
             (($? > 0)) && errmakepkg+=("${pkgsdeps[$i]}")
         fi
     done
-
-    # handle errors from integrity check
     if [[ "${errmakepkg[*]}" ]]; then
         for i in "${errmakepkg[@]}"; do
             Note "f" $"failed to verify integrity or prepare ${colorW}$i${reset} package"
@@ -1363,7 +1342,7 @@ MakePkgs() {
         # build
         Note "i" $"Building ${colorW}${pkgsdeps[$i]}${reset} package(s)..."
 
-        # install then remove repo dependencies deps
+        # install then remove binary deps
         makeopts=("${makeopts[@]/-r/}")
 
         if [[ ! "$installpkg" ]]; then
@@ -1371,7 +1350,7 @@ MakePkgs() {
             for j in "${pkgsdepslist[@]}"; do
                 [[ " ${aurdepspkgs[*]} " =~ " $j " ]] && isaurdeps=1
             done
-            #[[ "$isaurdeps" ]] && makeopts+=("-r")
+            [[ "$isaurdeps" ]] && makeopts+=("-r")
         fi
 
         if [[ "$silent" = true ]]; then
@@ -1416,7 +1395,7 @@ MakePkgs() {
         [[ "${aurdepspkgs[*]}" ]] && aurdepspkgs=($(expac -Q '%n' "${aurdepspkgs[@]}"))
         [[ "${aurdepspkgs[*]}" ]] && Note "i" $"Removing installed AUR dependencies..." &&
             sudo "$pacmanbin" -Rsn "${aurdepspkgs[@]}" --noconfirm
-        # readd previously removed conflicting packages
+        # readd removed conflicting packages
         [[ "${aurconflictingpkgsrm[*]}" ]] &&
             sudo "$pacmanbin" -S "${aurconflictingpkgsrm[@]}" --ask 36 --asdeps --needed --noconfirm
         [[ "${repoconflictingpkgsrm[*]}" ]] &&
@@ -1554,7 +1533,6 @@ CleanCache() {
         fi
     fi
 
-    # clean AUR sources cache
     if [[ -d "$SRCDEST" ]]; then
         [[ "$ccount" -eq 1 ]] &&
             printf "\n%s\n %s\n" $"Sources to keep:" $"All development packages sources"
@@ -1569,7 +1547,6 @@ CleanCache() {
                 rm -rf "${SRCDEST:?}"/*
         fi
     fi
-    # clean clone directory cache
     if [[ -d "$clonedir" ]]; then
         if [[ "$ccount" -eq 1 ]]; then
             if [[ ! "${pkgs[*]}" ]]; then
@@ -1773,6 +1750,18 @@ DiffArr() {
     grep -Fxf <(printf '%s\n' "${!array1}") <(printf '%s\n' "${!array2}") $3
 }
 
+RemArrDups() {
+    # from https://github.com/dylanaraps/pure-bash-bible
+    # Usage: remove_array_dups "array"
+    declare -A tmp_array
+
+    for i in "$@"; do
+        [[ $i ]] && IFS=" " tmp_array["${i:- }"]=1
+    done
+
+    printf '%s\n' "${!tmp_array[@]}"
+}
+
 trap Cancel INT
 Cancel() {
     echo
@@ -1844,7 +1833,7 @@ while true; do
         [[ "$1": = "--$i" ]] && pacopts+=("$1=$2")
     done
     case "$1" in
-        -S|--sync) [[ "$pacw" ]] || installpkg=1; [[ "$pacg" ]] && unset operation;;
+        -S|--sync) [[ "$pacw" ]] || installpkg=1 && [[ "$pacg" ]] && unset operation;;
         -s|--search) search=1;;
         -i|--info) info=1;;
         -e|--edit) [[ "$pacQ" ]] && pacopts+=("-e"); edit=1; (("$pac"==0)) && operation=edit;;
