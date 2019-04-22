@@ -769,15 +769,15 @@ ProviderChecks() {
                     read -r nb
                     ;;
                     *)
-                    read -r -n "$(echo -n "$providersnb" | wc -m)" nb
-                    echo
+                    read -r -n "$(printf '%s' "$providersnb" | wc -m)" nb
+                    printf '\n'
                     ;;
                 esac
 
                 case "$nb" in
                     [0-9]|[0-9][0-9])
                         if [[ "$nb" -lt 0 || "$nb" -ge "${#providers[@]}" ]]; then
-                            echo
+                            printf '\n'
                             Note "f" $"invalid value: $nb is not between 0 and $providersnb"
                             ((i--))
                         else
@@ -1068,14 +1068,15 @@ Prompt() {
     fi
 
     if [[ "${repodepspkgs[*]}" ]]; then
-        strrepodlsize=$"Repo Download Size:"; strrepoinsize=$"Repo Installed Size:"; strsumk=$"$sumk MiB"; strsumm=$"$summ MiB"
+        strrepodlsize=$"Repo Download Size:"; strrepoinsize=$"Repo Installed Size:"
+        strsumk=$"$sumk MiB"; strsumm=$"$summ MiB"
         lreposizelabel="$(GetLength "$strrepodlsize" "$strrepoinsize")"
         lreposize="$(GetLength "$strsumk" "$strsumm")"
         printf "\n${colorW}%-${lreposizelabel}s${reset}  %${lreposize}s\n" "$strrepodlsize" "$strsumk"
         printf "${colorW}%-${lreposizelabel}s${reset}  %${lreposize}s\n" "$strrepoinsize" "$strsumm"
     fi
 
-    echo
+    printf '\n'
     if [[ "$installpkg" ]]; then
         Proceed "y" $"Proceed with installation?" || exit
     else
@@ -1681,7 +1682,7 @@ Proceed() {
     [[ "$TERM" = dumb || "$cleancache" ]] && local readline=1
     case "$1" in
         y)  printf "${colorB}%s${reset} ${colorW}%s${reset}" "::" "$2 [Y/n] "
-            [[ "$noconfirm" ]] && echo && return 0
+            [[ "$noconfirm" ]] && printf '\n' && return 0
             while true; do
                 if [[ "$readline" ]]; then
                     read -r answer
@@ -1695,7 +1696,7 @@ Proceed() {
                 esac
             done;;
         n)  printf "${colorB}%s${reset} ${colorW}%s${reset}" "::" "$2 [y/N] "
-            [[ "$noconfirm" ]] && echo && return 0
+            [[ "$noconfirm" ]] && printf '\n' && return 0
             while true; do
                 if [[ "$readline" ]]; then
                     read -r answer
@@ -1709,16 +1710,16 @@ Proceed() {
                 esac
             done;;
     esac
-    [[ ! "$readline" ]] && echo "$answer"
+    [[ ! "$readline" ]] && printf '%s\n' "$answer"
     return "$ret"
 }
 
 Note() {
     case "$1" in
-        i) echo -e "${colorB}::${reset} $2";;            # info
-        w) echo -e "${colorY}warning:${reset} $2" >&2;;  # warn
-        f) echo -e "${colorR}error:${reset} $2" >&2;;    # fail
-        e) echo -e "${colorR}error:${reset} $2" >&2;     # error
+        i) printf '%b\n' "${colorB}::${reset} $2";;            # info
+        w) printf '%b\n' "${colorY}warning:${reset} $2" >&2;;  # warn
+        f) printf '%b\n' "${colorR}error:${reset} $2" >&2;;    # fail
+        e) printf '%b\n' "${colorR}error:${reset} $2" >&2;     # error
             exit 1;;
     esac
 }
@@ -1729,7 +1730,7 @@ GetLength() {
         x="${#i}"
         [[ "$x" -gt "$length" ]] && length="$x"
     done
-    echo "$length"
+    printf '%s\n' "$length"
 }
 
 NothingToDo() {
@@ -1750,21 +1751,9 @@ DiffArr() {
     grep -Fxf <(printf '%s\n' "${!array1}") <(printf '%s\n' "${!array2}") $3
 }
 
-RemArrDups() {
-    # from https://github.com/dylanaraps/pure-bash-bible
-    # Usage: remove_array_dups "array"
-    declare -A tmp_array
-
-    for i in "$@"; do
-        [[ $i ]] && IFS=" " tmp_array["${i:- }"]=1
-    done
-
-    printf '%s\n' "${!tmp_array[@]}"
-}
-
 trap Cancel INT
 Cancel() {
-    echo
+    printf '\n'
     rm -f "${tmpdir:?}"/pacaur.{build,sudov}.lck
     exit
 }
@@ -1855,7 +1844,7 @@ while true; do
         --silent) silent=true; pacopts+=("--quiet"); auropts+=("--quiet") makeopts+=("--log");;
         -y|--refresh) refresh=1;;
         -h|--help) unset operation; (("$pac"==0)) && Usage;;
-        -v|--version) [[ "$pac" -eq 0 || "$1" = --version ]] && echo "pacaur $version" && exit 0;;
+        -v|--version) [[ "$pac" -eq 0 || "$1" = --version ]] && printf '%s\n' "pacaur $version" && exit 0;;
         --) shift; break;;
     esac
     shift
