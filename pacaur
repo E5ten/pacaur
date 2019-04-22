@@ -591,7 +591,7 @@ FindDepsRepo() {
     unset allrepodepspkgs repodepspkgstmp
     # no version check needed as all deps are binary
     [[ "${repodeps[*]}" ]] && allrepodepspkgs=($(expac -S1 '%E' "${repodeps[@]}"))
-    [[ "${allrepodepspkgs[*]}" ]] && \
+    [[ "${allrepodepspkgs[*]}" ]] &&
         repodepspkgstmp=($("$pacmanbin" -T -- "${allrepodepspkgs[@]}" | sort -u))
 
     # remove duplicate
@@ -844,7 +844,7 @@ ConflictChecks() {
 
         for j in "${aurAconflicts[@]}"; do
             unset k Aprovides
-            read -rd' ' <<< "$(expac -Qs '%n %P' "^$i$")" k # k=<first package that provides i>
+            read -rd' ' <<< "$(expac -Qs '%n %P' "^$i$")" k
             [[ ! "$installpkg" && ! " ${aurdepspkgs[*]} " =~ " $j " ]] && continue
             # skip if downloading only
             [[ "$j" = "$k" || ! "$k" ]] && continue # skip if reinstalling or if no conflict exists
@@ -922,33 +922,31 @@ ConflictChecks() {
 
     for i in "${repoconflicts[@]}"; do
         unset Qprovides
-        repoSconflicts=($(expac -S1 '%n %C %S' "${repodepspkgs[@]}" | grep -E "[^a-zA-Z0-9_@\.\+-]$i" | grep -E "(${i}[^a-zA-Z0-9\.\+-]|$i$)" | awk '{print $1}'))
-        for j in "${repoSconflicts[@]}"; do
-            unset k && read -rd' ' <<< "$(expac -Qs '%n %P' "^$i$")" k
-            [[ "$j" = "$k" || ! "$k" ]] && continue # skip when no conflict with repopkgs
-            if [[ ! "$noconfirm" && ! " ${repoconflictingpkgs[*]} " =~ " $k " ]]; then
-                if ! Proceed "n" $"$j and $k are in conflict ($i). Remove $k?"; then
-                    repoconflictingpkgs+=("$j" "$k")
-                    repoconflictingpkgsrm+=("$k")
-                    repoprovidersconflictingpkgs+=("$j")
-                    Qprovides=($(expac -Ss '%S' "^$k$"))
-                    [[ ! " ${Qprovides[*]} ${repoconflictingpkgsrm[*]} " =~ " $k " ]] &&
-                        CheckRequires "$k"
-                    break
+        unset j && read -rd' ' <<< "$(expac -Ss '%n %C %S' "^$i$")" j
+        unset k && read -rd' ' <<< "$(expac -Qs '%n %C %S' "^$i$")" k
+        [[ "$j" = "$k" || ! "$k" ]] && continue # skip when no conflict with repopkgs
+        if [[ ! "$noconfirm" && ! " ${repoconflictingpkgs[*]} " =~ " $k " ]]; then
+            if ! Proceed "n" $"$j and $k are in conflict ($i). Remove $k?"; then
+                repoconflictingpkgs+=("$j" "$k")
+                repoconflictingpkgsrm+=("$k")
+                repoprovidersconflictingpkgs+=("$j")
+                Qprovides=($(expac -Ss '%S' "^$k$"))
+                [[ ! " ${Qprovides[*]} ${repoconflictingpkgsrm[*]} " =~ " $k " ]] &&
+                    CheckRequires "$k"
+                break
+            else
+                Note "f" $"unresolvable package conflicts detected"
+                Note "f" $"failed to prepare transaction (conflicting dependencies)"
+                if [[ "$upgrade" ]]; then
+                    Qrequires=($(expac -Q '%N' "$i"))
+                    Note "e" $"$j and $k are in conflict (required by ${Qrequires[*]})"
                 else
-                    Note "f" $"unresolvable package conflicts detected"
-                    Note "f" $"failed to prepare transaction (conflicting dependencies)"
-                    if [[ "$upgrade" ]]; then
-                        Qrequires=($(expac -Q '%N' "$i"))
-                        Note "e" $"$j and $k are in conflict (required by ${Qrequires[*]})"
-                    else
-                        Note "e" $"$j and $k are in conflict"
-                    fi
+                    Note "e" $"$j and $k are in conflict"
                 fi
             fi
-            Qprovides=($(expac -Ss '%S' "^$k$"))
-            [[ ! " ${Qprovides[*]} " =~ " $k " ]] && CheckRequires "$k"
-        done
+        fi
+        Qprovides=($(expac -Ss '%S' "^$k$"))
+        [[ ! " ${Qprovides[*]} " =~ " $k " ]] && CheckRequires "$k"
     done
 }
 
