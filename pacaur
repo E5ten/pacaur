@@ -616,7 +616,7 @@ FindDepsRepoProvider() {
         allproviderrepodepspkgs=($(expac -S1 '%E' "${providerspkgs[@]}"))
     # no version check needed as all deps are binary
     [[ "${allproviderrepodepspkgs[*]}" ]] &&
-        providerrepodepspkgstmp=($("$pacmanbin" -- -T "${allproviderrepodepspkgs[@]}" | sort -u))
+        providerrepodepspkgstmp=($("$pacmanbin" -T -- "${allproviderrepodepspkgs[@]}" | sort -u))
 
     # remove duplicate
     [[ "${providerrepodepspkgstmp[*]}" ]] &&
@@ -833,9 +833,7 @@ ConflictChecks() {
     done
     aurconflicts=($(DiffArr 'Aprovides' 'allQconflicts'))
     aurconflicts+=($(DiffArr 'Aconflicts' 'allQprovides'))
-    set -x
     aurconflicts=($(printf '%s\n' "${aurconflicts[@]}" | sort -u))
-    set +x
 
     for i in "${aurconflicts[@]}"; do
         unset aurAconflicts
@@ -922,12 +920,11 @@ ConflictChecks() {
         repoconflicts=($(printf '%s\n' "${repoconflicts[@]}" | sort -u))
     fi
 
-    set -x
     for i in "${repoconflicts[@]}"; do
         unset Qprovides
         repoSconflicts=($(expac -S1 '%n %C %S' "${repodepspkgs[@]}" | grep -E "[^a-zA-Z0-9_@\.\+-]$i" | grep -E "(${i}[^a-zA-Z0-9\.\+-]|$i$)" | awk '{print $1}'))
         for j in "${repoSconflicts[@]}"; do
-            unset k && read -rd' ' <<< "$(expac -Qs '%n %P' "^$i$")" k # k=<package that provides i
+            unset k && read -rd' ' <<< "$(expac -Qs '%n %P' "^$i$")" k
             [[ "$j" = "$k" || ! "$k" ]] && continue # skip when no conflict with repopkgs
             if [[ ! "$noconfirm" && ! " ${repoconflictingpkgs[*]} " =~ " $k " ]]; then
                 if ! Proceed "n" $"$j and $k are in conflict ($i). Remove $k?"; then
@@ -953,7 +950,6 @@ ConflictChecks() {
             [[ ! " ${Qprovides[*]} " =~ " $k " ]] && CheckRequires "$k"
         done
     done
-    set +x
 }
 
 ReinstallChecks() {
