@@ -174,7 +174,7 @@ UpgradeAur() {
 IgnoreChecks() {
     local checkaurpkgs checkaurpkgsAver checkaurpkgsQver checkaurpkgsgrp i json
     # global aurpkgs rmaurpkgs
-    [[ ! "${ignoredpkgs[*]}" && ! "${ignoredgrps[*]}" ]] && return
+    [[ "${ignoredpkgs[*]}" || "${ignoredgrps[*]}" ]] || return
 
     # remove AUR pkgs versioning
     for i in "${!aurpkgs[@]}"; do
@@ -264,10 +264,10 @@ DepsSolver() {
         done
 
         aurpkgsconflicts=($(DiffArr 'aurpkgsproviders' 'aurpkgsconflicts'))
-        aurpkgsconflicts=($(printf '%s\n' "${aurpkgsconflicts[@]}" | sort -u))
+        aurpkgsconflicts=($(sort -u <<< "$(printf '%s\n' "${aurpkgsconflicts[@]}")"))
 
         for i in "${aurpkgsconflicts[@]}"; do
-            [[ ! " ${aurpkgsnover[*]} " =~ " $i " ]] && continue
+            [[ " ${aurpkgsnover[*]} " =~ " $i " ]] || continue
             [[ " $(GetJson "$json" "Conflicts" "$i") " =~ " $i " ]] && continue
             Note "f" $"unresolvable package conflicts detected"
             Note "e" $"failed to prepare transaction (conflicting dependencies: $i)"
@@ -276,7 +276,7 @@ DepsSolver() {
 
     deps=("${aurpkgsnover[@]}")
 
-    [[ ! "${foreignpkgs[*]}" ]] && foreignpkgs=($("$pacmanbin" -Qmq))
+    [[ "${foreignpkgs[*]}" ]] || foreignpkgs=($("$pacmanbin" -Qmq))
     FindDepsAur "${aurpkgsnover[@]}"
 
     # avoid possible duplicate
@@ -309,7 +309,7 @@ DepsSolver() {
                 # find relevant tsorted deps chain
                 for j in "${deps[@]}"; do
                     tsorterrdeps+=("$j")
-                    [[ " $j " = " ${errdepsnover[$i]} " ]] && break
+                    [[ "$j" = "${errdepsnover[$i]}" ]] && break
                 done
                 # reverse deps order
                 tsorterrdeps=($(awk '{for (i=NF;i>=1;i--) print $i}' <<< "${tsorterrdeps[@]}" |
@@ -339,12 +339,12 @@ FindDepsAur() {
 
     # set json
     unset aurversionpkgs
-    if [[ ! "${depspkgsaur[*]}" ]]; then
-        SetJson "${aurpkgsnover[@]}"
-        aurversionpkgs=("${aurpkgs[@]}")
-    else
+    if [[ "${depspkgsaur[*]}" ]]; then
         SetJson "${depspkgsaur[@]}"
         aurversionpkgs=("${prevdepspkgsaur[@]}")
+    else
+        SetJson "${aurpkgsnover[@]}"
+        aurversionpkgs=("${aurpkgs[@]}")
     fi
 
     # versioning check
@@ -370,9 +370,8 @@ FindDepsAur() {
                         *"<"*)  [[ "$aurversionpkgsverdiff" -lt 0 ]] && continue;;
                         *"="*)  [[ "$aurversionpkgsverdiff" -eq 0 ]] && continue;;
                     esac
-                    [[ ! " ${errdeps[*]} " =~ " ${aurversionpkgs[$i]} " ]] &&
-                        errdeps+=("${aurversionpkgs[$i]}")
-                ;;
+                    [[ " ${errdeps[*]} " =~ " ${aurversionpkgs[$i]} " ]] ||
+                        errdeps+=("${aurversionpkgs[$i]}");;
                 *) continue;;
             esac
         done
@@ -476,7 +475,7 @@ FindDepsAur() {
 
     if [[ "${depspkgsaur[*]}" ]]; then
         # store for AUR version check
-        [[ ! "$nodeps" ]] && prevdepspkgsaur=("${depspkgsaur[@]}")
+        [[ "$nodeps" ]] || prevdepspkgsaur=("${depspkgsaur[@]}")
 
         # remove AUR pkgs versioning
         for i in "${!depspkgsaur[@]}"; do
@@ -547,11 +546,11 @@ FindDepsAurError() {
     # global errdepsnover errdepslist tsorterrdeps currenterrdep
 
     for i in "${tsorterrdeps[@]}"; do
-        [[ ! " ${errdepsnover[*]} " =~ " $i " && ! " ${errdepslist[*]} " =~ " $i " ]] &&
+        [[ " ${errdepsnover[*]} " =~ " $i " || " ${errdepslist[*]} " =~ " $i " ]] ||
             nexterrdep="$i" && break
     done
 
-    [[ ! "${currenterrdep[*]}" ]] && currenterrdep="${tsorterrdeps[0]}"
+    [[ "${currenterrdep[*]}" ]] || currenterrdep="${tsorterrdeps[0]}"
     if [[ ! " ${aurpkgs[*]} " =~ " $nexterrdep " ]]; then
         nextallerrdeps=($(GetJson "$json" "Depends" "$nexterrdep"))
         nextallerrdeps+=($(GetJson "$json" "MakeDepends" "$nexterrdep"))
@@ -585,13 +584,13 @@ FindDepsAurError() {
 FindDepsRepo() {
     local allrepodepspkgs repodepspkgstmp
     # global repodeps repodepspkgs
-    [[ ! "${repodeps[*]}" ]] && return
+    [[ "${repodeps[*]}" ]] || return
 
     # reduce root repo deps
-    repodeps=($(printf '%s\n' "${repodeps[@]}" | sort -u))
+    repodeps=($(sort -u <<< "$(printf '%s\n' "${repodeps[@]}")"))
 
     # add initial repodeps
-    [[ ! "${repodepspkgs[*]}" ]] && repodepspkgs=("${repodeps[@]}")
+    [[ "${repodepspkgs[*]}" ]] || repodepspkgs=("${repodeps[@]}")
 
     # get non installed repo deps
     unset allrepodepspkgs repodepspkgstmp
@@ -611,7 +610,7 @@ FindDepsRepo() {
 FindDepsRepoProvider() {
     local allrepodepspkgs providerrepodepspkgstmp
     # global repodeps repodepspkgs
-    [[ ! "${providerspkgs[*]}" ]] && return
+    [[ "${providerspkgs[*]}" ]] || return
 
     # reduce root repo deps
     providerspkgs=($(printf '%s\n' "${providerspkgs[@]}" | sort -u))
@@ -858,8 +857,7 @@ ConflictChecks() {
         for j in "${aurAconflicts[@]}"; do
             unset k Aprovides
             read -rd' ' <<< "$(expac -Qs '%n %P' "^$i$")" k
-            [[ ! "$installpkg" && ! " ${aurdepspkgs[*]} " =~ " $j " ]] && continue
-            # skip if downloading only
+            [[ ! "$installpkg" && ! " ${aurdepspkgs[*]} " =~ " $j " ]] && continue # download only
             [[ "$j" = "$k" || ! "$k" ]] && continue # skip if reinstalling or if no conflict exists
 
             Aprovides=("$j")
@@ -913,8 +911,8 @@ ConflictChecks() {
             unset repodepsconflictsname repodepsconflictsver localver
             repodepsconflictsname="${repodepsconflicts[$i]%%[><=]*}"
             repodepsconflictsver="${repodepsconflicts[$i]##*[><=]}"
-            [[ "$repodepsconflictsname" ]] && localver="$(expac -Q '%v' "$repodepsconflictsname")"
-            repodepsconflictsverdiff="$(vercmp "$repodepsconflictsver" "$localver")"
+            local localver="$(expac -Q '%v' "$repodepsconflictsname")"
+            local repodepsconflictsverdiff="$(vercmp "$repodepsconflictsver" "$localver")"
 
             if [[ "$localver" ]]; then
                 case "${repodepsconflicts[$i]}" in
@@ -930,7 +928,7 @@ ConflictChecks() {
 
         repoconflicts+=($(DiffArr 'repodepsprovides' 'allQconflicts'))
         repoconflicts+=($(DiffArr 'checkedrepodepsconflicts' 'allQprovides'))
-        repoconflicts=($(printf '%s\n' "${repoconflicts[@]}" | sort -u))
+        repoconflicts=($(sort -u <<< "$(printf '%s\n' "${repoconflicts[@]}")"))
     fi
 
     for i in "${repoconflicts[@]}"; do
