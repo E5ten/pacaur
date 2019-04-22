@@ -73,7 +73,7 @@ clonedir="${AURDEST:-$usercachedir}"        # clone directory
 [[ -r "$userconfigdir/config" ]] && source "$userconfigdir/config"
 
 # set up directories
-[[ ! -d "$clonedir" ]] && install -dm700 "$clonedir"
+[[ -d "$clonedir" ]] || install -dm700 "$clonedir"
 
 # source makepkg libraries
 source /usr/share/makepkg/util/parseopts.sh
@@ -111,10 +111,11 @@ ClassifyPkgs() {
             noaurpkgs+=("$i")
         done
         [[ "${noaurpkgs[*]}" ]] &&
-            norepopkgs=($(LC_ALL=C "$pacmanbin" -Sp -- "${noaurpkgs[@]}" 2>&1 >/dev/null |
-            awk '{print $NF}'))
+            mapfile -t norepopkgs <<< "$(expac -Sv '' -- "${noaurpkgs[@]}" 2>&1 >/dev/null)" &&
+            norepopkgs=("${norepopkgs[@]#error: package \`}") &&
+            norepopkgs=("${norepopkgs[@]%\' not found}")
         for i in "${norepopkgs[@]}"; do
-            [[ ! " ${noaurpkgs[*]} " =~ [a-zA-Z0-9\.\+-]+\/"$i"[^a-zA-Z0-9\.\+-] ]] &&
+            [[ " ${noaurpkgs[*]} " =~ [a-zA-Z0-9\.\+-]+\/"$i"[^a-zA-Z0-9\.\+-] ]] ||
                 aurpkgs+=("$i") # do not search repo/pkgs in AUR
         done
         repopkgs=($(DiffArr 'aurpkgs' 'noaurpkgs' -v))
@@ -458,7 +459,9 @@ FindDepsAur() {
             depspkgs=($(DiffArr 'assumeinstalled' 'depspkgs' -v))
         fi
         if [[ "${depspkgs[*]}" ]]; then
-            depspkgsaur=($(LC_ALL=C "$pacmanbin" -Sp -- "${depspkgs[@]}" 2>&1 >/dev/null | awk '{print $NF}'))
+            mapfile -t depspkgsaur <<< "$(expac -Sv '' -- "${depspkgs[@]}" 2>&1 >/dev/null)" &&
+            depspkgsaur=("${depspkgsaur[@]#error: package \`}") &&
+            depspkgsaur=("${depspkgsaur[@]%\' not found}")
             repodeps+=($(DiffArr 'depspkgsaur' 'depspkgs' -v))
         fi
     fi
@@ -820,7 +823,7 @@ ProviderChecks() {
 
 ConflictChecks() {
     local allQprovides allQconflicts Aprovides Aconflicts aurconflicts aurAconflicts Qrequires i j
-    local k repodepsprovides repodepsconflicts checkedrepodepsconflicts repodepsconflictsname
+    local k l repodepsprovides repodepsconflicts checkedrepodepsconflicts repodepsconflictsname
     local repodepsconflictsver localver repoconflictingpkgs
     # global deps depsAname json aurdepspkgs aurconflictingpkgs aurconflictingpkgsrm depsQver
     # global repodepspkgs repoconflictingpkgsrm repoprovidersconflictingpkgs
@@ -1206,8 +1209,8 @@ EditPkgs() {
 }
 
 MakePkgs() {
-    local i j oldorphanpkgs neworphanpkgs orphanpkgs oldoptionalpkgs newoptionalpkgs optionalpkgs
-    local errinstall pkgsdepslist vcsclients vcschecked list aurdevelpkgsAver aurdevelpkgsQver
+    local i j k oldorphanpkgs neworphanpkgs orphanpkgs oldoptionalpkgs newoptionalpkgs optionalpkgs
+    local errinstall pkgsdepslist vcsclients vcschecked aurdevelpkgsAver aurdevelpkgsQver
     local builtpkgs builtdepspkgs basepkgsupdate checkpkgsdepslist isaurdeps makedeps
     # global deps basepkgs sudoloop pkgsbase pkgsdeps aurpkgs aurdepspkgs builtpkg errmakepkg json
     # global repoprovidersconflictingpkgs
@@ -1320,19 +1323,15 @@ MakePkgs() {
         pkgsdepslist=($(awk -F "," '{for (k=1;k<=NF;k++) print $k}' <<< "${pkgsdeps[$i]}"))
 
         cd "$clonedir/${basepkgs[$i]}" || exit 1
-
         # retrieve updated version
-        unset list && mapfile -t -d'-' list <<< "$(makepkg --packagelist)"
-        # map packagelist output to array 'list', using the -es from the file name as delimiters
-        # then we can take the version as the 3rd element from the end, the first being arch and
-        # pkgext, and the second being pkgrel
-        aurdevelpkgsAver="${list[(("${#list[@]}"-3))]}"
+        mapfile -t -d'-' k <<< "$(makepkg --packagelist)" && aurdevelpkgsAver="${k[1]}-${k[2]}"
+        unset k
         # build devel if necessary only (supported protocols only)
         if [[ "${basepkgs[$i]}" =~ $vcs ]]; then
             # check split packages update
             unset basepkgsupdate checkpkgsdepslist
             for j in "${pkgsdepslist[@]}"; do
-               read -rd' ' <<< "$(expac -Qs '%v' "^$j$")" aurdevelpkgsQver
+                read -rd' ' <<< "$(expac -Qs '%v' "^$j$")" aurdevelpkgsQver
                 if [[ "$needed" && ! "$rebuild" && "$aurdevelpkgsQver" ]] &&
                     [[ "$(vercmp "$aurdevelpkgsQver" "$aurdevelpkgsAver")" -ge 0 ]]; then
                     Note "w" $"${colorW}$j${reset} is up-to-date -- skipping" && continue
@@ -1352,7 +1351,7 @@ MakePkgs() {
                 if [[ " ${aurdepspkgs[*]} " =~ " $j " || "$installpkg" ]]; then
                     Note "i" $"Installing ${colorW}$j${reset} cached package..."
                     sudo "$pacmanbin" -U "$builtpkg" --ask 36 "${pacopts[@]/--quiet}" --noconfirm
-                    [[ ! " ${aurpkgs[*]} " =~ " $j " ]] &&
+                    [[ " ${aurpkgs[*]} " =~ " $j " ]] ||
                         sudo "$pacmanbin" -D "$j" --asdeps "${pacopts[@]}" &>/dev/null
                 else
                     Note "w" $"Package ${colorW}$j${reset} already available in cache"
@@ -1453,7 +1452,7 @@ MakePkgs() {
 }
 
 CheckUpdates() {
-    local i json foreignpkgs foreignpkgsbase aurpkgsQood aurpkgsAname aurpkgsAver aurpkgsQver
+    local i j json foreignpkgs foreignpkgsbase aurpkgsQood aurpkgsAname aurpkgsAver aurpkgsQver
     local aurpkgsQignore aurdevelpkgsAver aurdevelpkgsQver aurpkgsQoodAver
     # global aur repo
 
@@ -1492,8 +1491,8 @@ CheckUpdates() {
                         # silent extraction and pkgver update only
                         makepkg -od --noprepare --skipinteg &>/dev/null
                         # retrieve updated version
-                        aurdevelpkgsAver="$(makepkg --packagelist |
-                            awk -F "-" '{print $(NF-2)"-"$(NF-1)}' | head -1)"
+                        mapfile -t -d'-' j <<< "$(makepkg --packagelist)"
+                        aurdevelpkgsAver="${j[1]}-${j[2]}" && unset j
                         read -rd' ' <<< "$(expac -Qs '%v' "^${foreignpkgsbase[$i]}$")" aurdevelpkgsQver
                         if [[ "$(vercmp "$aurdevelpkgsQver" "$aurdevelpkgsAver")" -ge 0 ]]; then
                             continue
@@ -1652,8 +1651,8 @@ GetBuiltPkg() {
     # check PKGEXT suffixe first, then default .xz suffix for repository packages in pacman cache
     # and lastly all remaining suffixes in case PKGEXT is locally overridden
     for ext in "$PKGEXT" .pkg.tar{.xz,,.gz,.bz2,.lzo,.lrz,.Z}; do
-        builtpkg="$2/$1-${CARCH}$ext"
-        [[ ! -f "$builtpkg" ]] && builtpkg="$2/$1-any$ext"
+        builtpkg="$2/$1-${CARCH}${ext}"
+        [[ ! -f "$builtpkg" ]] && builtpkg="$2/$1-any${ext}"
         [[ -f "$builtpkg" ]] && break
     done
     [[ ! -f "$builtpkg" ]] && unset builtpkg
