@@ -12,8 +12,8 @@ version="4.8.6"
 
 # sanitize
 unset aur asdeps asexplicit checkdeps cleancache ccount dcount devel edit info installpkg needed
-unset noconfirm nodeps noedit operation optret pac pacQ pacS pacg pacn pacw quiet readline rebuild
-unset refresh repo search upgrade vars vcs
+unset noconfirm nodeps noedit operation pac pacQ pacS pacg pacn pacw quiet readline rebuild refresh
+unset repo search upgrade vcs
 
 # internationalization
 LC_COLLATE=C
@@ -33,11 +33,17 @@ usercachedir="${XDG_CACHE_HOME:-${HOME}/.cache}/pacaur"
 tmpdir="${XDG_RUNTIME_DIR:-/tmp}"
 
 # preserve environment variables
-vars=('PACMAN' 'PKGDEST' 'SRCDEST' 'SRCPKGDEST' 'LOGDEST' 'BUILDDIR' 'PKGEXT' 'SRCEXT'
-      'GPGKEY' 'PACKAGER' 'CARCH')
-for i in "${vars[@]}"; do
-    [[ "${!i}" ]] && declare _"$i"="${!i}"
-done
+[[ -n ${PACMAN} ]] && _PACMAN=${PACMAN}
+[[ -n ${PKGDEST} ]] && _PKGDEST=${PKGDEST}
+[[ -n ${SRCDEST} ]] && _SRCDEST=${SRCDEST}
+[[ -n ${SRCPKGDEST} ]] && _SRCPKGDEST=${SRCPKGDEST}
+[[ -n ${LOGDEST} ]] && _LOGDEST=${LOGDEST}
+[[ -n ${BUILDDIR} ]] && _BUILDDIR=${BUILDDIR}
+[[ -n ${PKGEXT} ]] && _PKGEXT=${PKGEXT}
+[[ -n ${SRCEXT} ]] && _SRCEXT=${SRCEXT}
+[[ -n ${GPGKEY} ]] && _GPGKEY=${GPGKEY}
+[[ -n ${PACKAGER} ]] && _PACKAGER=${PACKAGER}
+[[ -n ${CARCH} ]] && _CARCH=${CARCH}
 
 # source makepkg variables
 if [[ -r "$MAKEPKG_CONF" ]]; then
@@ -52,9 +58,17 @@ else
 fi
 
 # restore environment variables
-for i in "${vars[@]}"; do
-    j="_$i" && declare "$i"="${!j:-${!i}}" && unset j
-done
+PACMAN=${_PACMAN:-$PACMAN}
+PKGDEST=${_PKGDEST:-$PKGDEST}
+SRCDEST=${_SRCDEST:-$SRCDEST}
+SRCPKGDEST=${_SRCPKGDEST:-$SRCPKGDEST}
+LOGDEST=${_LOGDEST:-$LOGDEST}
+BUILDDIR=${_BUILDDIR:-$BUILDDIR}
+PKGEXT=${_PKGEXT:-$PKGEXT}
+SRCEXT=${_SRCEXT:-$SRCEXT}
+GPGKEY=${_GPGKEY:-$GPGKEY}
+PACKAGER=${_PACKAGER:-$PACKAGER}
+CARCH=${_CARCH:-$CARCH}
 
 # set default config variables
 editor="${VISUAL:-${EDITOR:-vi}}"           # build files editor
@@ -181,8 +195,7 @@ IgnoreChecks() {
     # check targets
     SetJson "${aurpkgsnover[@]}"
     checkaurpkgs=($(GetJson "$json" "Name"))
-    errdeps+=($(DiffArr 'aurpkgsnover' 'checkaurpkgs' -v))
-    errdeps+=($(DiffArr 'checkaurpkgs' 'aurpkgsnover' -v))
+    errdeps=($(comm -3 <(printf '%s\n' "${aurpkgs[@]}") <(printf '%s\n' "${checkaurpkgs[@]}")))
     unset aurpkgsnover
 
     checkaurpkgsAver=($(GetJson "$json" "Version"))
@@ -396,14 +409,15 @@ FindDepsAur() {
         done
     fi
 
+    # remove versioning
+    depspkgs=("${depspkgs[@]%%[><=]*}")
     # remove installed deps
     if [[ ! "$devel" ]]; then
         depspkgs=($("$pacmanbin" -T -- "${depspkgs[@]}" | sort -u))
     else
-        # remove versioning and check providers
+        # check providers
         unset vcsdepspkgs
         for i in "${!depspkgs[@]}"; do
-            depspkgs[$i]="${depspkgs[$i]%%[><=]*}"
             unset j && read -rd' ' <<< "$(expac -Qs '%n %P' "^${depspkgs[$i]}$")" j
             if [[ "$j" ]]; then
                 depspkgs[$i]="$j"
@@ -430,18 +444,19 @@ FindDepsAur() {
         # assume installed deps
         elif [[ "${assumeinstalled[*]}" ]]; then
             # remove versioning
+            assumeinstalled=("${assumeinstalled[@]%%[><=]*}")
             for i in "${!assumeinstalled[@]}"; do
                 unset assumedepspkgs
-                assumeinstalled[$i]="${assumeinstalled[$i]%%[><=]*}"
                 for j in "${!depspkgs[@]}"; do
                     assumedepspkgs[$j]="${depspkgs[$j]%%[><=]*}"
-                    [[ " ${assumedepspkgs[*]} " =~ " ${assumeinstalled[$i]} " ]] && depspkgs[$j]="${assumeinstalled[$i]}";
+                    [[ " ${assumedepspkgs[*]} " =~ " ${assumeinstalled[$i]} " ]] &&
+                        depspkgs[$j]="${assumeinstalled[$i]}";
                 done
             done
             depspkgs=($(DiffArr 'assumeinstalled' 'depspkgs' -v))
         fi
         if [[ "${depspkgs[*]}" ]]; then
-            mapfile -t depspkgsaur <<< "$(expac -Sv '' -- "${depspkgs[@]}" 2>&1)" &&
+            mapfile -t depspkgsaur <<< "$(expac -Sv '' -- "${depspkgs[@]%%[><=]*}" 2>&1)" &&
             depspkgsaur=("${depspkgsaur[@]#error: package \`}") &&
             depspkgsaur=("${depspkgsaur[@]%\' not found}")
             repodeps+=($(DiffArr 'depspkgsaur' 'depspkgs' -v))
@@ -459,7 +474,6 @@ FindDepsAur() {
     if [[ "${depspkgsaur[*]}" ]]; then
         # store for AUR version check
         [[ "$nodeps" ]] || prevdepspkgsaur=("${depspkgsaur[@]}")
-
         # remove duplicates and versioning
         depspkgsaur=($(printf '%s\n' "${depspkgsaur[@]%%[><=]*}" | sort -u))
     fi
@@ -486,8 +500,8 @@ SortDepsAur() {
         errdepsnover=("${errdeps[@]%%[><=]*}")
 
         # check AUR deps only
-        sortdepspkgs=("${sortdepspkgs[@]%%[><=]*}")
         for j in "${!sortdepspkgs[@]}"; do
+            sortdepspkgs[$j]="${sortdepspkgs[$j]%%[><=]*}"
             sortdepspkgsaur+=($(GetJson "$json" "Name" "${sortdepspkgs[$j]}"))
             # add erroneous AUR deps
             [[ " ${errdepsnover[*]} " =~ " ${sortdepspkgs[$j]} " ]] &&
@@ -719,8 +733,8 @@ ProviderChecks() {
 
         # skip if provided in dependency chain
         unset repodepspkgsprovided
-        for j in "${providers[@]}"; do
-            [[ " ${repodepspkgs[*]} " =~ " $j " ]] && repodepspkgsprovided='true'
+        for j in "${!providers[@]}"; do
+            [[ " ${repodepspkgs[*]} " =~ " ${providers[$j]} " ]] && repodepspkgsprovided='true'
         done
         [[ "$repodepspkgsprovided" ]] && continue
 
@@ -1769,12 +1783,14 @@ longopts_aur=('aur' 'by:' 'devel' 'edit' 'literal' 'noedit' 'rebuild' 'repo' 'rs
 parseopts "${shortopts}" "${longopts[@]}" "${longopts_aur[@]}" -- "$@" || exit 1
 set -- "${OPTRET[@]}"
 
-optret="${OPTRET[*]}"; optret="${optret%%--[[:space:]]*}"
-[[ " ${optret} " =~ ' '-(S|-sync)' ' ]] && pacS=1 && operation=sync && ((pac++))
-[[ " ${optret} " =~ ' '-(Q|-query)' ' ]] && pacQ=1 && ((pac++))
-[[ " ${optret} " =~ ' '-([DFRTUV]|-database|-files|-remove|-deptest|-upgrade)' ' ]] && ((pac++))
-[[ " ${optret} " =~ ' '-(w|-downloadonly)' ' ]] && pacw=1
-[[ " ${optret} " =~ ' '-([glp]|-groups|-list|-print)' ' ]] && pacg=1
+for i in "${OPTRET[@]}"; do
+    [[ "$i" =~ ^--$ ]] && break
+    [[ "$i" =~ ^-(S|-sync) ]] && pacS=1 && operation=sync && ((pac++))
+    [[ "$i" =~ ^-(Q|-query) ]] && pacQ=1 && ((pac++))
+    [[ "$i" =~ ^-([DFRTUV]|-database|-files|-remove|-deptest|-upgrade) ]] && ((pac++))
+    [[ "$i" =~ ^-(w|-downloadonly) ]] && pacw=1
+    [[ "$i" =~ ^-([glp]|-groups|-list|-print) ]] && pacg=1
+done
 
 while true; do
     [[ "$1" = -[cdf-qs-zDFQRSTUV] ]] && pacmanarg+=("$1")
