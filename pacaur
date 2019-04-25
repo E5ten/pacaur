@@ -4,7 +4,7 @@
 #
 
 shopt -s extglob
-version="4.8.6"
+declare -r version="4.8.6"
 
 #
 # Config
@@ -16,9 +16,9 @@ unset noconfirm nodeps noedit operation pac pacQ pacS pacg pacn pacw quiet readl
 unset repo search upgrade vcs
 
 # internationalization
-LC_COLLATE=C
-TEXTDOMAIN='pacaur'
-TEXTDOMAINDIR='/usr/share/locale'
+export LC_COLLATE=C
+export TEXTDOMAIN='pacaur'
+export TEXTDOMAINDIR='/usr/share/locale'
 
 # determine config location
 if [[ "${XDG_CONFIG_DIRS}" ]]; then
@@ -33,17 +33,17 @@ usercachedir="${XDG_CACHE_HOME:-${HOME}/.cache}/pacaur"
 tmpdir="${XDG_RUNTIME_DIR:-/tmp}"
 
 # preserve environment variables
-[[ -n ${PACMAN} ]] && _PACMAN=${PACMAN}
-[[ -n ${PKGDEST} ]] && _PKGDEST=${PKGDEST}
-[[ -n ${SRCDEST} ]] && _SRCDEST=${SRCDEST}
-[[ -n ${SRCPKGDEST} ]] && _SRCPKGDEST=${SRCPKGDEST}
-[[ -n ${LOGDEST} ]] && _LOGDEST=${LOGDEST}
-[[ -n ${BUILDDIR} ]] && _BUILDDIR=${BUILDDIR}
-[[ -n ${PKGEXT} ]] && _PKGEXT=${PKGEXT}
-[[ -n ${SRCEXT} ]] && _SRCEXT=${SRCEXT}
-[[ -n ${GPGKEY} ]] && _GPGKEY=${GPGKEY}
-[[ -n ${PACKAGER} ]] && _PACKAGER=${PACKAGER}
-[[ -n ${CARCH} ]] && _CARCH=${CARCH}
+[[ "${PACMAN}" ]] && _PACMAN="${PACMAN}"
+[[ "${PKGDEST}" ]] && _PKGDEST="${PKGDEST}"
+[[ "${SRCDEST}" ]] && _SRCDEST="${SRCDEST}"
+[[ "${SRCPKGDEST}" ]] && _SRCPKGDEST="${SRCPKGDEST}"
+[[ "${LOGDEST}" ]] && _LOGDEST="${LOGDEST}"
+[[ "${BUILDDIR}" ]] && _BUILDDIR="${BUILDDIR}"
+[[ "${PKGEXT}" ]] && _PKGEXT="${PKGEXT}"
+[[ "${SRCEXT}" ]] && _SRCEXT="${SRCEXT}"
+[[ "${GPGKEY}" ]] && _GPGKEY="${GPGKEY}"
+[[ "${PACKAGER}" ]] && _PACKAGER="${PACKAGER}"
+[[ "${CARCH}" ]] && _CARCH="${CARCH}"
 
 # source makepkg variables
 if [[ -r "$MAKEPKG_CONF" ]]; then
@@ -58,20 +58,20 @@ else
 fi
 
 # restore environment variables
-PACMAN=${_PACMAN:-$PACMAN}
-PKGDEST=${_PKGDEST:-$PKGDEST}
-SRCDEST=${_SRCDEST:-$SRCDEST}
-SRCPKGDEST=${_SRCPKGDEST:-$SRCPKGDEST}
-LOGDEST=${_LOGDEST:-$LOGDEST}
-BUILDDIR=${_BUILDDIR:-$BUILDDIR}
-PKGEXT=${_PKGEXT:-$PKGEXT}
-SRCEXT=${_SRCEXT:-$SRCEXT}
-GPGKEY=${_GPGKEY:-$GPGKEY}
-PACKAGER=${_PACKAGER:-$PACKAGER}
-CARCH=${_CARCH:-$CARCH}
+PACMAN="${_PACMAN:-"$PACMAN"}"
+PKGDEST="${_PKGDEST:-"$PKGDEST"}"
+SRCDEST="${_SRCDEST:-"$SRCDEST"}"
+SRCPKGDEST="${_SRCPKGDEST:-"$SRCPKGDEST"}"
+LOGDEST="${_LOGDEST:-"$LOGDEST"}"
+BUILDDIR="${_BUILDDIR:-"$BUILDDIR"}"
+PKGEXT="${_PKGEXT:-"$PKGEXT"}"
+SRCEXT="${_SRCEXT:-"$SRCEXT"}"
+GPGKEY="${_GPGKEY:-"$GPGKEY"}"
+PACKAGER="${_PACKAGER:-"$PACKAGER"}"
+CARCH="${_CARCH:-"$CARCH"}"
 
 # set default config variables
-editor="${VISUAL:-${EDITOR:-vi}}"           # build files editor
+editor="${VISUAL:-"${EDITOR:-vi}"}"         # build files editor
 displaybuildfiles=diff                      # display build files (none|diff|full)
 silent=false                                # silence output
 sortby=name                                 # sort method (name|votes|popularity)
@@ -79,19 +79,17 @@ sortorder=ascending                         # sort order (ascending|descending)
 sudoloop=true                               # prevent sudo timeout
 
 # set variables
-pacmanbin="${PACMAN:-pacman}"               # pacman binary
+declare -r pacmanbin="${PACMAN:-pacman}"    # pacman binary
 clonedir="${AURDEST:-${usercachedir:?}}"    # clone directory
 
 # source xdg config
 [[ -r "$configdir/config" ]] && source "$configdir/config"
 [[ -r "$userconfigdir/config" ]] && source "$userconfigdir/config"
 
-# set up directories
-[[ -d "$clonedir" ]] || install -dm700 "$clonedir"
-
 # source makepkg libraries
-source /usr/share/makepkg/util/parseopts.sh
-source /usr/share/makepkg/util/option.sh
+for i in parseopts util option error; do
+    source "/usr/share/makepkg/util/$i.sh"
+done
 check_buildoption "check" "y" && checkdeps=1
 
 # determine whether we have gettext; make it a no-op if we do not
@@ -100,6 +98,9 @@ if ! type -p gettext >/dev/null; then
 		printf "%s\n" "$@"
 	}
 fi
+
+# set up directories
+declare -r clonedir="$(canonicalize_path "$clonedir")"
 
 # define vcs packages
 vcs='-(cvs|svn|git|hg|bzr|darcs|daily.*|nightly.*)$'
@@ -269,7 +270,7 @@ DepsSolver() {
             [[ " ${aurpkgsnover[*]} " =~ " $i " ]] || continue
             [[ " $(GetJson "$json" "Conflicts" "$i") " =~ " $i " ]] && continue
             Note "f" $"unresolvable package conflicts detected"
-            Note "e" $"failed to prepare transaction (conflicting dependencies: $i)"
+            Note "e" $"failed to prepare transaction (conflicting dependencies: $i)" "$E_INSTALL_DEPS_FAILED"
         done
     fi
 
@@ -285,7 +286,7 @@ DepsSolver() {
     # ensure correct dependency order
     SetJson "${deps[@]}"
     SortDepsAur "${aurpkgs[@]}"
-    deps=($(tsort <<< "${tsortdeps[@]}")) || Note "e" $"dependency cycle detected"
+    deps=($(tsort <<< "${tsortdeps[@]}")) || Note "e" $"dependency cycle detected" "$E_INSTALL_DEPS_FAILED"
 
     # get AUR packages info
     depsAname=($(GetJson "$json" "Name"))
@@ -320,7 +321,7 @@ DepsSolver() {
                 Note "f" $"no results found for ${errdeps[$i]} (dependency tree: ${errdepslist[*]})"
             fi
         done
-        exit 1
+        exit "$E_INSTALL_DEPS_FAILED"
     fi
 
     # return all binary deps
@@ -469,7 +470,7 @@ FindDepsAur() {
 
     # dependency cycle check
     [[ "${prevdepspkgsaur[*]}" && "${prevdepspkgsaur[*]}" = "${depspkgsaur[*]}" ]] &&
-        Note "e" $"dependency cycle detected (${depspkgsaur[*]})"
+        Note "e" $"dependency cycle detected (${depspkgsaur[*]})" "$E_INSTALL_DEPS_FAILED"
 
     if [[ "${depspkgsaur[*]}" ]]; then
         # store for AUR version check
@@ -646,14 +647,14 @@ IgnoreDepsChecks() {
         if [[ "$isignored" ]]; then
             [[ ! "$upgrade" ]] && Note "w" $"skipping target: ${colorW}$i${reset}" ||
                 Note "w" $"${colorW}$i${reset}: ignoring package upgrade"
-            Note "e" $"Unresolved dependency '${colorW}$i${reset}'"
+            Note "e" $"Unresolved dependency '${colorW}$i${reset}'" "$E_INSTALL_DEPS_FAILED"
         fi
     done
     for i in "${aurdepspkgs[@]}"; do
         # skip already checked dependencies
         [[ " ${aurpkgs[*]} " =~ " $i " ]] && continue
         [[ " ${rmaurpkgs[*]} " =~ " $i " ]] &&
-            Note "e" $"Unresolved dependency '${colorW}$i${reset}'"
+            Note "e" $"Unresolved dependency '${colorW}$i${reset}'" "$E_INSTALL_DEPS_FAILED"
 
         unset isignored
         if [[ " ${ignoredpkgs[*]} " =~ " $i " ]]; then
@@ -671,12 +672,12 @@ IgnoreDepsChecks() {
             if [[ ! "$noconfirm" ]]; then
                 if ! Proceed "y" $"$i dependency is in IgnorePkg/IgnoreGroup. Install anyway?"; then
                     Note "w" $"skipping target: ${colorW}$i${reset}"
-                    Note "e" $"Unresolved dependency '${colorW}$i${reset}'"
+                    Note "e" $"Unresolved dependency '${colorW}$i${reset}'" "$E_INSTALL_DEPS_FAILED"
                 fi
             else
                 [[ "$upgrade" ]] && Note "w" $"${colorW}$i${reset}: ignoring package upgrade" ||
                     Note "w" $"skipping target: ${colorW}$i${reset}"
-                Note "e" $"Unresolved dependency '${colorW}$i${reset}'"
+                Note "e" $"Unresolved dependency '${colorW}$i${reset}'" "$E_INSTALL_DEPS_FAILED"
             fi
         fi
         deps+=("$i")
@@ -855,9 +856,9 @@ ConflictChecks() {
                     Note "f" $"failed to prepare transaction (conflicting dependencies)"
                     if [[ "$upgrade" ]]; then
                         Qrequires=($(expac -Q '%N' "$i"))
-                        Note "e" $"$j and $k are in conflict (required by ${Qrequires[*]})"
+                        Note "e" $"$j and $k are in conflict (required by ${Qrequires[*]})" "$E_INSTALL_DEPS_FAILED"
                     else
-                        Note "e" $"$j and $k are in conflict"
+                        Note "e" $"$j and $k are in conflict" "$E_INSTALL_DEPS_FAILED"
                     fi
                 fi
             fi
@@ -921,9 +922,9 @@ ConflictChecks() {
                 Note "f" $"failed to prepare transaction (conflicting dependencies)"
                 if [[ "$upgrade" ]]; then
                     Qrequires=($(expac -Q '%N' "$i"))
-                    Note "e" $"$j and $k are in conflict (required by ${Qrequires[*]})"
+                    Note "e" $"$j and $k are in conflict (required by ${Qrequires[*]})" "$E_INSTALL_DEPS_FAILED"
                 else
-                    Note "e" $"$j and $k are in conflict"
+                    Note "e" $"$j and $k are in conflict" "$E_INSTALL_DEPS_FAILED"
                 fi
             fi
         fi
@@ -1059,9 +1060,9 @@ Prompt() {
 
     printf '\n'
     if [[ "$installpkg" ]]; then
-        Proceed "y" $"Proceed with installation?" || exit
+        Proceed "y" $"Proceed with installation?" || exit "$E_FAIL"
     else
-        Proceed "y" $"Proceed with download?" || exit
+        Proceed "y" $"Proceed with download?" || exit "$E_FAIL"
     fi
 }
 
@@ -1072,7 +1073,7 @@ DownloadPkgs() {
     GetPkgbase "$@"
 
     # no results check
-    [[ ! "${basepkgs[*]}" ]] && Note "e" $"no results found"
+    [[ ! "${basepkgs[*]}" ]] && Note "e" $"no results found" "$E_INSTALL_DEPS_FAILED"
 
     # reset
     for i in "${basepkgs[@]}"; do
@@ -1084,7 +1085,8 @@ DownloadPkgs() {
     done
 
     # clone
-    auracle -C "$clonedir" clone "$@" >/dev/null || Note "e" $"failed to retrieve packages"
+    auracle -C "$clonedir" clone "$@" >/dev/null ||
+        Note "e" $"failed to retrieve packages" "$E_INSTALL_DEPS_FAILED"
 }
 
 EditPkgs() {
@@ -1115,7 +1117,7 @@ EditPkgs() {
                         "$editor" "$clonedir/$i/PKGBUILD" &&
                             Note "i" $"${colorW}$i${reset} PKGBUILD viewed" || erreditpkg+=("$i")
                     else
-                        Note "e" $"Could not open ${colorW}$i${reset} PKGBUILD"
+                        Note "e" $"Could not open ${colorW}$i${reset} PKGBUILD" "$E_MISSING_FILE"
                     fi
                 fi
                 # show install script
@@ -1127,7 +1129,7 @@ EditPkgs() {
                                     Note "i" $"${colorW}$j${reset} script viewed" ||
                                     erreditpkg+=("$i")
                             else
-                                Note "e" $"Could not open ${colorW}$j${reset} script"
+                                Note "e" $"Could not open ${colorW}$j${reset} script" "$E_MISSING_FILE"
                             fi
                         fi
                     done
@@ -1139,7 +1141,7 @@ EditPkgs() {
                 "$editor" "$clonedir/$i/PKGBUILD" &&
                     Note "i" $"${colorW}$i${reset} PKGBUILD viewed" || erreditpkg+=("$i")
             else
-                Note "e" $"Could not open ${colorW}$i${reset} PKGBUILD"
+                Note "e" $"Could not open ${colorW}$i${reset} PKGBUILD" "$E_MISSING_FILE"
             fi
             if [[ "${installscripts[*]}" ]]; then
                 for j in "${installscripts[@]}"; do
@@ -1147,7 +1149,7 @@ EditPkgs() {
                         "$editor" "$clonedir/$i/$j" &&
                             Note "i" $"${colorW}$j${reset} script viewed" || erreditpkg+=("$i")
                     else
-                        Note "e" $"Could not open ${colorW}$j${reset} script"
+                        Note "e" $"Could not open ${colorW}$j${reset} script" "$E_MISSING_FILE"
                     fi
                 done
             fi
@@ -1158,7 +1160,7 @@ EditPkgs() {
         for i in "${erreditpkg[@]}"; do
             Note "f" $"${colorW}$i${reset} errored on exit"
         done
-        exit 1
+        exit "$E_FAIL"
     fi
 
     if [[ "$displaybuildfiles" = diff && "$viewed" ]]; then
@@ -1236,7 +1238,7 @@ MakePkgs() {
         done
 
         if [[ ! "$builtpkg" || "$rebuild" ]]; then
-            cd "$clonedir/${basepkgs[$i]}" || exit 1
+            cd_safe "$clonedir/${basepkgs[$i]}"
             Note "i" $"Checking ${colorW}${pkgsdeps[$i]}${reset} integrity..."
             if [[ "$silent" = true ]]; then
                 makepkg -f --verifysource "${makeopts[@]}" &>/dev/null
@@ -1254,20 +1256,20 @@ MakePkgs() {
             (($? > 0)) && errmakepkg+=("${pkgsdeps[$i]}")
         fi
     done
-    if [[ "${errmakepkg[*]}" ]]; then
+    if [[ "${errmakepkg[*]}" || "${errinstall[*]}" ]]; then
         for i in "${errmakepkg[@]}"; do
             Note "f" $"failed to verify integrity or prepare ${colorW}$i${reset} package"
         done
         # remove sudo lock
         rm -f "${tmpdir:?}/pacaur.sudov.lck"
-        exit 1
+        exit "$E_FAIL"
     fi
 
     # check database lock
-    [[ -e "/var/lib/pacman/db.lck" ]] && Note "e" $"db.lck exists in /var/lib/pacman" && exit 1
+    [[ -e "/var/lib/pacman/db.lck" ]] && Note "e" $"db.lck exists in /var/lib/pacman" "$E_FAIL"
 
     # set build lock
-    [[ -e "$tmpdir/pacaur.build.lck" ]] && Note "e" $"pacaur.build.lck exists in $tmpdir" && exit 1
+    [[ -e "$tmpdir/pacaur.build.lck" ]] && Note "e" $"pacaur.build.lck exists in $tmpdir" "$E_FAIL"
     touch "$tmpdir/pacaur.build.lck"
 
     # install provider packages and repo conflicting packages that makepkg --noconfirm cannot handle
@@ -1281,7 +1283,7 @@ MakePkgs() {
         # get split packages list
         pkgsdepslist=($(awk -F "," '{for (k=1;k<=NF;k++) print $k}' <<< "${pkgsdeps[$i]}"))
 
-        cd "$clonedir/${basepkgs[$i]}" || exit 1
+        cd_safe "$clonedir/${basepkgs[$i]}"
         # retrieve updated version
         mapfile -t -d'-' k <<< "$(makepkg --packagelist)" && aurdevelpkgsAver="${k[1]}-${k[2]}"
         unset k
@@ -1402,12 +1404,13 @@ MakePkgs() {
     done
 
     # makepkg and install failure check
-    if [[ "${errmakepkg[*]}" || "${errinstall[*]}" ]]; then
+    if [[ "${errmakepkg[*]}" ]]; then
         for i in "${errmakepkg[@]}"; do
             Note "f" $"failed to build ${colorW}$i${reset} package(s)"
         done
-        exit 1
+        exit "$E_PACKAGE_FAILED"
     fi
+    [[ "${errinstall[*]}" ]] && exit  "$E_INSTALL_FAILED"
 }
 
 CheckUpdates() {
@@ -1446,7 +1449,7 @@ CheckUpdates() {
                     if [[ "${foreignpkgsbase[$i]}" =~ $vcs ]]; then
                         [[ ! -d "$clonedir/${foreignpkgsbase[$i]}" ]] &&
                             DownloadPkgs "${foreignpkgsbase[$i]}" &>/dev/null
-                        cd "$clonedir/${foreignpkgsbase[$i]}" || exit 1
+                        cd_safe "$clonedir/${foreignpkgsbase[$i]}"
                         # silent extraction and pkgver update only
                         makepkg -od --noprepare --skipinteg &>/dev/null
                         # retrieve updated version
@@ -1487,7 +1490,7 @@ CheckUpdates() {
         fi
     fi
     # exit code
-    [[ "$exitrepo" = 0 || "$exitaur" = 0 ]] && exit 0 || exit 1
+    [[ "$exitrepo" = 0 || "$exitaur" = 0 ]] && exit "$E_OK" || exit "$E_FAIL"
 }
 
 CleanCache() {
@@ -1575,7 +1578,7 @@ CleanCache() {
             fi
         fi
     fi
-    exit 0
+    exit "$E_OK"
 }
 
 GetIgnoredPkgs() {
@@ -1640,14 +1643,15 @@ GetJson() {
 
     [[ "$pkgname" ]] && filter="select(.Name == \"$pkgname\")"
 
-    jq -rM ".results[] | $filter | select(.$field) .$field | if type==\"array\" then .[] else . end" <<< "$json" 2> /dev/null || Note "e" $"Failed to parse JSON"
+    jq -rM ".results[] | $filter | select(.$field) .$field | if type==\"array\" then .[] else . end" <<< "$json" 2> /dev/null ||
+        Note "e" $"Failed to parse JSON" "$E_FAIL"
 }
 
 CheckRequires() {
     local Qrequires=($(expac -Q '%N'))
     if [[ "${Qrequires[*]}" ]]; then
         Note "f" $"failed to prepare transaction (could not satisfy dependencies)"
-        Note "e" $"${Qrequires[@]}: requires $@"
+        Note "e" $"${Qrequires[@]}: requires $@" "$E_INSTALL_DEPS_FAILED"
     fi
 }
 
@@ -1695,7 +1699,7 @@ Note() {
         w) printf '%b\n' "${colorY}warning:${reset} $2" >&2;;  # warn
         f) printf '%b\n' "${colorR}error:${reset} $2" >&2;;    # fail
         e) printf '%b\n' "${colorR}error:${reset} $2" >&2;     # error
-            exit 1;;
+            exit "$3";;
     esac
 }
 
@@ -1709,7 +1713,7 @@ GetLength() {
 }
 
 NothingToDo() {
-    [[ ! "$*" ]] && printf '%s\n' $" there is nothing to do" && exit || return 0
+    [[ ! "$*" ]] && printf '%s\n' $" there is nothing to do" && exit "$E_OK" || return 0
 }
 
 SudoV() {
@@ -1758,7 +1762,7 @@ Usage() {
     printf "%s\n" $"   --noedit         do not prompt to edit files"
     printf "%s\n" $"   --rebuild        always rebuild package(s)"
     printf "%s\n" $"   --silent         silence output"
-    exit 0
+    exit "$E_OK"
 }
 
 #
@@ -1780,16 +1784,16 @@ longopts+=('arch:' 'assume-installed:' 'cachedir:' 'color:' 'config:' 'dbpath:' 
            'ignore:' 'ignoregroup:' 'logfile:' 'overwrite:' 'print-format:' 'root:' 'sysroot:')
 longopts_aur=('aur' 'by:' 'devel' 'edit' 'literal' 'noedit' 'rebuild' 'repo' 'rsort:' 'searchby:'
               'silent' 'sort:' 'update' 'version')
-parseopts "${shortopts}" "${longopts[@]}" "${longopts_aur[@]}" -- "$@" || exit 1
+parseopts "${shortopts}" "${longopts[@]}" "${longopts_aur[@]}" -- "$@" || exit "$E_INVALID_OPTION"
 set -- "${OPTRET[@]}"
 
 for i in "${OPTRET[@]}"; do
     [[ "$i" =~ ^--$ ]] && break
-    [[ "$i" =~ ^-(S|-sync) ]] && pacS=1 && operation=sync && ((pac++))
-    [[ "$i" =~ ^-(Q|-query) ]] && pacQ=1 && ((pac++))
-    [[ "$i" =~ ^-([DFRTUV]|-database|-files|-remove|-deptest|-upgrade) ]] && ((pac++))
-    [[ "$i" =~ ^-(w|-downloadonly) ]] && pacw=1
-    [[ "$i" =~ ^-([glp]|-groups|-list|-print) ]] && pacg=1
+    [[ "$i" =~ ^-(S|-sync)$ ]] && pacS=1 && operation=sync && ((pac++))
+    [[ "$i" =~ ^-(Q|-query)$ ]] && pacQ=1 && ((pac++))
+    [[ "$i" =~ ^-([DFRTUV]|-database|-files|-remove|-deptest|-upgrade)$ ]] && ((pac++))
+    [[ "$i" =~ ^-(w|-downloadonly)$ ]] && pacw=1
+    [[ "$i" =~ ^-([glp]|-groups|-list|-print)$ ]] && pacg=1
 done
 
 while true; do
@@ -1821,7 +1825,7 @@ while true; do
         --silent) silent=true; pacopts+=("--quiet"); auropts+=("--quiet") makeopts+=("--log");;
         -y|--refresh) refresh=1;;
         -h|--help) unset operation; (("$pac"==0)) && Usage;;
-        -v|--version) [[ "$pac" -eq 0 || "$1" = --version ]] && printf '%s\n' "pacaur $version" && exit 0;;
+        -v|--version) [[ "$pac" -eq 0 || "$1" = --version ]] && printf '%s\n' "pacaur $version" && exit "$E_OK";;
         --) shift; break;;
     esac
     shift
@@ -1850,20 +1854,21 @@ fi
 # sanity check
 [[ "$aur" ]] && unset refresh
 [[ "$pacS" && "$cleancache" ]] && unset search info upgrade
-[[ "$pac" -gt 1 ]] && Note "e" $"only one operation may be used at a time"
+[[ "$pac" -gt 1 ]] && Note "e" $"only one operation may be used at a time" "$E_FAIL"
 [[ "$operation" = sync && ! "$search" && ! "$info" && ! "$cleancache" && "$EUID" -eq 0 ]] &&
-    Note "e" $"you cannot perform this operation as root"
+    Note "e" $"you cannot perform this operation as root" "$E_ROOT"
 [[ "$pacS" && "$search" && "$info" ]] &&
-    Note "e" $"invalid option: '--info' and '--search' may not be used together"
+    Note "e" $"invalid option: '--info' and '--search' may not be used together" "$E_INVALID_OPTION"
 [[ "$(command -v "${editor%% *}")" ]] ||
-    Note "e" $"${colorW}\$VISUAL${reset} and ${colorW}\$EDITOR${reset} environment variables not set or defined ${colorW}editor${reset} not found"
+    Note "e" $"${colorW}\$VISUAL${reset} and ${colorW}\$EDITOR${reset} environment variables not set or defined ${colorW}editor${reset} not found" "$E_MISSING_FILE"
 [[ "$PACMAN" = "${0##*/}" ]] &&
-    Note "e" $"you cannot use ${colorW}pacaur${reset} as PACMAN environment variable"
-[[ -w "$clonedir" ]] || Note "e" $"${colorW}$clonedir${reset} does not have write permission"
+    Note "e" $"you cannot use ${colorW}pacaur${reset} as PACMAN environment variable" "$E_FAIL"
+[[ -w "$clonedir" ]] ||
+    Note "e" $"${colorW}$clonedir${reset} does not have write permission" "$E_FS_PERMISSIONS"
 [[ ! "${pkgs[*]}" && ! "${refresh}${upgrade}${cleancache}" && "$operation" =~ (sync|edit) ]] &&
-    Note "e" $"no targets specified (use -h for help)"
+    Note "e" $"no targets specified (use -h for help)" "$E_FAIL"
 [[ ! "${pkgs[*]}" && " ${pacmanarg[*]} " =~ ' '-[RU]' ' && ! " ${pacmanarg[*]} " =~ ' -h ' ]] &&
-    Note "e" $"no targets specified (use -h for help)"
+    Note "e" $"no targets specified (use -h for help)" "$E_FAIL"
 [[ "$repo" && "$aur" ]] && unset aur repo &&
     Note "w" $"invalid option: '--repo' and '--aur' may not be used together, disabling both"
 
@@ -1889,7 +1894,7 @@ case "$operation" in
                 exitaur=$?
             fi
             # exit code
-            [[ "$exitrepo" = 0 || "$exitaur" = 0 ]] && exit 0 || exit 1
+            [[ "$exitrepo" = 0 || "$exitaur" = 0 ]] && exit "$E_OK" || exit "$E_FAIL"
         # info (-Si, -i) handling
         elif [[ "$info" ]]; then
             if [[ ! "${pkgs[*]}" ]]; then
@@ -1918,7 +1923,7 @@ case "$operation" in
             [[ "${pkgs[*]}" ]] && ClassifyPkgs "${pkgs[@]}"
             if [[ ! "$aur" ]]; then
                 sudo "$pacmanbin" "${pacmanarg[@]}" "${pacopts[@]}" "${repopkgs[@]}"
-                (($?>0)) && [[ "$repo" ]] && exit 1
+                (($?>0)) && [[ "$repo" ]] && exit "$E_FAIL"
             fi
             if [[ "${aurpkgs[*]}" && ! "$aur" ]]; then
                 Note "w" $"Package(s) ${colorW}${aurpkgs[*]}${reset} not found in repositories, trying ${colorM}AUR${reset}..."
