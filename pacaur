@@ -386,11 +386,10 @@ FindDepsAur() {
 
     # workaround for limited RPC support of architecture dependent fields
     if [[ "${CARCH}" = 'i686' ]]; then
-        depspkgstmp=("${depspkgs[@]}")
-        for i in "${!depspkgstmp[@]}"; do
-            [[ "${depspkgstmp[$i]}" =~ ^(lib32-|gcc-multilib) ]] &&
-                depspkgs=($(printf '%s\n' "${depspkgs[@]}" | sed "s%^${depspkgstmp[$i]}$%%g"))
+        for i in "${!depspkgs[@]}"; do
+            [[ "${depspkgs[$i]}" =~ ^(lib32-|gcc-multilib) ]] && unset depspkgs[$i]
         done
+        depspkgs=($(printf '%s\n' "${depspkgs[@]}"))
     fi
 
     # remove versioning
@@ -413,8 +412,7 @@ FindDepsAur() {
         done
         # reorder devel
         depspkgs=($("$pacmanbin" -T -- "${depspkgs[@]}" | sort -u))
-        depspkgstmp=($(DiffArr 'depspkgs' 'vcsdepspkgs' '-3'))
-        depspkgs=($(printf '%s\n' "${depspkgstmp[@]}" | sort -u))
+        depspkgs=($(DiffArr 'depspkgs' 'vcsdepspkgs' '-3'))
     fi
 
     # split repo and AUR depends pkgs
@@ -881,7 +879,7 @@ ConflictChecks() {
 
         repoconflicts+=($(DiffArr 'repodepsprovides' 'allQconflicts' '-12'))
         repoconflicts+=($(DiffArr 'checkedrepodepsconflicts' 'allQprovides' '-12'))
-        repoconflicts=($(sort -u <<< "$(printf '%s\n' "${repoconflicts[@]}")"))
+        repoconflicts=($(printf '%s\n' "${repoconflicts[@]}" | sort -u))
     fi
 
     for i in "${repoconflicts[@]}"; do
