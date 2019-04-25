@@ -13,7 +13,7 @@ declare -r version="4.8.6"
 # sanitize
 unset aur asdeps asexplicit checkdeps cleancache ccount dcount devel edit info installpkg needed
 unset noconfirm nodeps noedit operation pac pacQ pacS pacg pacn pacw quiet readline rebuild refresh
-unset repo search upgrade vcs
+unset repo search upgrade var vcs
 
 # internationalization
 export LC_COLLATE=C
@@ -33,17 +33,11 @@ usercachedir="${XDG_CACHE_HOME:-${HOME}/.cache}/pacaur"
 tmpdir="${XDG_RUNTIME_DIR:-/tmp}"
 
 # preserve environment variables
-[[ "${PACMAN}" ]] && _PACMAN="${PACMAN}"
-[[ "${PKGDEST}" ]] && _PKGDEST="${PKGDEST}"
-[[ "${SRCDEST}" ]] && _SRCDEST="${SRCDEST}"
-[[ "${SRCPKGDEST}" ]] && _SRCPKGDEST="${SRCPKGDEST}"
-[[ "${LOGDEST}" ]] && _LOGDEST="${LOGDEST}"
-[[ "${BUILDDIR}" ]] && _BUILDDIR="${BUILDDIR}"
-[[ "${PKGEXT}" ]] && _PKGEXT="${PKGEXT}"
-[[ "${SRCEXT}" ]] && _SRCEXT="${SRCEXT}"
-[[ "${GPGKEY}" ]] && _GPGKEY="${GPGKEY}"
-[[ "${PACKAGER}" ]] && _PACKAGER="${PACKAGER}"
-[[ "${CARCH}" ]] && _CARCH="${CARCH}"
+var=('PACMAN' 'PKGDEST' 'SRCDEST' 'SRCPKGDEST' 'LOGDEST' 'BUILDDIR' 'PKGEXT' 'SRCEXT' 'GPGKEY'
+     'PACKAGER' 'CARCH')
+for i in "${var[@]}"; do
+    [[ "${!i}" ]] && declare _"$i"="${!i}"
+done
 
 # source makepkg variables
 if [[ -r "$MAKEPKG_CONF" ]]; then
@@ -58,17 +52,9 @@ else
 fi
 
 # restore environment variables
-PACMAN="${_PACMAN:-"$PACMAN"}"
-PKGDEST="${_PKGDEST:-"$PKGDEST"}"
-SRCDEST="${_SRCDEST:-"$SRCDEST"}"
-SRCPKGDEST="${_SRCPKGDEST:-"$SRCPKGDEST"}"
-LOGDEST="${_LOGDEST:-"$LOGDEST"}"
-BUILDDIR="${_BUILDDIR:-"$BUILDDIR"}"
-PKGEXT="${_PKGEXT:-"$PKGEXT"}"
-SRCEXT="${_SRCEXT:-"$SRCEXT"}"
-GPGKEY="${_GPGKEY:-"$GPGKEY"}"
-PACKAGER="${_PACKAGER:-"$PACKAGER"}"
-CARCH="${_CARCH:-"$CARCH"}"
+for i in "${vars[@]}"; do
+    j="_$i" && declare "$i"="${!j:-${!i}}" && unset j
+done
 
 # set default config variables
 editor="${VISUAL:-"${EDITOR:-vi}"}"         # build files editor
@@ -179,7 +165,6 @@ UpgradeAur() {
     fi
 
     # avoid possible duplicate
-    # TODO: unnecessary now that devel packages are only added if they aren't already there?
     aurpkgs=($(printf '%s\n' "${aurpkgs[@]}" | sort -u))
 
     NothingToDo "${aurpkgs[@]}"
@@ -429,7 +414,6 @@ FindDepsAur() {
             fi
         done
         # reorder devel
-        # TODO: this can probably be replaced by deptesting {,vcs}depspkgs and sorting at once
         depspkgs=($("$pacmanbin" -T -- "${depspkgs[@]}" | sort -u))
         depspkgstmp=($(DiffArr 'depspkgs' 'vcsdepspkgs' -v))
         depspkgstmp+=($(DiffArr 'vcsdepspkgs' 'depspkgs' -v))
