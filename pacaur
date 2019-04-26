@@ -51,8 +51,8 @@ else
 fi
 
 # restore environment variables
-for i in "${vars[@]}"; do
-    j="_$i" && declare "$i"="${!j:-${!i}}" && unset j
+for i in "${var[@]/#/_}"; do
+    declare "${i//_}"="${!i:-${!i//_}}"
 done
 
 # set default config variables
@@ -994,8 +994,7 @@ Prompt() {
     done
 
     if [[ "$(pacman-conf VerbosePkgLists)" ]]; then
-        straurname=$"AUR Packages  (${#deps[@]})"
-		strreponame=$"Repo Packages (${#repodepspkgs[@]})"
+        straurname=$"AUR Packages  (${#deps[@]})"; strreponame=$"Repo Packages (${#repodepspkgs[@]})"
         stroldver=$"Old Version"; strnewver=$"New Version"; strsize=$"Download Size"
         depsArepo=("${depsAname[@]/#/aur/}")
         lname="$(GetLength "${depsArepo[@]}" "${repodepsSrepo[@]}" "$straurname" "$strreponame")"
@@ -1484,7 +1483,7 @@ CheckUpdates() {
 }
 
 CleanCache() {
-    local i
+    local i cachepkgs
     cachedir=($(pacman-conf CacheDir))
     [[ "${cachedir[*]}" ]] && cachedir=("${cachedir[@]%/}") && PKGDEST="${PKGDEST%/}"
     if [[ "$PKGDEST" && ! " ${cachedir[*]} " =~ " $PKGDEST " ]]; then
@@ -1493,9 +1492,9 @@ CleanCache() {
         if [[ "$ccount" -eq 1 ]]; then
             if Proceed "y" $"Do you want to remove all other packages from AUR cache?"; then
                 printf "%s\n" $"removing old packages from cache..."
-                for i in $(basename -a "$PKGDEST"/* | sed "s%\(.*\)-.*%\1%g"); do
-                    pkgname="$(sed "s%\(.*\)-.*-.*%\1%g" <<< "$i")"
-                    [[ "$i" != "$(expac -Q '%n-%v' "$pkgname")" ]] && rm "${PKGDEST:?}/$i"-*
+                cachepkgs=("${PKGDEST:?}"/*); cachepkgs=("${cachepkgs[@]##*/}")
+                for i in "${cachepkgs[@]%-*}"; do
+                    [[ "$i" != "$(expac -Q '%n-%v' "${i%-*-*}")" ]] && rm "${PKGDEST:?}/$i"-*
                 done
             fi
         else
@@ -1529,7 +1528,7 @@ CleanCache() {
         fi
         printf "\n%s %s\n" $"AUR clone directory:" "$clonedir"
         if [[ "$ccount" -eq 1 ]]; then
-            foreignpkgsbase=($(expac -Q '%n %e' "$("$pacmanbin" -Qmq)" |
+            foreignpkgsbase=($(expac -Q '%n %e' $("$pacmanbin" -Qmq) |
                 awk '{if ($2 == "(null)") print $1; else print $2}'))
             # get target
             if [[ "${pkgs[*]}" ]]; then
