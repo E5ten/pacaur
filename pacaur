@@ -11,9 +11,9 @@ declare -r version="4.8.6"
 #
 
 # sanitize
-unset aur asdeps asexplicit checkdeps cleancache ccount dcount devel edit info installpkg needed
-unset noconfirm nodeps noedit operation pac pacQ pacS pacg pacn pacw quiet readline rebuild refresh
-unset repo search upgrade var vcs
+unset aur asdeps asexplicit checkdeps cleancache ccount dcount devel downloadonly edit info
+unset installpkg native needed noconfirm nodeps noedit noop operation pac pace pacQ pacS quiet
+unset readline rebuild refresh repo search upgrade var vcs ver
 
 # internationalization
 export LC_COLLATE=C
@@ -1080,7 +1080,7 @@ EditPkgs() {
     for i in "$@"; do
         [[ " ${cachedpkgs[*]} " =~ " $i " ]] && continue
         GetInstallScripts "$i"
-        if [[ ! "$edit" ]]; then
+        if [[ ! "$pace" ]]; then
             if [[ "$displaybuildfiles" = diff && -e "$clonedir/$i/.git/HEAD.prev" ]]; then
                 local prev="$(<"$clonedir/$i/.git/HEAD.prev")"
                 # show diff
@@ -1411,7 +1411,7 @@ CheckUpdates() {
 
     GetIgnoredPkgs
 
-    if [[ ! "$repo" && ! "$pacn" ]]; then
+    if [[ ! "$repo" && ! "$native" ]]; then
         [[ ! "${pkgs[*]}" ]] && foreignpkgs=($("$pacmanbin" -Qmq)) || foreignpkgs=("${pkgs[@]}")
         if [[ "${foreignpkgs[*]}" ]]; then
             SetJson "${foreignpkgs[@]}"
@@ -1776,15 +1776,6 @@ longopts_aur=('aur' 'by:' 'devel' 'edit' 'literal' 'noedit' 'rebuild' 'repo' 'rs
 parseopts "${shortopts}" "${longopts[@]}" "${longopts_aur[@]}" -- "$@" || exit "$E_INVALID_OPTION"
 set -- "${OPTRET[@]}"
 
-for i in "${OPTRET[@]}"; do
-    [[ "$i" =~ ^--$ ]] && break
-    [[ "$i" =~ ^-(S|-sync)$ ]] && pacS=1 && operation=sync && ((pac++))
-    [[ "$i" =~ ^-(Q|-query)$ ]] && pacQ=1 && ((pac++))
-    [[ "$i" =~ ^-([DFRTUV]|-database|-files|-remove|-deptest|-upgrade)$ ]] && ((pac++))
-    [[ "$i" =~ ^-(w|-downloadonly)$ ]] && pacw=1
-    [[ "$i" =~ ^-([glp]|-groups|-list|-print)$ ]] && pacg=1
-done
-
 while true; do
     [[ "$1" = -[cdf-qs-zDFQRSTUV] ]] && pacmanarg+=("$1")
     for i in "${longopts[@]}"; do
@@ -1792,14 +1783,15 @@ while true; do
         [[ "$1": = "--$i" ]] && pacopts+=("$1=$2")
     done
     case "$1" in
-        -S|--sync) [[ "$pacw" ]] || installpkg=1 && [[ "$pacg" ]] && unset operation;;
+        -S|--sync) pacS=1; installpkg=1; operation=sync; ((pac++));;
+        -Q|--query) pacQ=1; ((pac++));;
         -s|--search) search=1;;
         -i|--info) info=1;;
-        -e|--edit) [[ "$pacQ" ]] && pacopts+=("-e"); edit=1; (("$pac"==0)) && operation=edit;;
-        -u|--upgrades|--sysupgrade) [[ "$pacQ" ]] && operation=upgrades; upgrade=1; installpkg=1;;
+        -e|--edit) pace=1;;
+        -u|--upgrades|--sysupgrade) upgrade=1; installpkg=1;;
         -q|--quiet) quiet=1; auropts+=("$1");;
         -c|--clean) cleancache=1 && ((ccount++));;
-        -n|--native) pacn=1;;
+        -n|--native) native=1;;
         -r|--repo) repo=1;;
         -a|--aur) aur=1;;
         --ignore) ignoredpkgs+=("$2"); shift;;
@@ -1810,19 +1802,29 @@ while true; do
         --rsort) sortorder="descending"; sortby="$2"; shift;;
         -d|--nodeps) nodeps=1; makeopts+=("$1"); ((dcount++));;
         --assume-installed) assumeinstalled+=("$2"); shift;;
+        -[DFRTUV]|--@(database|files|remove|deptest|upgrade)) ((pac++));;
         --@(asdeps|asexplicit|devel|needed|noconfirm|noedit|rebuild)) declare "${1/--}"=1;;
+        -[glp]|--@(groups|list|print)) noop=1;;
+        -w|--downloadonly) downloadonly=1;;
         --silent) silent=true; pacopts+=("--quiet"); auropts+=("--quiet") makeopts+=("--log");;
         -y|--refresh) refresh=1;;
-        -h|--help) unset operation; (("$pac"==0)) && Usage;;
-        -v|--version) [[ "$pac" -eq 0 || "$1" = --version ]] && printf '%s\n' "pacaur $version" && exit "$E_OK";;
+        -h|--help) help=1;;
+        --version) operation=version; ((pac++));;
+        -v) ver=1;;
         --) shift; break;;
     esac
     shift
 done
 
+# help or version
+[[ "$operation" = version ]] || [[ "$pac" -eq 0 && "$ver" ]] && printf '%s\n' "pacaur $version" && exit "$E_OK"
+[[ "$pac" -eq 0 && "$help" ]] && Usage
+
 # sorting
-[[ "$sortorder" = ascending ]] && auropts+=("--sort=$sortby")
-[[ "$sortorder" = descending ]] && auropts+=("--rsort=$sortby")
+case "$sortorder" in
+    ascending)  auropts+=("--sort=$sortby");;
+    descending) auropts+=("--rsort=$sortby");;
+esac
 
 # packages
 pkgs=("$@")
@@ -1842,6 +1844,11 @@ fi
 
 # sanity check
 [[ "$aur" ]] && unset refresh
+[[ "$pac" -eq 0 && "$pace" ]] && operation=edit
+[[ "$pacQ" && "$pace" ]] && pacopts+=("-e")
+[[ "$pacQ" && "$upgrade" ]] && operation=upgrades
+[[ "$pacS" && "$downloadonly" ]] && unset installpkg
+[[ "$pacS" && "$noop" ]] && unset operation
 [[ "$pacS" && "$cleancache" ]] && unset search info upgrade
 [[ "$pac" -gt 1 ]] && Note "e" $"only one operation may be used at a time" "$E_FAIL"
 [[ "$operation" = sync && ! "$search" && ! "$info" && ! "$cleancache" && "$EUID" -eq 0 ]] &&
