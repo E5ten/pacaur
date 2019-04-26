@@ -1300,9 +1300,9 @@ MakePkgs() {
             if [[ "$builtpkg" ]]; then
                 if [[ " ${aurdepspkgs[*]} " =~ " $j " || "$installpkg" ]]; then
                     Note "i" $"Installing ${colorW}$j${reset} cached package..."
-                    sudo "$pacmanbin" -U --ask 36 "${pacopts[@]/--quiet}" --noconfirm -- "$builtpkg"
+                    sudo "$pacmanbin" -U --ask 36 ${pacopts[@]/--quiet} --noconfirm -- "$builtpkg"
                     [[ " ${aurpkgs[*]} " =~ " $j " ]] ||
-                        sudo "$pacmanbin" -D "$j" --asdeps "${pacopts[@]}" &>/dev/null
+                        sudo "$pacmanbin" -D "$j" --asdeps ${pacopts[@]} &>/dev/null
                 else
                     Note "w" $"Package ${colorW}$j${reset} already available in cache"
                 fi
@@ -1350,7 +1350,7 @@ MakePkgs() {
         # install
         if [[ "$installpkg" || ! "${builtpkgs[*]}" ]]; then
             Note "i" $"Installing ${colorW}${pkgsdeps[$i]}${reset} package(s)..."
-            sudo "$pacmanbin" -U --ask 36 "${pacopts[@]/--quiet}" --noconfirm -- "${builtdepspkgs[@]}" "${builtpkgs[@]}"
+            sudo "$pacmanbin" -U --ask 36 ${pacopts[@]/--quiet} --noconfirm -- ${builtdepspkgs[@]} ${builtpkgs[@]}
         fi
 
         # set dep status
@@ -1400,86 +1400,6 @@ MakePkgs() {
         exit "$E_PACKAGE_FAILED"
     fi
     [[ "${errinstall[*]}" ]] && exit  "$E_INSTALL_FAILED"
-}
-
-CheckUpdates() {
-    local i j json foreignpkgs foreignpkgsbase aurpkgsQood aurpkgsAname aurpkgsAver aurpkgsQver
-    local aurpkgsQignore aurdevelpkgsAver aurdevelpkgsQver aurpkgsQoodAver
-    # global aur repo
-
-    [[ ! "$aur" ]] && "$pacmanbin" "${pacmanarg[@]}" "${pacopts[@]}"; exitrepo=$?
-
-    GetIgnoredPkgs
-
-    if [[ ! "$repo" && ! "$native" ]]; then
-        [[ ! "${pkgs[*]}" ]] && foreignpkgs=($("$pacmanbin" -Qmq)) || foreignpkgs=("${pkgs[@]}")
-        if [[ "${foreignpkgs[*]}" ]]; then
-            SetJson "${foreignpkgs[@]}"
-            aurpkgsAname=($(GetJson "$json" "Name"))
-            aurpkgsAver=($(GetJson "$json" "Version"))
-            aurpkgsQver=($(expac -Q '%v' "${aurpkgsAname[@]}"))
-            for i in "${!aurpkgsAname[@]}"; do
-                [[ "$(vercmp "${aurpkgsAver[$i]}" "${aurpkgsQver[$i]}")" -gt 0 ]] &&
-                    aurpkgsQood+=("${aurpkgsAname[$i]}");
-            done
-        fi
-
-        # add devel packages
-        if [[ "$devel" ]]; then
-            if [[ ! "$needed" ]]; then
-                for i in "${foreignpkgs[@]}"; do
-                    [[ "$i" =~ $vcs ]] && aurpkgsQood+=("$i")
-                done
-            else
-                foreignpkgsbase=($(expac -Q '%n %e' "${foreignpkgs[@]}" |
-                    awk '{if ($2 == "(null)") print $1; else print $2}'))
-                foreignpkgsnobase=($(expac -Q '%n' "${foreignpkgs[@]}"))
-                for i in "${!foreignpkgsbase[@]}"; do
-                    if [[ "${foreignpkgsbase[$i]}" =~ $vcs ]]; then
-                        [[ ! -d "$clonedir/${foreignpkgsbase[$i]}" ]] &&
-                            DownloadPkgs "${foreignpkgsbase[$i]}" &>/dev/null
-                        cd_safe "$clonedir/${foreignpkgsbase[$i]}"
-                        # silent extraction and pkgver update only
-                        makepkg -od --noprepare --skipinteg &>/dev/null
-                        # retrieve updated version
-                        mapfile -t -d'-' j <<< "$(makepkg --packagelist)"
-                        aurdevelpkgsAver="${j[-3]}-${j[-2]}" && unset j
-                        read -rd' ' <<< "$(expac -Qs '%v' "^${foreignpkgsbase[$i]}$")" aurdevelpkgsQver
-                        [[ "$(vercmp "$aurdevelpkgsQver" "$aurdevelpkgsAver")" -ge 0 ]] ||
-                            aurpkgsQood+=("${foreignpkgsnobase[$i]}") &&
-                            aurpkgsQoodAver+=("$aurdevelpkgsAver")
-                    fi
-                done
-            fi
-        fi
-
-        if [[ "${aurpkgsQood[*]}" && ! "$quiet" ]]; then
-            SetJson "${aurpkgsQood[@]}"
-            aurpkgsAname=($(GetJson "$json" "Name"))
-            aurpkgsAname=($(expac -Q '%n' "${aurpkgsAname[@]}"))
-            aurpkgsAver=($(GetJson "$json" "Version"))
-            aurpkgsQver=($(expac -Q '%v' "${aurpkgsAname[@]}"))
-            for i in "${!aurpkgsAname[@]}"; do
-                if [[ "${aurpkgsAname[$i]}" =~ $vcs ]]; then
-                    [[ ! "$needed" ]] && aurpkgsAver[$i]=$"latest" || aurpkgsAver[$i]="${aurpkgsQoodAver[$i]}"
-                fi
-            done
-        fi
-    fi
-
-    if [[ "${aurpkgsQood[*]}" ]]; then
-        exitaur=$?
-        if [[ ! "$quiet" ]]; then
-            for i in "${!aurpkgsAname[@]}"; do
-                [[ "${ignoredpkgs[*]}" =~ "${aurpkgsAname[$i]}" ]] && aurpkgsQignore[$i]=$"[ignored]"
-                printf "${colorW}%s${reset} ${colorG}%s${reset} -> ${colorG}%s${reset} %s\n" "${aurpkgsAname[$i]}" "${aurpkgsQver[$i]}" "${aurpkgsAver[$i]}" "${aurpkgsQignore[$i]}"
-            done
-        else
-            printf '%s\n' "${aurpkgsQood[@]}" | sort -u
-        fi
-    fi
-    # exit code
-    [[ "$exitrepo" = 0 || "$exitaur" = 0 ]] && exit "$E_OK" || exit "$E_FAIL"
 }
 
 CleanCache() {
@@ -1866,7 +1786,7 @@ fi
 [[ ! "${pkgs[*]}" && " ${pacmanarg[*]} " =~ ' '-[RU]' ' && ! " ${pacmanarg[*]} " =~ ' -h ' ]] &&
     Note "e" $"no targets specified (use -h for help)" "$E_FAIL"
 [[ "$repo" && "$aur" ]] && unset aur repo &&
-    Note "w" $"invalid option: '--repo' and '--aur' may not be used together, disabling both"
+    Note "w" $"invalid option: '-r/--repo' and '-a/--aur' may not be used together, disabling both"
 
 # operations
 case "$operation" in
@@ -1879,14 +1799,14 @@ case "$operation" in
         if [[ "$search" ]]; then
             if [[ ! "$aur" ]]; then
                 if [[ "$refresh" ]]; then
-                    sudo "$pacmanbin" "${pacmanarg[@]}" "${pacopts[@]}" -- "${pkgs[@]}"
+                    sudo "$pacmanbin" ${pacmanarg[@]} ${pacopts[@]} -- ${pkgs[@]}
                 else
-                    "$pacmanbin" "${pacmanarg[@]}" "${pacopts[@]}" -- "${pkgs[@]}"
+                    "$pacmanbin" ${pacmanarg[@]} ${pacopts[@]} -- ${pkgs[@]}
                 fi
                 exitrepo=$?
             fi
             if [[ ! "$repo" ]]; then
-                auracle search "${auropts[@]}" -- "${pkgs[@]}"
+                auracle search ${auropts[@]} -- ${pkgs[@]}
                 exitaur=$?
             fi
             # exit code
@@ -1894,31 +1814,31 @@ case "$operation" in
         # info (-Si, -i) handling
         elif [[ "$info" ]]; then
             if [[ ! "${pkgs[*]}" ]]; then
-                "$pacmanbin" "${pacmanarg[@]}" "${pacopts[@]}"
+                "$pacmanbin" ${pacmanarg[@]} ${pacopts[@]}
             else
                 ClassifyPkgs "${pkgs[@]}"
             fi
             if [[ "${repopkgs[*]}" ]]; then
                 [[ "$refresh" ]] &&
-                    sudo "$pacmanbin" "${pacmanarg[@]}" "${pacopts[@]}" "${repopkgs[@]}"
+                    sudo "$pacmanbin" ${pacmanarg[@]} ${pacopts[@]} ${repopkgs[@]}
                 [[ ! "$refresh" ]] &&
-                    "$pacmanbin" "${pacmanarg[@]}" "${pacopts[@]}" "${repopkgs[@]}"
+                    "$pacmanbin" ${pacmanarg[@]} ${pacopts[@]} ${repopkgs[@]}
             fi
             if [[ "${aurpkgs[*]}" ]]; then
-                [[ "$refresh" && ! "${repopkgs[*]}" ]] && sudo "$pacmanbin" -Sy "${pacopts[@]}"
+                [[ "$refresh" && ! "${repopkgs[*]}" ]] && sudo "$pacmanbin" -Sy ${pacopts[@]}
                 [[ ! "$aur" ]] &&
                     Note "w" $"Package(s) ${colorW}${aurpkgs[*]}${reset} not found in repositories, trying ${colorM}AUR${reset}..."
                 auracle info "${auropts[@]}" -- "${aurpkgs[@]}"
             fi
         # clean (-Sc) handling
         elif [[ "$cleancache" ]]; then
-            [[ ! "$aur" ]] && sudo "$pacmanbin" "${pacmanarg[@]}" "${pacopts[@]}" "${repopkgs[@]}"
+            [[ ! "$aur" ]] && sudo "$pacmanbin" ${pacmanarg[@]} ${pacopts[@]} ${repopkgs[@]}
             [[ ! "$repo" ]] && CleanCache "${pkgs[@]}"
         # sysupgrade (-Su, -u) handling
         elif [[ "$upgrade" ]]; then
             [[ "${pkgs[*]}" ]] && ClassifyPkgs "${pkgs[@]}"
             if [[ ! "$aur" ]]; then
-                sudo "$pacmanbin" "${pacmanarg[@]}" "${pacopts[@]}" "${repopkgs[@]}"
+                sudo "$pacmanbin" ${pacmanarg[@]} ${pacopts[@]} ${repopkgs[@]}
                 (($?>0)) && [[ "$repo" ]] && exit "$E_FAIL"
             fi
             if [[ "${aurpkgs[*]}" && ! "$aur" ]]; then
@@ -1928,27 +1848,37 @@ case "$operation" in
         # sync (-S, -y), downloadonly (-Sw, -m), refresh (-Sy)
         else
             if [[ ! "${pkgs[*]}" ]]; then
-                sudo "$pacmanbin" "${pacmanarg[@]}" "${pacopts[@]}"
+                sudo "$pacmanbin" ${pacmanarg[@]} ${pacopts[@]}
             else
                 ClassifyPkgs "${pkgs[@]}"
             fi
             [[ "${repopkgs[*]}" ]] &&
-                sudo "$pacmanbin" "${pacmanarg[@]}" "${pacopts[@]}" "${repopkgs[@]}"
+                sudo "$pacmanbin" ${pacmanarg[@]} ${pacopts[@]} ${repopkgs[@]}
             if [[ "${aurpkgs[*]}" ]]; then
-                [[ "$refresh" && ! "${repopkgs[*]}" ]] && sudo "$pacmanbin" -Sy "${pacopts[@]}"
+                [[ "$refresh" && ! "${repopkgs[*]}" ]] && sudo "$pacmanbin" -Sy ${pacopts[@]}
                 [[ ! "$aur" ]] && Note "w" $"Package(s) ${colorW}${aurpkgs[*]}${reset} not found in repositories, trying ${colorM}AUR${reset}..."
                 Core
             fi
         fi
         exit;;
-    upgrades) CheckUpdates "${pkgs[@]}";; # upgrades (-Qu) handling
+    upgrades) # upgrades (-Qu) handling
+        [[ "$aur" ]] || "$pacmanbin" ${pacmanarg[@]} ${pacopts[@]} -- ${pkgs[@]}; exitrepo=$?
+        if [[ ! "$repo" && ! "$native" ]]; then
+            if [[ ! "${pkgs[*]}" ]]; then
+                auracle sync ${auropts[@]} $("$pacmanbin" -qm ${pacmanarg[@]//-u} ${pacopts[@]//--upgrades})
+            else
+                auracle sync ${auropts[@]} -- ${pkgs[@]}
+            fi
+            exitaur=$?
+        fi
+        [[ "$exitrepo" = 0 || "$exitaur" = 0 ]] && exit "$E_OK" || exit "$E_FAIL";;
     *) if [[ " ${pacmanarg[*]} " =~ ' -F ' && " ${pacmanarg[*]} " =~ ' -y ' ]]; then
-            sudo "$pacmanbin" "${pacmanarg[@]}" "${pacopts[@]}" -- "${pkgs[@]}"
+            sudo "$pacmanbin" ${pacmanarg[@]} ${pacopts[@]} -- ${pkgs[@]}
         elif [[ ! "${pkgs[*]}" ]] ||
             [[ " ${pacmanarg[*]} " =~ ' '-[DFQTglp]' ' && ! "${asdeps}${asexplicit}" ]]; then
-            "$pacmanbin" "${pacmanarg[@]}" "${pacopts[@]}" -- "${pkgs[@]}"
+            "$pacmanbin" ${pacmanarg[@]} ${pacopts[@]} -- ${pkgs[@]}
         else
-            sudo "$pacmanbin" "${pacmanarg[@]}" "${pacopts[@]}" -- "${pkgs[@]}"
+            sudo "$pacmanbin" ${pacmanarg[@]} ${pacopts[@]} -- ${pkgs[@]}
         fi
         exit;; # others operations handling
 esac
