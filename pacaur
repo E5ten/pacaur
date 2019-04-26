@@ -295,12 +295,16 @@ DepsSolver() {
                     [[ "$j" = "${errdepsnover[$i]}" ]] && break
                 done
                 # reverse deps order
-                tsorterrdeps=($(awk '{for (i=NF;i>=1;i--) print $i}' <<< "${tsorterrdeps[@]}" |
-                    awk -F "\n" '{print}'))
+                for i in "${!tsorterrdeps[@]}"; do
+                    tsorterrdepsrev[$i]="${tsorterrdeps[-(($i+1))]}"
+                done
+                tsorterrdeps=("${tsorterrdepsrev[@]}") && unset tsorterrdepsrev
                 errdepslist+=("${tsorterrdeps[0]}")
                 FindDepsAurError "${tsorterrdeps[@]}"
-                errdepslist=($(awk '{for (i=NF;i>=1;i--) print $i}' <<< "${errdepslist[@]}" |
-                    awk -F "\n" '{print}'))
+                for i in "${!errdepslist[@]}"; do
+                    errdepslistrev[$i]="${errdepslist[-(($i+1))]}"
+                done
+                errdepslist=("${errdepslistrev[@]}") && unset errdepslistrev
                 Note "f" $"no results found for ${errdeps[$i]} (dependency tree: ${errdepslist[*]})"
             fi
         done
@@ -976,8 +980,8 @@ Prompt() {
             sumk="$((sumk + "${binaryksize[$i]}"))"
             summ="$((summ + "${binarymsize[$i]}"))"
         done
-        sumk="$(awk '{ printf("%.2f\n", $1/$2) }' <<< "$sumk 1048576")"
-        summ="$(awk '{ printf("%.2f\n", $1/$2) }' <<< "$summ 1048576")"
+        sumk="$((sumk / 1048576)).$((sumk / 1024 % 1024 * 100 / 1024))"
+        summ="$((summ / 1048576)).$((summ / 1024 % 1024 * 100 / 1024))"
     fi
 
     # cached packages check
@@ -1010,7 +1014,7 @@ Prompt() {
 
         if [[ "${repodepspkgs[*]}" ]]; then
             for i in "${!repodepspkgs[@]}"; do
-                binarysize[$i]="$(awk '{ printf("%.2f\n", $1/$2) }' <<< "${binaryksize[$i]} 1048576")"
+                binarysize[$i]="$((binaryksize[$i] / 1048576)).$((binaryksize[$i] / 1024 % 1024 * 100 / 1024))"
             done
             printf "\n${colorW}%-${lname}s  %-${lver}s  %-${lver}s  %s${reset}\n\n" "$strreponame" "$stroldver" "$strnewver" "$strsize"
             for i in "${!repodepspkgs[@]}"; do
@@ -1185,13 +1189,19 @@ MakePkgs() {
         sed 's/^,//g;s/,$//g'))
 
     # reverse deps order
-    basepkgs=($(awk '{for (i=NF;i>=1;i--) print $i}' <<< "${basepkgs[@]}" | awk -F "\n" '{print}'))
-    pkgsdeps=($(awk '{for (i=NF;i>=1;i--) print $i}' <<< "${pkgsdeps[@]}" | awk -F "\n" '{print}'))
+    for i in "${!basepkgs[@]}"; do
+        basepkgsrev[$i]="${basepkgs[-(($i+1))]}"
+    done
+    basepkgs=("${basepkgsrev[@]}") && unset basepkgsrev
+    for i in "${!pkgsdeps[@]}"; do
+        pkgsdepsrev[$i]="${pkgsdeps[-(($i+1))]}"
+    done
+    pkgsdeps=("${pkgsdepsrev[@]}") && unset pkgsdepsrev
 
     # integrity check
     for i in "${!basepkgs[@]}"; do
         # get split packages list
-        pkgsdepslist=($(awk -F "," '{for (k=1;k<=NF;k++) print $k}' <<< "${pkgsdeps[$i]}"))
+        mapfile -t -d',' pkgsdepslist <<< "${pkgsdeps[$i]}"
 
         # cache check
         unset builtpkg
@@ -1261,7 +1271,7 @@ MakePkgs() {
     # main
     for i in "${!basepkgs[@]}"; do
         # get split packages list
-        pkgsdepslist=($(awk -F "," '{for (k=1;k<=NF;k++) print $k}' <<< "${pkgsdeps[$i]}"))
+        mapfile -t -d',' pkgsdepslist <<< "${pkgsdeps[$i]}"
 
         cd_safe "$clonedir/${basepkgs[$i]}"
         # retrieve updated version
