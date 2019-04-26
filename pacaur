@@ -930,7 +930,8 @@ ReinstallChecks() {
                 Note "w" $"${colorW}${depsAname[$i]}-${depsQver[$i]}${reset} is up to date -- reinstalling"
             else
                 Note "w" $"${colorW}${depsAname[$i]}-${depsQver[$i]}${reset} is up to date -- skipping"
-                deps=($(printf '%s\n' "${deps[@]}" | sed "s/^${depsAname[$i]}$//g"))
+                mapfile -t deps <<< "$(printf ' %s \n' "${deps[@]}")"
+                deps=($(printf '%s\n' "${deps[@]// ${depsAname[$i]} /}"))
                 unset "depsAname[$i]" "depsQver[$i]" "depsAver[$i]" "depsAood[$i]" "depsAmain[$i]"
             fi
         fi
@@ -1264,7 +1265,7 @@ MakePkgs() {
 
         cd_safe "$clonedir/${basepkgs[$i]}"
         # retrieve updated version
-        mapfile -t -d'-' k <<< "$(makepkg --packagelist)" && aurdevelpkgsAver="${k[1]}-${k[2]}"
+        mapfile -t -d'-' k <<< "$(makepkg --packagelist)" && aurdevelpkgsAver="${k[-3]}-${k[-2]}"
         unset k
         # build devel if necessary only (supported protocols only)
         if [[ "${basepkgs[$i]}" =~ $vcs ]]; then
@@ -1433,7 +1434,7 @@ CheckUpdates() {
                         makepkg -od --noprepare --skipinteg &>/dev/null
                         # retrieve updated version
                         mapfile -t -d'-' j <<< "$(makepkg --packagelist)"
-                        aurdevelpkgsAver="${j[1]}-${j[2]}" && unset j
+                        aurdevelpkgsAver="${j[-3]}-${j[-2]}" && unset j
                         read -rd' ' <<< "$(expac -Qs '%v' "^${foreignpkgsbase[$i]}$")" aurdevelpkgsQver
                         [[ "$(vercmp "$aurdevelpkgsQver" "$aurdevelpkgsAver")" -ge 0 ]] ||
                             aurpkgsQood+=("${foreignpkgsnobase[$i]}") &&
