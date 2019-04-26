@@ -278,7 +278,7 @@ DepsSolver() {
     depsAmain=($(GetJson "$json" "Maintainer"))
     for i in "${!depsAname[@]}"; do
         read -rd' ' <<< "$(expac -Qs '%v' "^${depsAname[$i]}$")" depsQver[$i]
-        [[ "${depsQver[$i]}" ]] || depsQver[$i]="#"  # avoid empty elements shift
+        [[ "${depsQver[$i]}" ]] || depsQver[$i]="%"  # avoid empty elements shift
         [[ "${depsAname[$i]}" =~ $vcs ]] && depsAver[$i]=$"latest"
     done
 
@@ -924,7 +924,7 @@ ReinstallChecks() {
     for i in "${!depsAtmp[@]}"; do
         [[ ! " ${aurpkgs[*]} " =~ " ${depsAname[$i]} " ]] ||
             [[ " ${aurconflictingpkgs[*]} " =~ " ${depsAname[$i]} " ]] && continue
-        [[ ! "${depsQver[$i]}" || "${depsQver[$i]}" = '#' ]] ||
+        [[ ! "${depsQver[$i]}" || "${depsQver[$i]}" = '%' ]] ||
             [[ "$(vercmp "${depsAver[$i]}" "${depsQver[$i]}")" -gt 0 ]] && continue
         [[ ! "$installpkg" && ! " ${aurdepspkgs[*]} " =~ " ${depsAname[$i]} " ]] && continue
         if [[ "${depsAname[$i]}" =~ $vcs ]]; then
@@ -1003,7 +1003,7 @@ Prompt() {
 
         # local version column cleanup
         for i in "${!deps[@]}"; do
-            [[ "${depsQver[$i]}" =~ '#' ]] && unset depsQver[$i]
+            [[ "${depsQver[$i]}" =~ '%' ]] && unset depsQver[$i]
         done
         # show detailed output
         printf "\n${colorW}%-${lname}s  %-${lver}s  %-${lver}s${reset}\n\n" "$straurname" "$stroldver" "$strnewver"
@@ -1158,7 +1158,7 @@ EditPkgs() {
 MakePkgs() {
     local i j k oldorphanpkgs neworphanpkgs orphanpkgs oldoptionalpkgs newoptionalpkgs optionalpkgs
     local errinstall pkgsdepslist vcsclients vcschecked aurdevelpkgsAver aurdevelpkgsQver
-    local builtpkgs builtdepspkgs basepkgsupdate checkpkgsdepslist isaurdeps makedeps
+    local builtpkgs builtdepspkgs basepkgsupdate checkpkgsdepslist deplist isaurdeps makedeps
     # global deps basepkgs sudoloop pkgsbase pkgsdeps aurpkgs aurdepspkgs builtpkg errmakepkg json
     # global repoprovidersconflictingpkgs
 
@@ -1182,10 +1182,10 @@ MakePkgs() {
             [[ "${pkgsbase[$i]}" = "${pkgsbase[$j]}" && ! " ${pkgsdeps[*]} " =~ " ${deps[$j]} " ]] &&
                 pkgsdeps+=("${deps[$j]}")
         done
-        pkgsdeps+=("#")
+        pkgsdeps+=("%")
     done
-    pkgsdeps=($(sed 's/ # /\n/g' <<< "${pkgsdeps[@]}" | tr -d '#' | sed '/^ $/d' | tr ' ' ',' |
-        sed 's/^,//g;s/,$//g'))
+    deplist="${pkgsdeps[@]}"; deplist="${deplist// % /|}"; deplist="${deplist//%}"
+    deplist="${deplist// /,}"; deplist="${deplist//|/ }"; pkgsdeps=($(printf '%s\n' ${deplist}))
 
     # reverse deps order
     for i in "${!basepkgs[@]}"; do
@@ -1306,11 +1306,11 @@ MakePkgs() {
                 else
                     Note "w" $"Package ${colorW}$j${reset} already available in cache"
                 fi
-                pkgsdeps=($(printf '%s\n' "${pkgsdeps[@]}" | sed "s/^$j,//g;s/,$j$//g;s/,$j,/,/g;s/^$j$/#/g"))
+                pkgsdeps=($(printf '%s\n' "${pkgsdeps[@]}" | sed "s/^$j,//g;s/,$j$//g;s/,$j,/,/g;s/^$j$/%/g"))
                 continue
             fi
         done
-        [[ "${pkgsdeps[$i]}" = '#' ]] && continue
+        [[ "${pkgsdeps[$i]}" = '%' ]] && continue
 
         # build
         Note "i" $"Building ${colorW}${pkgsdeps[$i]}${reset} package(s)..."
