@@ -180,7 +180,7 @@ IgnoreChecks() {
     # check targets
     SetJson "${aurpkgsnover[@]}"
     checkaurpkgs=($(GetJson "$json" "Name"))
-    errdeps=($(comm -3 <(printf '%s\n' "${aurpkgs[@]}") <(printf '%s\n' "${checkaurpkgs[@]}")))
+    errdeps=($(CommArr 'aurpkgs' 'checkaurpkgs' '-3'))
     unset aurpkgsnover
 
     checkaurpkgsAver=($(GetJson "$json" "Version"))
