@@ -111,7 +111,7 @@ ClassifyPkgs() {
             noaurpkgs+=("$i")
         done
         [[ "${noaurpkgs[*]}" ]] &&
-            mapfile -t norepopkgs <<< "$(expac -Sv '' -- "${noaurpkgs[@]}" 2>&1 >/dev/null)" &&
+            mapfile -t norepopkgs < <(expac -Sv '' -- "${noaurpkgs[@]}" 2>&1 >/dev/null) &&
             norepopkgs=("${norepopkgs[@]#error: package \`}") &&
             norepopkgs=("${norepopkgs[@]%\' not found}")
         for i in "${norepopkgs[@]}"; do
@@ -154,7 +154,7 @@ UpgradeAur() {
     done
 
     # use auracle to find out of date AUR packages
-    mapfile -t aurpkgs <<< "$(auracle sync -q)"
+    mapfile -t aurpkgs < <(auracle sync -q)
 
     # add devel packages
     if [[ "$devel" ]]; then
@@ -279,7 +279,7 @@ DepsSolver() {
     depsAood=($(GetJson "$json" "OutOfDate"))
     depsAmain=($(GetJson "$json" "Maintainer"))
     for i in "${!depsAname[@]}"; do
-        read -rd' ' <<< "$(expac -Qs '%v' "^${depsAname[$i]}$")" depsQver[$i]
+        read -rd' ' < <(expac -Qs '%v' "^${depsAname[$i]}$") depsQver[$i]
         [[ "${depsQver[$i]}" ]] || depsQver[$i]="%"  # avoid empty elements shift
         [[ "${depsAname[$i]}" =~ $vcs ]] && depsAver[$i]=$"latest"
     done
@@ -411,7 +411,7 @@ FindDepsAur() {
         # check providers
         unset vcsdepspkgs
         for i in "${!depspkgs[@]}"; do
-            unset j && read -rd' ' <<< "$(expac -Qs '%n %P' "^${depspkgs[$i]}$")" j
+            unset j && read -rd' ' < <(expac -Qs '%n %P' "^${depspkgs[$i]}$") j
             if [[ "$j" ]]; then
                 depspkgs[$i]="$j"
                 [[ "$devel" && ! " ${ignoredpkgs[*]} " =~ " $j " && "$j" =~ $vcs ]] &&
@@ -446,7 +446,7 @@ FindDepsAur() {
             depspkgs=($(CommArr 'assumeinstalled' 'depspkgs' '-13'))
         fi
         if [[ "${depspkgs[*]}" ]]; then
-            mapfile -t depspkgsaur <<< "$(expac -Sv '' -- "${depspkgs[@]%%[><=]*}" 2>&1)" &&
+            mapfile -t depspkgsaur < <(expac -Sv '' -- "${depspkgs[@]%%[><=]*}" 2>&1) &&
             depspkgsaur=("${depspkgsaur[@]#error: package \`}") &&
             depspkgsaur=("${depspkgsaur[@]%\' not found}")
             repodeps+=($(CommArr 'depspkgsaur' 'depspkgs' '-13'))
@@ -563,7 +563,7 @@ FindDepsRepo() {
     [[ "${repodeps[*]}" ]] || return
 
     # reduce root binary deps
-    repodeps=($(sort -u <<< "$(printf '%s\n' "${repodeps[@]}")"))
+    repodeps=($(sort -u < <(printf '%s\n' "${repodeps[@]}")))
 
     # add initial repodeps
     [[ "${repodepspkgs[*]}" ]] || repodepspkgs=("${repodeps[@]}")
@@ -821,7 +821,7 @@ ConflictChecks() {
 
         for j in "${aurAconflicts[@]}"; do
             unset k Aprovides
-            read -rd' ' <<< "$(expac -Qs '%n %P' "^$i$")" k
+            read -rd' ' < <(expac -Qs '%n %P' "^$i$") k
             [[ ! "$installpkg" && ! " ${aurdepspkgs[*]} " =~ " $j " ]] && continue # download only
             [[ "$j" = "$k" || ! "$k" ]] && continue # skip if reinstalling or if no conflict exists
 
@@ -832,7 +832,7 @@ ConflictChecks() {
                     aurconflictingpkgsrm+=("$k")
                     for l in "${!depsAname[@]}"; do
                         [[ " ${depsAname[$l]} " =~ "$k" ]] &&
-                            read -rd' ' <<< "$(expac -Qs '%v' "^$k$")" depsQver[$l]
+                            read -rd' ' < <(expac -Qs '%v' "^$k$") depsQver[$l]
                     done
                     Aprovides+=($(GetJson "$json" "Provides" "$j"))
                     # remove AUR versioning
@@ -894,8 +894,8 @@ ConflictChecks() {
 
     for i in "${repoconflicts[@]}"; do
         unset Qprovides
-        unset j && read -rd' ' <<< "$(expac -Ss '%n %C %S' "^$i$")" j
-        unset k && read -rd' ' <<< "$(expac -Qs '%n %C %S' "^$i$")" k
+        unset j && read -rd' ' < <(expac -Ss '%n %C %S' "^$i$") j
+        unset k && read -rd' ' < <(expac -Qs '%n %C %S' "^$i$") k
         [[ "$j" = "$k" || ! "$k" ]] && continue # skip when no conflict with repopkgs
         if [[ ! "$noconfirm" && ! " ${repoconflictingpkgs[*]} " =~ " $k " ]]; then
             if ! Proceed "n" $"$j and $k are in conflict ($i). Remove $k?"; then
@@ -940,7 +940,7 @@ ReinstallChecks() {
                 Note "w" $"${colorW}${depsAname[$i]}-${depsQver[$i]}${reset} is up to date -- reinstalling"
             else
                 Note "w" $"${colorW}${depsAname[$i]}-${depsQver[$i]}${reset} is up to date -- skipping"
-                mapfile -t deps <<< "$(printf ' %s \n' "${deps[@]}")"
+                mapfile -t deps < <(printf ' %s \n' "${deps[@]}")
                 deps=($(printf '%s\n' "${deps[@]// ${depsAname[$i]} /}"))
                 unset "depsAname[$i]" "depsQver[$i]" "depsAver[$i]" "depsAood[$i]" "depsAmain[$i]"
             fi
@@ -1280,14 +1280,14 @@ MakePkgs() {
 
         cd_safe "$clonedir/${basepkgs[$i]}"
         # retrieve updated version
-        mapfile -t -d'-' k <<< "$(makepkg --packagelist)" && aurdevelpkgsAver="${k[-3]}-${k[-2]}"
+        mapfile -t -d'-' k < <(makepkg --packagelist) && aurdevelpkgsAver="${k[-3]}-${k[-2]}"
         unset k
         # build devel if necessary only (supported protocols only)
         if [[ "${basepkgs[$i]}" =~ $vcs ]]; then
             # check split packages update
             unset basepkgsupdate checkpkgsdepslist
             for j in "${pkgsdepslist[@]}"; do
-                read -rd' ' <<< "$(expac -Qs '%v' "^$j$")" aurdevelpkgsQver
+                read -rd' ' < <(expac -Qs '%v' "^$j$") aurdevelpkgsQver
                 if [[ "$needed" && ! "$rebuild" && "$aurdevelpkgsQver" ]] &&
                     [[ "$(vercmp "$aurdevelpkgsQver" "$aurdevelpkgsAver")" -ge 0 ]]; then
                     Note "w" $"${colorW}$j${reset} is up-to-date -- skipping" && continue
