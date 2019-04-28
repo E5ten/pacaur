@@ -272,6 +272,7 @@ DepsSolver() {
 
     # get AUR packages info
     depsAname=($(GetJson "$json" "Name"))
+    depsAbase=($(GetJson "$json" "PackageBase"))
     depsAver=($(GetJson "$json" "Version"))
     depsAood=($(GetJson "$json" "OutOfDate"))
     depsAmain=($(GetJson "$json" "Maintainer"))
@@ -370,16 +371,17 @@ FindDepsAur() {
     depspkgs=($(GetJson "$json" "Depends"))
 
     # cached packages makedeps check
-    if [[ ! "$PKGDEST" || "$rebuild" ]]; then
+    if [[ "$rebuild" ]]; then
         depspkgs+=($(GetJson "$json" "MakeDepends"))
         [[ "$checkdeps" ]] && depspkgs+=($(GetJson "$json" "CheckDepends"))
     else
         [[ ! "${depspkgsaur[*]}" ]] && depspkgsaurtmp=("${aurpkgs[@]}") ||
             depspkgsaurtmp=("${depspkgsaur[@]}")
         for i in "${!depspkgsaurtmp[@]}"; do
+            local depAbase="$(GetJson "$json" "PackageBase" "${depspkgsaurtmp[$i]}")"
             local depAname="$(GetJson "$json" "Name" "${depspkgsaurtmp[$i]}")"
             local depAver="$(GetJson "$json" "Version" "${depspkgsaurtmp[$i]}")"
-            GetBuiltPkg "$depAname-$depAver" "$PKGDEST"
+            GetBuiltPkg "$depAbase" "$depAname" "$depAver"
             if [[ ! "$builtpkg" ]]; then
                 depspkgs+=($(GetJson "$json" "MakeDepends" "${depspkgsaurtmp[$i]}"))
                 [[ "$checkdeps" ]] && depspkgs+=($(GetJson "$json" "CheckDepends"))
@@ -571,9 +573,7 @@ FindDepsRepo() {
     [[ "${allrepodepspkgs[*]}" ]] && repodepspkgstmp=($("$pacmanbin" -T -- "${allrepodepspkgs[@]}" | sort -u))
 
     # remove duplicate
-    [[ "${repodepspkgstmp[*]}" ]] &&
-        repodepspkgstmp=($(CommArr 'repodepspkgs' 'repodepspkgstmp' '-13'))
-
+    [[ "${repodepspkgstmp[*]}" ]] && repodepspkgstmp=($(CommArr 'repodepspkgs' 'repodepspkgstmp' '-13'))
     [[ "${repodepspkgstmp[*]}" ]] && repodepspkgs+=("${repodepspkgstmp[@]}") &&
         repodeps=("${repodepspkgstmp[@]}") && FindDepsRepo "${repodeps[@]}"
 }
@@ -597,11 +597,8 @@ FindDepsRepoProvider() {
     [[ "${providerrepodepspkgstmp[*]}" ]] &&
         providerrepodepspkgstmp=($(CommArr 'repodepspkgs' 'providerrepodepspkgstmp' '-13'))
 
-    if [[ "${providerrepodepspkgstmp[*]}" ]]; then
-        repodepspkgs+=("${providerrepodepspkgstmp[@]}")
-        providerspkgs=("${providerrepodepspkgstmp[@]}")
-        FindDepsRepoProvider "${providerspkgs[@]}"
-    fi
+    [[ "${providerrepodepspkgstmp[*]}" ]] && repodepspkgs+=("${providerrepodepspkgstmp[@]}") &&
+        providerspkgs=("${providerrepodepspkgstmp[@]}") && FindDepsRepoProvider "${providerspkgs[@]}"
 }
 
 IgnoreDepsChecks() {
@@ -784,8 +781,8 @@ ConflictChecks() {
     local allQprovides allQconflicts Aprovides Aconflicts aurconflicts aurAconflicts Qrequires i j
     local k l repodepsprovides repodepsconflicts checkedrepodepsconflicts repodepsconflictsname
     local repodepsconflictsver localver repoconflictingpkgs
-    # global deps depsAname json aurdepspkgs aurconflictingpkgs aurconflictingpkgsrm depsQver
-    # global repodepspkgs repoconflictingpkgsrm repoprovidersconflictingpkgs
+    # global deps depsAname json aurdepspkgs aurconflictingpkgs aurconflictingpkgskeep aurconflictingpkgsrm
+    # global depsQver repodepspkgs repoconflictingpkgskeep repoconflictingpkgsrm repoprovidersconflictingpkgs
     Note "i" $"looking for inter-conflicts..."
 
     allQprovides=($(expac -Q '%n'))
@@ -931,12 +928,13 @@ ReinstallChecks() {
                 Note "w" $"${colorW}${depsAname[$i]}-${depsQver[$i]}${reset} is up to date -- skipping"
                 mapfile -t < <(printf ' %s \n' "${deps[@]}") deps
                 deps=($(printf '%s\n' "${deps[@]// ${depsAname[$i]} /}"))
-                unset "depsAname[$i]" "depsQver[$i]" "depsAver[$i]" "depsAood[$i]" "depsAmain[$i]"
+                unset "depsAname[$i]" "depsAbase[$i]" "depsQver[$i]" "depsAver[$i]" "depsAood[$i]" "depsAmain[$i]"
             fi
         fi
     done
-    [[ "$needed" ]] && depsAname=("${depsAname[@]}") && depsQver=("${depsQver[@]}") &&
-        depsAver=("${depsAver[@]}") && depsAood=("${depsAood[@]}") && depsAmain=("${depsAmain[@]}")
+    [[ "$needed" ]] && depsAname=("${depsAname[@]}") depsAbase=("${depsAbase[@]}") &&
+        depsQver=("${depsQver[@]}") && depsAver=("${depsAver[@]}") && depsAood=("${depsAood[@]}") &&
+        depsAmain=("${depsAmain[@]}")
     NothingToDo "${deps[@]}"
 }
 
@@ -970,8 +968,9 @@ Prompt() {
         sumk=0
         summ=0
         for i in "${!repodepspkgs[@]}"; do
-            GetBuiltPkg "${repodepspkgs[$i]}-${repodepsSver[$i]}" '/var/cache/pacman/pkg'
-            [[ "$builtpkg" ]] && binaryksize[$i]=0
+            shopt -s nullglob
+            [[ "$(printf '%s\n' "$(pacman-conf CacheDir)/${repodepspkgs[$i]}-${repodepsSver[$i]}"*)" ]] &&
+                binaryksize[$i]=0; shopt -u nullglob
             sumk="$((sumk + "${binaryksize[$i]}"))"
             summ="$((summ + "${binarymsize[$i]}"))"
         done
@@ -981,8 +980,8 @@ Prompt() {
 
     # cached packages check
     for i in "${!depsAname[@]}"; do
-        [[ ! "$PKGDEST" || "$rebuild" ]] && break
-        GetBuiltPkg "${depsAname[$i]}-${depsAver[$i]}" "$PKGDEST"
+        [[ "$rebuild" ]] && break
+        GetBuiltPkg "${depsAbase[$i]}" "${depsAname[$i]}" "${depsAver[$i]}"
         [[ "$builtpkg" ]] && cachedpkgs+=("${depsAname[$i]}") && depsAcached[$i]=$"(cached)" || depsAcached[$i]=""
         unset builtpkg
     done
@@ -997,7 +996,7 @@ Prompt() {
 
         # local version column cleanup
         for i in "${!deps[@]}"; do
-            [[ "${depsQver[$i]}" =~ '#' ]] && unset depsQver[$i]
+            [[ "${depsQver[$i]}" =~ '%' ]] && unset depsQver[$i]
         done
         # show detailed output
         printf "\n${colorW}%-${lname}s  %-${lver}s  %-${lver}s${reset}\n\n" "$straurname" "$stroldver" "$strnewver"
@@ -1201,8 +1200,8 @@ MakePkgs() {
         unset builtpkg
         if [[ ! "${basepkgs[$i]}" =~ $vcs ]]; then
             for j in "${pkgsdepslist[@]}"; do
-                [[ "$PKGDEST" && ! "$rebuild" ]] &&
-                    GetBuiltPkg "$j-$(GetJson "$json" "Version" "$j")" "$PKGDEST"
+                [[ "$rebuild" ]] ||
+                    GetBuiltPkg "$(GetJson "$json" "PackageBase" "$j")" "$j" "$(GetJson "$json" "Version" "$j")"
             done
         fi
 
@@ -1216,7 +1215,7 @@ MakePkgs() {
         unset makedeps
         for j in "${vcsclients[@]}"; do
             if [[ ! "${vcschecked[*]}" =~ "$j" ]]; then
-                [[ ! "$(expac -Qs '%n' "^$j$")" ]] && sudo "$pacmanbin" -S --asdeps --noconfirm -- "$j"
+                expac -Qs '' "^$j$" || sudo "$pacmanbin" -S --asdeps --noconfirm -- "$j"
                 vcschecked+=("$j")
             fi
         done
@@ -1289,7 +1288,7 @@ MakePkgs() {
         # check package cache
         for j in "${pkgsdepslist[@]}"; do
             unset builtpkg
-            [[ "$PKGDEST" && ! "$rebuild" ]] && GetBuiltPkg "$j-$aurdevelpkgsAver" "$PKGDEST"
+            [[ "$rebuild" ]] || GetBuiltPkg "${basepkgs[$i]}" "$j" "$aurdevelpkgsAver"
             if [[ "$builtpkg" ]]; then
                 if [[ " ${aurdepspkgs[*]} " =~ " $j " || "$installpkg" ]]; then
                     Note "i" $"Installing ${colorW}$j${reset} cached package..."
@@ -1331,12 +1330,7 @@ MakePkgs() {
         # retrieve filename
         unset builtpkgs builtdepspkgs
         for j in "${pkgsdepslist[@]}"; do
-            unset builtpkg
-            if [[ "$PKGDEST" ]]; then
-                GetBuiltPkg "$j-$aurdevelpkgsAver" "$PKGDEST"
-            else
-                GetBuiltPkg "$j-$aurdevelpkgsAver" "$clonedir/${basepkgs[$i]}"
-            fi
+            unset builtpkg; GetBuiltPkg "${basepkgs[$i]}" "$j" "$aurdevelpkgsAver"
             [[ " ${aurdepspkgs[*]} " =~ " $j " ]] && builtdepspkgs+=("$builtpkg") || builtpkgs+=("$builtpkg")
         done
 
@@ -1506,16 +1500,14 @@ GetInstallScripts() {
 }
 
 GetBuiltPkg() {
-    local ext
-    # global builtpkg
-    # check PKGEXT suffix first, then default .xz suffix for repository packages in pacman cache
-    # and lastly all remaining suffixes in case PKGEXT is locally overridden
-    for ext in "$PKGEXT" .pkg.tar{.xz,,.gz,.bz2,.lzo,.lrz,.Z}; do
-        builtpkg="$2/$1-${CARCH}${ext}"
-        [[ ! -f "$builtpkg" ]] && builtpkg="$2/$1-any${ext}"
-        [[ -f "$builtpkg" ]] && break
+    local i basepkgdir="$1"
+    cd "${clonedir:?}/${basepkgdir:?}" || return
+    mapfile -t < <(makepkg --packagelist) builtpkgpathfiles
+    local builtpkgfiles=("${builtpkgpathfiles[@]##*/}")
+    for i in "${!builtpkgpathfiles[@]}"; do
+        [[ "$2-$3" = "${builtpkgfiles[$i]%-*}" ]] && builtpkg="${builtpkgpathfiles[$i]}"
     done
-    [[ ! -f "$builtpkg" ]] && unset builtpkg
+    [[ -f "$builtpkg" ]] || unset builtpkg
 }
 
 GetPkgbase() {
