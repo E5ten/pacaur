@@ -16,9 +16,9 @@ unset installpkg native needed noconfirm nodeps noedit noop operation pac pace p
 unset readline rebuild refresh repo search upgrade var vcs ver
 
 # internationalization
-export LC_COLLATE=C
-export TEXTDOMAIN='pacaur'
-export TEXTDOMAINDIR='/usr/share/locale'
+declare -xr LC_COLLATE=C
+declare -xr TEXTDOMAIN='pacaur'
+declare -xr TEXTDOMAINDIR='/usr/share/locale'
 
 # determine config location
 if [[ "${XDG_CONFIG_DIRS}" ]]; then
@@ -404,7 +404,7 @@ FindDepsAur() {
     depspkgs=("${depspkgs[@]%%[><=]*}")
     # remove installed deps
     if [[ ! "$devel" ]]; then
-        depspkgs=($("$pacmanbin" -T -- "${depspkgs[@]}" | sort -u))
+        depspkgs=($("$pacmanbin" -T -- ${depspkgs[@]} | sort -u))
     else
         # check providers
         unset vcsdepspkgs
@@ -524,8 +524,7 @@ FindDepsAurError() {
     # global errdepsnover errdepslist tsorterrdeps currenterrdep
 
     for i in "${tsorterrdeps[@]}"; do
-        [[ " ${errdepsnover[*]} " =~ " $i " || " ${errdepslist[*]} " =~ " $i " ]] ||
-            nexterrdep="$i" && break
+        [[ " ${errdepsnover[*]} " =~ " $i " || " ${errdepslist[*]} " =~ " $i " ]] || nexterrdep="$i" && break
     done
 
     [[ "${currenterrdep[*]}" ]] || currenterrdep="${tsorterrdeps[0]}"
@@ -570,8 +569,7 @@ FindDepsRepo() {
     unset allrepodepspkgs repodepspkgstmp
     # no version check needed as all deps are repo deps
     [[ "${repodeps[*]}" ]] && allrepodepspkgs=($(expac -S1 '%E' "${repodeps[@]}"))
-    [[ "${allrepodepspkgs[*]}" ]] &&
-        repodepspkgstmp=($("$pacmanbin" -T -- "${allrepodepspkgs[@]}" | sort -u))
+    [[ "${allrepodepspkgs[*]}" ]] && repodepspkgstmp=($("$pacmanbin" -T -- "${allrepodepspkgs[@]}" | sort -u))
 
     # remove duplicate
     [[ "${repodepspkgstmp[*]}" ]] &&
@@ -591,8 +589,7 @@ FindDepsRepoProvider() {
 
     # get non installed repo deps
     unset allproviderrepodepspkgs providerrepodepspkgstmp
-    [[ "${providerspkgs[*]}" ]] &&
-        allproviderrepodepspkgs=($(expac -S1 '%E' "${providerspkgs[@]}"))
+    [[ "${providerspkgs[*]}" ]] && allproviderrepodepspkgs=($(expac -S1 '%E' "${providerspkgs[@]}"))
     # no version check needed as all deps are binary
     [[ "${allproviderrepodepspkgs[*]}" ]] &&
         providerrepodepspkgstmp=($("$pacmanbin" -T -- "${allproviderrepodepspkgs[@]}" | sort -u))
@@ -610,9 +607,8 @@ FindDepsRepoProvider() {
 
 IgnoreDepsChecks() {
     local i
-    # global ignoredpkgs aurpkgs aurdepspkgs aurdepspkgsAgrp aurdepspkgsQgrp repodepspkgsSgrp
-    # global repodepspkgsQgrp rmaurpkgs deps repodepspkgs
-    [[ ! "${ignoredpkgs[*]}" && ! "${ignoredgrps[*]}" ]] && return
+    # global ignoredpkgs aurpkgs aurdepspkgs aurdepspkgsgrp repodepspkgsgrp rmaurpkgs deps repodepspkgs
+    [[ "${ignoredpkgs[*]}" || "${ignoredgrps[*]}" ]] || return
 
     # add checked targets and preserve tsorted order
     deps=("${deps[@]:0:${#aurpkgs[@]}}")
@@ -624,9 +620,9 @@ IgnoreDepsChecks() {
             isignored=1
         elif [[ "${ignoredgrps[*]}" ]]; then
             unset repodepspkgsSgrp repodepspkgsQgrp
-            repodepspkgsSgrp=($(expac -S1 '%G' "$i"))
-            repodepspkgsQgrp=($(expac -Q '%G' "$i"))
-            for j in "${repodepspkgsSgrp[@]}" "${repodepspkgsQgrp[@]}"; do
+            repodepspkgsgrp=($(expac -S1 '%G' "$i"))
+            repodepspkgsgrp+=($(expac -Q '%G' "$i"))
+            for j in "${repodepspkgsgrp[@]}"; do
                 [[ " ${ignoredgrps[*]} " =~ " $j " ]] && isignored=1
             done
         fi
@@ -647,10 +643,10 @@ IgnoreDepsChecks() {
         if [[ " ${ignoredpkgs[*]} " =~ " $i " ]]; then
             isignored=1
         elif [[ "${ignoredgrps[*]}" ]]; then
-            unset aurdepspkgsAgrp aurdepspkgsQgrp
-            aurdepspkgsAgrp=($(GetJson "$json" "Groups" "$i"))
-            aurdepspkgsQgrp=($(expac -Q '%G' "$i"))
-            for j in "${aurdepspkgsAgrp[@]}" "${aurdepspkgsQgrp[@]}"; do
+            unset aurdepspkgsgrp
+            aurdepspkgsgrp=($(GetJson "$json" "Groups" "$i"))
+            aurdepspkgsgrp+=($(expac -Q '%G' "$i"))
+            for j in "${aurdepspkgsgrp[@]}"; do
                 [[ " ${ignoredgrps[*]} " =~ " $j " ]] && isignored=1
             done
         fi
@@ -675,7 +671,7 @@ ProviderChecks() {
     local providersdeps providersdepsnover providers repodepspkgsprovided providerspkgs provided
     local nb providersnb
     # global repodepspkgs repoprovidersconflictingpkgs repodepsSver repodepsSrepo repodepsQver
-    [[ ! "${repodepspkgs[*]}" ]] && return
+    [[ "${repodepspkgs[*]}" ]] || return
 
     # filter directly provided deps
     noprovidersdeps=($(expac -S1 '%n' "${repodepspkgs[@]}"))
@@ -752,11 +748,9 @@ ProviderChecks() {
                 esac
 
                 case "$nb" in
-                    [0-9]|[0-9][0-9])
-                        if [[ "$nb" -lt 0 || "$nb" -ge "${#providers[@]}" ]]; then
+                    [0-9]|[0-9][0-9]) if [[ "$nb" -lt 0 || "$nb" -ge "${#providers[@]}" ]]; then
                             printf '\n'
-                            Note "f" $"invalid value: $nb is not between 0 and $providersnb"
-                            ((i--))
+                            Note "f" $"invalid value: $nb is not between 0 and $providersnb" && ((i--))
                         else
                             break
                         fi;;
@@ -835,8 +829,7 @@ ConflictChecks() {
                     Aprovides+=($(GetJson "$json" "Provides" "$j"))
                     # remove AUR versioning
                     Aprovides=("${Aprovides[@]%%[><=]*}")
-                    [[ ! " ${Aprovides[*]} ${aurconflictingpkgsrm[*]} " =~ " $k " ]] &&
-                        CheckRequires "$k"
+                    [[ ! " ${Aprovides[*]} ${aurconflictingpkgsrm[*]} " =~ " $k " ]] && CheckRequires "$k"
                     break
                 else
                     Note "f" $"unresolvable package conflicts detected"
@@ -902,8 +895,7 @@ ConflictChecks() {
                 repoconflictingpkgsrm+=("$k")
                 repoprovidersconflictingpkgs+=("$j")
                 Qprovides=($(expac -Ss '%S' "^$k$"))
-                [[ ! " ${Qprovides[*]} ${repoconflictingpkgsrm[*]} " =~ " $k " ]] &&
-                    CheckRequires "$k"
+                [[ ! " ${Qprovides[*]} ${repoconflictingpkgsrm[*]} " =~ " $k " ]] && CheckRequires "$k"
                 break
             else
                 Note "f" $"unresolvable package conflicts detected"
@@ -923,8 +915,7 @@ ConflictChecks() {
 
 ReinstallChecks() {
     local i depsAtmp
-    # global aurpkgs aurdepspkgs deps aurconflictingpkgs depsAname depsQver depsAver depsAood
-    # global depsAmain
+    # global aurpkgs aurdepspkgs deps aurconflictingpkgs depsAname depsQver depsAver depsAood depsAmain
     depsAtmp=("${depsAname[@]}")
     for i in "${!depsAtmp[@]}"; do
         [[ ! " ${aurpkgs[*]} " =~ " ${depsAname[$i]} " ]] ||
@@ -993,8 +984,7 @@ Prompt() {
     for i in "${!depsAname[@]}"; do
         [[ ! "$PKGDEST" || "$rebuild" ]] && break
         GetBuiltPkg "${depsAname[$i]}-${depsAver[$i]}" "$PKGDEST"
-        [[ "$builtpkg" ]] && cachedpkgs+=("${depsAname[$i]}") && depsAcached[$i]=$"(cached)" ||
-            depsAcached[$i]=""
+        [[ "$builtpkg" ]] && cachedpkgs+=("${depsAname[$i]}") && depsAcached[$i]=$"(cached)" || depsAcached[$i]=""
         unset builtpkg
     done
 
@@ -1034,13 +1024,13 @@ Prompt() {
             repodepspkgsver="${repodepspkgsver}${repodepspkgs[$i]}-${repodepsSver[$i]}  "
         done
         printf "\n${colorW}%-16s${reset} %s\n" $"AUR Packages  (${#deps[@]})" "$depsver"
-        [[ "${repodepspkgs[*]}" ]] && printf "${colorW}%-16s${reset} %s\n" $"Repo Packages (${#repodepspkgs[@]})" "$repodepspkgsver"
+        [[ "${repodepspkgs[*]}" ]] &&
+            printf "${colorW}%-16s${reset} %s\n" $"Repo Packages (${#repodepspkgs[@]})" "$repodepspkgsver"
     fi
 
     if [[ "${repodepspkgs[*]}" ]]; then
-        strrepodlsize=$"Repo Download Size:"; strrepoinsize=$"Repo Installed Size:"
-        strsumk=$"$sumk MiB"; strsumm=$"$summ MiB"
-        lreposizelabel="$(GetLength "$strrepodlsize" "$strrepoinsize")"
+        strrepodlsize=$"Repo Download Size:"; strrepoinsize=$"Repo Installed Size:"; strsumk=$"$sumk MiB"
+        strsumm=$"$summ MiB" lreposizelabel="$(GetLength "$strrepodlsize" "$strrepoinsize")"
         lreposize="$(GetLength "$strsumk" "$strsumm")"
         printf "\n${colorW}%-${lreposizelabel}s${reset}  %${lreposize}s\n" "$strrepodlsize" "$strsumk"
         printf "${colorW}%-${lreposizelabel}s${reset}  %${lreposize}s\n" "$strrepoinsize" "$strsumm"
@@ -1354,7 +1344,7 @@ MakePkgs() {
         # install
         if [[ "$installpkg" || ! "${builtpkgs[*]}" ]]; then
             Note "i" $"Installing ${colorW}${pkgsdeps[$i]}${reset} package(s)..."
-            sudo "$pacmanbin" -U --ask 36 ${pacopts[@]/--quiet} --noconfirm -- ${builtdepspkgs[@]} ${builtpkgs[@]}
+            sudo "$pacmanbin" -U ${builtdepspkgs[@]} ${builtpkgs[@]} --ask 36 ${pacopts[@]/--quiet} --noconfirm
         fi
 
         # set dep status
@@ -1368,15 +1358,15 @@ MakePkgs() {
     done
 
     # remove AUR deps
-    if [[ ! $installpkg ]]; then
+    if [[ ! "$installpkg" ]]; then
         [[ "${aurdepspkgs[*]}" ]] && aurdepspkgs=($(expac -Q '%n' "${aurdepspkgs[@]}"))
         [[ "${aurdepspkgs[*]}" ]] && Note "i" $"Removing installed AUR dependencies..." &&
             sudo "$pacmanbin" -Rsn "${aurdepspkgs[@]}" --noconfirm
         # readd removed conflicting packages
         [[ "${aurconflictingpkgsrm[*]}" ]] &&
-            sudo "$pacmanbin" -S "${aurconflictingpkgsrm[@]}" --ask 36 --asdeps --needed --noconfirm
+            sudo "$pacmanbin" -S ${aurconflictingpkgsrm[@]} --ask 36 --asdeps --needed --noconfirm
         [[ "${repoconflictingpkgsrm[*]}" ]] &&
-            sudo "$pacmanbin" -S "${repoconflictingpkgsrm[@]}" --ask 36 --asdeps --needed --noconfirm
+            sudo "$pacmanbin" -S ${repoconflictingpkgsrm[@]} --ask 36 --asdeps --needed --noconfirm
     fi
 
     # remove locks
