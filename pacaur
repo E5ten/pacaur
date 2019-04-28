@@ -1223,7 +1223,7 @@ MakePkgs() {
         done
 
         if [[ ! "$builtpkg" || "$rebuild" ]]; then
-            cd_safe "$clonedir/${basepkgs[$i]}"
+            cd "$clonedir/${basepkgs[$i]}" || exit "$E_MISSING_FILE"
             Note "i" $"Checking ${colorW}${pkgsdeps[$i]}${reset} integrity..."
             if [[ "$silent" = true ]]; then
                 makepkg -f --verifysource "${makeopts[@]}" &>/dev/null
@@ -1500,8 +1500,10 @@ GetInstallScripts() {
     # global installscripts
     [[ ! -d "$clonedir/$1" ]] && return
     unset installscriptspath installscripts
-    installscriptspath=($(find "$clonedir/$1/" -maxdepth 1 -name "*.install"))
-    [[ "${installscriptspath[*]}" ]] && installscripts=($(basename -a "${installscriptspath[@]}"))
+    shopt -s nullglob
+    installscriptspath=($(printf '%s\n' "$clonedir/$1/"*'.install'))
+    shopt -u nullglob
+    [[ "${installscriptspath[*]}" ]] && installscripts=("${installscriptspath[@]##*/}")
 }
 
 GetBuiltPkg() {
