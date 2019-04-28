@@ -182,15 +182,13 @@ IgnoreChecks() {
     # check targets
     SetJson "${aurpkgsnover[@]}"
     checkaurpkgs=($(GetJson "$json" "Name"))
-    errdeps=($(CommArr 'aurpkgs' 'checkaurpkgs' '-3'))
+    errdeps=($(CommArr 'aurpkgsnover' 'checkaurpkgs' '-3'))
     unset aurpkgsnover
 
     checkaurpkgsAver=($(GetJson "$json" "Version"))
-    checkaurpkgsQver=($(expac -Q '%v' "${checkaurpkgs[@]}"))
+    mapfile -t checkaurpkgsQver < <(expac -Qv '%v' "${checkaurpkgs[@]}" 2>&1)
     for i in "${!checkaurpkgs[@]}"; do
         [[ "${checkaurpkgs[$i]}" =~ $vcs ]] && checkaurpkgsAver[$i]=$"latest"
-    done
-    for i in "${!checkaurpkgs[@]}"; do
         unset isignored
         if [[ " ${ignoredpkgs[*]} " =~ " ${checkaurpkgs[$i]} " ]]; then
             isignored=1
@@ -1191,7 +1189,8 @@ MakePkgs() {
         pkgsdeps+=("%")
     done
     deplist="${pkgsdeps[@]}"; deplist="${deplist// % /|}"; deplist="${deplist//%}"
-    deplist="${deplist// /,}"; deplist="${deplist//|/ }"; pkgsdeps=($(printf '%s\n' ${deplist}))
+    deplist="${deplist// /,}"; deplist="${deplist//|/ }"; pkgsdeps=($(printf '%s\n' ${deplist%, }))
+    pkgsdeps=("${pkgsdeps[@]%,}")
 
     # reverse deps order
     for i in "${!basepkgs[@]}"; do
@@ -1206,7 +1205,7 @@ MakePkgs() {
     # integrity check
     for i in "${!basepkgs[@]}"; do
         # get split packages list
-        mapfile -t -d',' pkgsdepslist <<< "${pkgsdeps[$i]}"
+        read -rd',' -a pkgsdepslist <<< "${pkgsdeps[$i]}"
 
         # cache check
         unset builtpkg
@@ -1276,7 +1275,7 @@ MakePkgs() {
     # main
     for i in "${!basepkgs[@]}"; do
         # get split packages list
-        mapfile -t -d',' pkgsdepslist <<< "${pkgsdeps[$i]}"
+        read -rd',' -a pkgsdepslist <<< "${pkgsdeps[$i]}"
 
         cd_safe "$clonedir/${basepkgs[$i]}"
         # retrieve updated version
@@ -1454,8 +1453,7 @@ CleanCache() {
         fi
         printf "\n%s %s\n" $"AUR clone directory:" "$clonedir"
         if [[ "$ccount" -eq 1 ]]; then
-            foreignpkgsbase=($(expac -Q '%n %e' $("$pacmanbin" -Qmq) |
-                awk '{if ($2 == "(null)") print $1; else print $2}'))
+            foreignpkgsbase=($(expac -Q '%n %e' $("$pacmanbin" -Qmq)))
             # get target
             if [[ "${pkgs[*]}" ]]; then
                 pkgsbase=($(expac -Q '%e' "${pkgs[@]}"))
