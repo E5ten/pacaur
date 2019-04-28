@@ -116,8 +116,7 @@ ClassifyPkgs() {
             norepopkgs=("${norepopkgs[@]%\' not found}")
         for i in "${norepopkgs[@]}"; do
             # do not search repo/pkgs in AUR
-            [[ " ${noaurpkgs[*]} " =~ [a-zA-Z0-9\.\+-]+\/"$i"[^a-zA-Z0-9\.\+-] ]] ||
-                aurpkgs+=("$i") # do not search repo/pkgs in AUR
+            [[ " ${noaurpkgs[*]} " =~ [a-zA-Z0-9\.\+-]+\/"$i"[^a-zA-Z0-9\.\+-] ]] || aurpkgs+=("$i")
         done
         repopkgs=($(CommArr 'aurpkgs' 'noaurpkgs' '-13'))
     fi
@@ -1180,8 +1179,8 @@ MakePkgs() {
         pkgsdeps+=("%")
     done
     deplist="${pkgsdeps[@]}"; deplist="${deplist// % /|}"; deplist="${deplist//%}"
-    deplist="${deplist// /,}"; deplist="${deplist//|/ }"; pkgsdeps=($(printf '%s\n' ${deplist%, }))
-    pkgsdeps=("${pkgsdeps[@]%,}")
+    deplist="${deplist// /,}"; deplist="${deplist//|/ }"; deplist="${deplist%, }"
+    pkgsdeps=($(printf '%s\n' ${deplist% ,})); pkgsdeps=("${pkgsdeps[@]%,}")
 
     # reverse deps order
     for i in "${!basepkgs[@]}"; do
@@ -1211,8 +1210,8 @@ MakePkgs() {
         # commit into account)
         unset vcsclients
         makedeps=($(GetJson "$json" "MakeDepends" "${basepkgs[$i]}"))
-        for i in git subversion mercurial bzr cvs darcsl; do
-            [[ " ${makedeps[*]} " =~ " $i " ]] && vcsclients+=("$i")
+        for k in git subversion mercurial bzr cvs darcsl; do
+            [[ " ${makedeps[*]} " =~ " $k " ]] && vcsclients+=("$k")
         done
         unset makedeps
         for j in "${vcsclients[@]}"; do
