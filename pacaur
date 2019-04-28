@@ -1760,6 +1760,7 @@ fi
 [[ "$pac" -eq 0 && "$pace" ]] && operation=edit
 [[ "$pacQ" && "$pace" ]] && pacopts+=("-e")
 [[ "$pacQ" && "$upgrade" ]] && operation=upgrades
+[[ "$pacQ" && "$native" ]] && repo=1
 [[ "$pacS" && "$downloadonly" ]] && unset installpkg
 [[ "$pacS" && "$noop" ]] && unset operation
 [[ "$pacS" && "$cleancache" ]] && unset search info upgrade
@@ -1852,7 +1853,7 @@ case "$operation" in
         exit;;
     upgrades) # upgrades (-Qu) handling
         [[ "$aur" ]] || "$pacmanbin" ${pacmanarg[@]} ${pacopts[@]} -- ${pkgs[@]}; exitrepo=$?
-        if [[ ! "$repo" && ! "$native" ]]; then
+        if [[ ! "$repo" ]]; then
             if [[ ! "${pkgs[*]}" ]]; then
                 auracle sync ${auropts[@]} $("$pacmanbin" -qm ${pacmanarg[@]//-u} ${pacopts[@]//--upgrades})
             else
