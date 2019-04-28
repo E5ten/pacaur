@@ -1227,7 +1227,7 @@ MakePkgs() {
         unset makedeps
         for j in "${vcsclients[@]}"; do
             if [[ ! "${vcschecked[*]}" =~ "$j" ]]; then
-                [[ ! "$(expac -Qs '' "^$j$")" ]] && sudo "$pacmanbin" -S --asdeps --noconfirm -- "$j"
+                [[ ! "$(expac -Qs '%n' "^$j$")" ]] && sudo "$pacmanbin" -S --asdeps --noconfirm -- "$j"
                 vcschecked+=("$j")
             fi
         done
