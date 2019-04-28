@@ -278,7 +278,7 @@ DepsSolver() {
     depsAmain=($(GetJson "$json" "Maintainer"))
     for i in "${!depsAname[@]}"; do
         read -rd' ' < <(expac -Qs '%v' "^${depsAname[$i]}$") depsQver[$i]
-        [[ "${depsQver[$i]}" ]] || depsQver[$i]="#"  # avoid empty elements shift
+        [[ "${depsQver[$i]}" ]] || depsQver[$i]="%"  # avoid empty elements shift
         [[ "${depsAname[$i]}" =~ $vcs ]] && depsAver[$i]=$"latest"
     done
 
@@ -929,7 +929,7 @@ ReinstallChecks() {
     for i in "${!depsAtmp[@]}"; do
         [[ ! " ${aurpkgs[*]} " =~ " ${depsAname[$i]} " ]] ||
             [[ " ${aurconflictingpkgs[*]} " =~ " ${depsAname[$i]} " ]] && continue
-        [[ ! "${depsQver[$i]}" || "${depsQver[$i]}" = '#' ]] ||
+        [[ ! "${depsQver[$i]}" || "${depsQver[$i]}" = '%' ]] ||
             [[ "$(vercmp "${depsAver[$i]}" "${depsQver[$i]}")" -gt 0 ]] && continue
         [[ ! "$installpkg" && ! " ${aurdepspkgs[*]} " =~ " ${depsAname[$i]} " ]] && continue
         if [[ "${depsAname[$i]}" =~ $vcs ]]; then
@@ -1187,13 +1187,11 @@ MakePkgs() {
             [[ "${pkgsbase[$i]}" = "${pkgsbase[$j]}" && ! " ${pkgsdeps[*]} " =~ " ${deps[$j]} " ]] &&
                 pkgsdeps+=("${deps[$j]}")
         done
-        pkgsdeps+=("#")
+        pkgsdeps+=("%")
     done
-    pkgsdeps=($(sed 's/ # /\n/g' <<< "${pkgsdeps[@]}" | tr -d '#' | sed '/^ $/d' | tr ' ' ',' |
-        sed 's/^,//g;s/,$//g'))
-    #deplist="${pkgsdeps[@]}"; deplist="${deplist// % /|}"; deplist="${deplist//%}"
-    #deplist="${deplist// /,}"; deplist="${deplist//|/ }"; pkgsdeps=($(printf '%s\n' ${deplist%, }))
-    #pkgsdeps=("${pkgsdeps[@]%,}")
+    deplist="${pkgsdeps[@]}"; deplist="${deplist// % /|}"; deplist="${deplist//%}"
+    deplist="${deplist// /,}"; deplist="${deplist//|/ }"; pkgsdeps=($(printf '%s\n' ${deplist%, }))
+    pkgsdeps=("${pkgsdeps[@]%,}")
 
     # reverse deps order
     for i in "${!basepkgs[@]}"; do
@@ -1278,8 +1276,7 @@ MakePkgs() {
     # main
     for i in "${!basepkgs[@]}"; do
         # get split packages list
-        #read -rd',' -a pkgsdepslist <<< "${pkgsdeps[$i]}"
-        mapfile -t -d',' pkgsdepslist <<< "${pkgsdeps[$i]}"
+        read -rd',' -a pkgsdepslist <<< "${pkgsdeps[$i]}"
 
         cd "$clonedir/${basepkgs[$i]}" || exit "$E_MISSING_FILE"
         # retrieve updated version
@@ -1313,11 +1310,11 @@ MakePkgs() {
                 else
                     Note "w" $"Package ${colorW}$j${reset} already available in cache"
                 fi
-                pkgsdeps=($(printf '%s\n' "${pkgsdeps[@]}" | sed "s/^$j,//g;s/,$j$//g;s/,$j,/,/g;s/^$j$/#/g"))
+                pkgsdeps=($(printf '%s\n' "${pkgsdeps[@]}" | sed "s/^$j,//g;s/,$j$//g;s/,$j,/,/g;s/^$j$/%/g"))
                 continue
             fi
         done
-        [[ "${pkgsdeps[$i]}" = '#' ]] && continue
+        [[ "${pkgsdeps[$i]}" = '%' ]] && continue
 
         # build
         Note "i" $"Building ${colorW}${pkgsdeps[$i]}${reset} package(s)..."
@@ -1455,7 +1452,7 @@ CleanCache() {
         fi
         printf "\n%s %s\n" $"AUR clone directory:" "$clonedir"
         if [[ "$ccount" -eq 1 ]]; then
-            foreignpkgsbase=($(expac -Q '%n %e' $("$pacmanbin" -Qmq)))
+            foreignpkgsbase=($(expac -Q '%e' $("$pacmanbin" -Qmq)))
             # get target
             if [[ "${pkgs[*]}" ]]; then
                 pkgsbase=($(expac -Q '%e' "${pkgs[@]}"))
