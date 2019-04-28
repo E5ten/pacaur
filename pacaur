@@ -1665,7 +1665,7 @@ GetBuiltPkg() {
     # check PKGEXT suffix first, then default .xz suffixe for repository packages in pacman cache
     # and lastly all remaining suffixes in case PKGEXT is locally overridden
     for ext in "$PKGEXT" .pkg.tar{.xz,,.gz,.bz2,.lzo,.lrz,.Z}; do
-        builtpkg="$2/$1-${CARCH}$pkgext"
+        builtpkg="$2/$1-${CARCH}${ext}"
         [[ ! -f "$builtpkg" ]] && builtpkg="$2/$1-any${ext}"
         [[ -f "$builtpkg" ]] && break
     done
