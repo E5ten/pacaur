@@ -381,7 +381,7 @@ FindDepsAur() {
             local depAbase="$(GetJson "$json" "PackageBase" "${depspkgsaurtmp[$i]}")"
             local depAname="$(GetJson "$json" "Name" "${depspkgsaurtmp[$i]}")"
             local depAver="$(GetJson "$json" "Version" "${depspkgsaurtmp[$i]}")"
-            GetBuiltPkg "$depAbase" "$depAname" "$depAver"
+            [[ -d "${clonedir:?}/$depsAbase" ]] && GetBuiltPkg "$depAbase" "$depAname" "$depAver"
             if [[ ! "$builtpkg" ]]; then
                 depspkgs+=($(GetJson "$json" "MakeDepends" "${depspkgsaurtmp[$i]}"))
                 [[ "$checkdeps" ]] && depspkgs+=($(GetJson "$json" "CheckDepends"))
@@ -405,7 +405,7 @@ FindDepsAur() {
     depspkgs=("${depspkgs[@]%%[><=]*}")
     # remove installed deps
     if [[ ! "$devel" ]]; then
-        depspkgs=($("$pacmanbin" -T -- ${depspkgs[@]} | sort -u))
+        depspkgs=($("$pacmanbin" -T -- "${depspkgs[@]}" | sort -u))
     else
         # check providers
         unset vcsdepspkgs
@@ -1435,11 +1435,11 @@ CleanCache() {
         fi
         printf "\n%s %s\n" $"AUR clone directory:" "$clonedir"
         if [[ "$ccount" -eq 1 ]]; then
-            foreignpkgsbase=($(expac -Q '%e' $("$pacmanbin" -Qmq)))
+            mapfile -t < <(expac -Q '%e' $("$pacmanbin" -Qmq)) foreignpkgsbase
             # get target
             if [[ "${pkgs[*]}" ]]; then
-                pkgsbase=($(expac -Q '%e' "${pkgs[@]}"))
-                aurpkgsbase=($(CommArr 'pkgsbase' 'foreignpkgsbase' '-12'))
+                mapfile -t < <(expac -Q '%e' "${pkgs[@]}") pkgsbase
+                mapfile -t < <(CommArr 'pkgsbase' 'foreignpkgsbase' '-12') aurpkgsbase
                 if Proceed "y" $"Do you want to remove ${aurpkgsbase[*]} clones from AUR clone directory?"; then
                     printf "%s\n\n" $"removing uninstalled clones from AUR clone cache..."
                     for i in "${aurpkgsbase[@]}"; do
@@ -1507,12 +1507,13 @@ GetBuiltPkg() {
     for i in "${!builtpkgpathfiles[@]}"; do
         [[ "$2-$3" = "${builtpkgfiles[$i]%-*}" ]] && builtpkg="${builtpkgpathfiles[$i]}"
     done
+    unset builtpkgpathfiles builtpkgfiles
     [[ -f "$builtpkg" ]] || unset builtpkg
 }
 
 GetPkgbase() {
     local i
-    # global json pkgsbase basepkgs
+    # global pkgsbase basepkgs
     SetJson "$@"
     for i in "$@"; do
         pkgsbase+=($(GetJson "$json" "PackageBase" "$i"))
