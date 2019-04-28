@@ -974,7 +974,7 @@ Prompt() {
         summ=0
         for i in "${!repodepspkgs[@]}"; do
             shopt -s nullglob
-            [[ "$(printf '%s\n' "/var/cache/pacman/pkg${repodepspkgs[$i]}-${repodepsSver[$i]}"*)" ]] &&
+            [[ "$(printf '%s\n' "/var/cache/pacman/pkg/${repodepspkgs[$i]}-${repodepsSver[$i]}"*)" ]] &&
                 binaryksize[$i]=0
             shopt -u nullglob
             sumk="$((sumk + "${binaryksize[$i]}"))"
