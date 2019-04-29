@@ -111,9 +111,8 @@ ClassifyPkgs() {
             noaurpkgs+=("$i")
         done
         [[ "${noaurpkgs[*]}" ]] &&
-            mapfile -t < <(expac -Sv '' -- "${noaurpkgs[@]}" 2>&1 >/dev/null) norepopkgs &&
-            norepopkgs=("${norepopkgs[@]#error: package \`}") &&
-            norepopkgs=("${norepopkgs[@]%\' not found}")
+            IFS=$'\n' mapfile -t < <(LC_ALL=C "$pacmanbin" -Sp "${noaurpkgs[@]}" 2>&1 >/dev/null) norepopkgs &&
+            norepopkgs=("${norepopkgs[@]#error: target not found: }")
         for i in "${norepopkgs[@]}"; do
             # do not search repo/pkgs in AUR
             [[ " ${noaurpkgs[*]} " =~ [a-zA-Z0-9\.\+-]+\/"$i"[^a-zA-Z0-9\.\+-] ]] || aurpkgs+=("$i")
@@ -443,9 +442,8 @@ FindDepsAur() {
             depspkgs=($(CommArr 'assumeinstalled' 'depspkgs' '-13'))
         fi
         if [[ "${depspkgs[*]}" ]]; then
-            mapfile -t < <(expac -Sv '' -- "${depspkgs[@]%%[><=]*}" 2>&1) depspkgsaur &&
-            depspkgsaur=("${depspkgsaur[@]#error: package \`}") &&
-            depspkgsaur=("${depspkgsaur[@]%\' not found}")
+            IFS=$'\n' mapfile -t < <(LC_ALL=C "$pacmanbin" -Sp "${depspkgs[@]}" 2>&1 >/dev/null ) depspkgsaur &&
+            depspkgsaur=("${depspkgsaur[@]#error: target not found: }")
             repodeps+=($(CommArr 'depspkgsaur' 'depspkgs' '-13'))
         fi
     fi
