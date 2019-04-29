@@ -52,7 +52,7 @@ fi
 
 # restore environment variables
 for i in "${var[@]/#/_}"; do
-    declare "${i//_}"="${!i:-${!i//_}}"
+    declare -x "${i//_}"="${!i:-${!i//_}}"
 done
 
 # set default config variables
@@ -139,12 +139,12 @@ Core() {
 }
 
 UpgradeAur() {
-    local foreignpkgs allaurpkgs aurforeignpkgs i json
+    local foreignpkgs allaurpkgs aurforeignpkgs i
     # global aurpkgs
     Note "i" $"${colorW}Starting AUR upgrade...${reset}"
     foreignpkgs=($("$pacmanbin" -Qmq))
-    SetJson "${foreignpkgs[@]}"
-    allaurpkgs=($(GetJson "$json" "Name"))
+    SetInfo "${foreignpkgs[@]}"
+    allaurpkgs=($(GetInfo "Name"))
 
     # foreign packages check
     aurforeignpkgs=($(CommArr 'allaurpkgs' 'foreignpkgs' '-13'))
@@ -171,7 +171,7 @@ UpgradeAur() {
 }
 
 IgnoreChecks() {
-    local checkaurpkgs checkaurpkgsAver checkaurpkgsQver checkaurpkgsgrp i json
+    local checkaurpkgs checkaurpkgsAver checkaurpkgsQver checkaurpkgsgrp i
     # global aurpkgs rmaurpkgs
     [[ "${ignoredpkgs[*]}" || "${ignoredgrps[*]}" ]] || return
 
@@ -179,12 +179,12 @@ IgnoreChecks() {
     aurpkgsnover=("${aurpkgs[@]%%[><=]*}")
 
     # check targets
-    SetJson "${aurpkgsnover[@]}"
-    checkaurpkgs=($(GetJson "$json" "Name"))
+    SetInfo "${aurpkgsnover[@]}"
+    checkaurpkgs=($(GetInfo "Name"))
     errdeps=($(CommArr 'aurpkgsnover' 'checkaurpkgs' '-3'))
     unset aurpkgsnover
 
-    checkaurpkgsAver=($(GetJson "$json" "Version"))
+    checkaurpkgsAver=($(GetInfo "Version"))
     mapfile -t < <(expac -Qv '%v' "${checkaurpkgs[@]}" 2>&1) checkaurpkgsQver
     for i in "${!checkaurpkgs[@]}"; do
         [[ "${checkaurpkgs[$i]}" =~ $vcs ]] && checkaurpkgsAver[$i]=$"latest"
@@ -193,7 +193,7 @@ IgnoreChecks() {
             isignored=1
         elif [[ "${ignoredgrps[*]}" ]]; then
             unset checkaurpkgsgrp
-            checkaurpkgsgrp=($(GetJson "$json" "Groups" "${checkaurpkgs[$i]}"))
+            checkaurpkgsgrp=($(GetInfo "Groups" "${checkaurpkgs[$i]}"))
             checkaurpkgsgrp+=($(expac -Q '%G' "${checkaurpkgs[$i]}"))
             for j in "${checkaurpkgsgrp[@]}"; do
                 [[ " ${ignoredgrps[*]} " =~ " $j " ]] && isignored=1
@@ -228,29 +228,29 @@ IgnoreChecks() {
 
 DepsSolver() {
     local i aurpkgsconflicts
-    # global aurpkgs aurpkgsnover aurpkgsproviders aurdeps deps errdeps json
+    # global aurpkgs aurpkgsnover aurpkgsproviders aurdeps deps errdeps
     # global errdepsnover foreignpkgs repodeps depsAname depsAver depsAood depsQver
     Note "i" $"resolving dependencies..."
 
     # remove AUR pkgs versioning
     aurpkgsnover=("${aurpkgs[@]%%[><=]*}")
 
-    # set unversioned json
-    SetJson "${aurpkgsnover[@]}"
+    # set unversioned info
+    SetInfo "${aurpkgsnover[@]}"
 
     # set targets providers
     aurpkgsproviders=("${aurpkgsnover[@]}")
-    aurpkgsproviders+=($(GetJson "$json" "Provides"))
+    aurpkgsproviders+=($(GetInfo "Provides"))
     aurpkgsproviders=("${aurpkgsproviders[@]%%[><=]*}")
 
     # check targets conflicts
-    aurpkgsconflicts=($(GetJson "$json" "Conflicts"))
+    aurpkgsconflicts=($(GetInfo "Conflicts"))
     if [[ "${aurpkgsconflicts[*]}" ]]; then
         aurpkgsconflicts=("${aurpkgsconflicts[@]%%[><=]*}")
         aurpkgsconflicts=($(CommArr 'aurpkgsproviders' 'aurpkgsconflicts' '-12'))
         for i in "${aurpkgsconflicts[@]}"; do
             [[ " ${aurpkgsnover[*]} " =~ " $i " ]] || continue
-            [[ " $(GetJson "$json" "Conflicts" "$i") " =~ " $i " ]] && continue
+            [[ " $(GetInfo "Conflicts" "$i") " =~ " $i " ]] && continue
             Note "f" $"unresolvable package conflicts detected"
             Note "e" $"failed to prepare transaction (conflicting dependencies: $i)" "$E_INSTALL_DEPS_FAILED"
         done
@@ -266,15 +266,15 @@ DepsSolver() {
     deps+=("${aurdepspkgs[@]}")
 
     # ensure correct dependency order
-    SetJson "${deps[@]}"
+    SetInfo "${deps[@]}"
     SortDepsAur "${aurpkgs[@]}"
     deps=($(tsort <<< "${tsortdeps[@]}")) || Note "e" $"dependency cycle detected" "$E_INSTALL_DEPS_FAILED"
 
     # get AUR packages info
-    depsAname=($(GetJson "$json" "Name"))
-    depsAver=($(GetJson "$json" "Version"))
-    depsAood=($(GetJson "$json" "OutOfDate"))
-    depsAmain=($(GetJson "$json" "Maintainer"))
+    depsAname=($(GetInfo "Name"))
+    depsAver=($(GetInfo "Version"))
+    depsAood=($(GetInfo "OOD"))
+    depsAmain=($(GetInfo "Maintainer"))
     for i in "${!depsAname[@]}"; do
         read -rd' ' < <(expac -Qs '%v' "^${depsAname[$i]}$") depsQver[$i]
         [[ "${depsQver[$i]}" ]] || depsQver[$i]="%"  # avoid empty elements shift
@@ -319,19 +319,19 @@ DepsSolver() {
 
 FindDepsAur() {
     local depspkgs depspkgstmp depspkgsaurtmp builtpkg vcsdepspkgs assumedepspkgs aurversionpkgs
-    local aurversionpkgsname aurversionpkgsver aurversionpkgsaurver aurversionpkgsverdiff i j json
+    local aurversionpkgsname aurversionpkgsver aurversionpkgsaurver aurversionpkgsverdiff i j
     # global aurpkgsnover depspkgsaur errdeps repodeps aurdepspkgs prevdepspkgsaur foreignpkgs
     [[ "$nodeps" && "$dcount" -ge 2 ]] && return
 
-    # set json
+    # set info
     unset aurversionpkgs
     if [[ "${depspkgsaur[*]}" ]]; then
-        SetJson "${depspkgsaur[@]}"
+        SetInfo "${depspkgsaur[@]}"
         for i in "${prevdepspkgsaur[@]}"; do
             [[ "$i" =~ [\>\<=] ]] && aurversionpkgs+=("$i")
         done
     else
-        SetJson "${aurpkgsnover[@]}"
+        SetInfo "${aurpkgsnover[@]}"
         for i in "${aurpkgs[@]}"; do
             [[ "$i" =~ [\>\<=] ]] && aurversionpkgs+=("$i")
         done
@@ -343,7 +343,7 @@ FindDepsAur() {
             unset aurversionpkgsname aurversionpkgsver aurversionpkgsaurver aurversionpkgsverdiff
             aurversionpkgsname="${aurversionpkgs[$i]%%[><=]*}"
             aurversionpkgsver="${aurversionpkgs[$i]##*[><=]}"
-            aurversionpkgsaurver="$(GetJson "$json" "Version" "$aurversionpkgsname")"
+            aurversionpkgsaurver="$(GetInfo "Version" "$aurversionpkgsname")"
             aurversionpkgsverdiff="$(vercmp "$aurversionpkgsaurver" "$aurversionpkgsver")"
 
             # not found in AUR nor repo
@@ -367,22 +367,22 @@ FindDepsAur() {
         done
     fi
 
-    depspkgs=($(GetJson "$json" "Depends"))
+    depspkgs=($(GetInfo "Depends"))
 
     # cached packages makedeps check
     if [[ ! "$PKGDEST" || "$rebuild" ]]; then
-        depspkgs+=($(GetJson "$json" "MakeDepends"))
-        [[ "$checkdeps" ]] && depspkgs+=($(GetJson "$json" "CheckDepends"))
+        depspkgs+=($(GetInfo "MakeDepends"))
+        [[ "$checkdeps" ]] && depspkgs+=($(GetInfo "CheckDepends"))
     else
         [[ ! "${depspkgsaur[*]}" ]] && depspkgsaurtmp=("${aurpkgs[@]}") ||
             depspkgsaurtmp=("${depspkgsaur[@]}")
         for i in "${!depspkgsaurtmp[@]}"; do
-            local depAname="$(GetJson "$json" "Name" "${depspkgsaurtmp[$i]}")"
-            local depAver="$(GetJson "$json" "Version" "${depspkgsaurtmp[$i]}")"
+            local depAname="$(GetInfo "Name" "${depspkgsaurtmp[$i]}")"
+            local depAver="$(GetInfo "Version" "${depspkgsaurtmp[$i]}")"
             GetBuiltPkg "$depAname-$depAver" "$PKGDEST"
             if [[ ! "$builtpkg" ]]; then
-                depspkgs+=($(GetJson "$json" "MakeDepends" "${depspkgsaurtmp[$i]}"))
-                [[ "$checkdeps" ]] && depspkgs+=($(GetJson "$json" "CheckDepends"))
+                depspkgs+=($(GetInfo "MakeDepends" "${depspkgsaurtmp[$i]}"))
+                [[ "$checkdeps" ]] && depspkgs+=($(GetInfo "CheckDepends"))
             fi
             unset builtpkg
         done
@@ -471,7 +471,7 @@ FindDepsAur() {
 
 SortDepsAur() {
     local i j sortaurpkgs sortdepspkgs sortdepspkgsaur
-    # global checkedsortdepspkgsaur allcheckedsortdepspkgsaur errdepsnover json
+    # global checkedsortdepspkgsaur allcheckedsortdepspkgsaur errdepsnover
     [[ "${checkedsortdepspkgsaur[*]}" ]] && sortaurpkgs=("${checkedsortdepspkgsaur[@]}") ||
         sortaurpkgs=("${aurpkgs[@]}")
 
@@ -479,9 +479,9 @@ SortDepsAur() {
     for i in "${!sortaurpkgs[@]}"; do
         unset sortdepspkgs sortdepspkgsaur
 
-        sortdepspkgs+=($(GetJson "$json" "Depends" "${sortaurpkgs[$i]}"))
-        sortdepspkgs+=($(GetJson "$json" "MakeDepends" "${sortaurpkgs[$i]}"))
-        [[ "$checkdeps" ]] && sortdepspkgs+=($(GetJson "$json" "CheckDepends"))
+        sortdepspkgs+=($(GetInfo "Depends" "${sortaurpkgs[$i]}"))
+        sortdepspkgs+=($(GetInfo "MakeDepends" "${sortaurpkgs[$i]}"))
+        [[ "$checkdeps" ]] && sortdepspkgs+=($(GetInfo "CheckDepends"))
 
         # remove versioning
         errdepsnover=("${errdeps[@]%%[><=]*}")
@@ -489,7 +489,7 @@ SortDepsAur() {
         # check AUR deps only
         for j in "${!sortdepspkgs[@]}"; do
             sortdepspkgs[$j]="${sortdepspkgs[$j]%%[><=]*}"
-            sortdepspkgsaur+=($(GetJson "$json" "Name" "${sortdepspkgs[$j]}"))
+            sortdepspkgsaur+=($(GetInfo "Name" "${sortdepspkgs[$j]}"))
             # add erroneous AUR deps
             [[ " ${errdepsnover[*]} " =~ " ${sortdepspkgs[$j]} " ]] &&
                 sortdepspkgsaur+=("${sortdepspkgs[$j]}")
@@ -528,9 +528,9 @@ FindDepsAurError() {
 
     [[ "${currenterrdep[*]}" ]] || currenterrdep="${tsorterrdeps[0]}"
     if [[ ! " ${aurpkgs[*]} " =~ " $nexterrdep " ]]; then
-        nextallerrdeps=($(GetJson "$json" "Depends" "$nexterrdep"))
-        nextallerrdeps+=($(GetJson "$json" "MakeDepends" "$nexterrdep"))
-        [[ "$checkdeps" ]] && nextallerrdeps+=($(GetJson "$json" "CheckDepends"))
+        nextallerrdeps=($(GetInfo "Depends" "$nexterrdep"))
+        nextallerrdeps+=($(GetInfo "MakeDepends" "$nexterrdep"))
+        [[ "$checkdeps" ]] && nextallerrdeps+=($(GetInfo "CheckDepends"))
 
         # remove versioning
         nextallerrdeps=("${nextallerrdeps[@]%%[><=]*}")
@@ -541,9 +541,9 @@ FindDepsAurError() {
         FindDepsAurError "${tsorterrdeps[@]}"
     else
         for i in "${!aurpkgs[@]}"; do
-            nextallerrdeps=($(GetJson "$json" "Depends" "${aurpkgs[$i]}"))
-            nextallerrdeps+=($(GetJson "$json" "MakeDepends" "${aurpkgs[$i]}"))
-            [[ "$checkdeps" ]] && nextallerrdeps+=($(GetJson "$json" "CheckDepends"))
+            nextallerrdeps=($(GetInfo "Depends" "${aurpkgs[$i]}"))
+            nextallerrdeps+=($(GetInfo "MakeDepends" "${aurpkgs[$i]}"))
+            [[ "$checkdeps" ]] && nextallerrdeps+=($(GetInfo "CheckDepends"))
 
             # remove versioning
             nextallerrdeps=("${nextallerrdeps[@]%%[><=]*}")
@@ -638,7 +638,7 @@ IgnoreDepsChecks() {
             isignored=1
         elif [[ "${ignoredgrps[*]}" ]]; then
             unset aurdepspkgsgrp
-            aurdepspkgsgrp=($(GetJson "$json" "Groups" "$i"))
+            aurdepspkgsgrp=($(GetInfo "Groups" "$i"))
             aurdepspkgsgrp+=($(expac -Q '%G' "$i"))
             for j in "${aurdepspkgsgrp[@]}"; do
                 [[ " ${ignoredgrps[*]} " =~ " $j " ]] && isignored=1
@@ -779,7 +779,7 @@ ConflictChecks() {
     local allQprovides allQconflicts Aprovides Aconflicts aurconflicts aurAconflicts Qrequires i j
     local k l repodepsprovides repodepsconflicts checkedrepodepsconflicts repodepsconflictsname
     local repodepsconflictsver localver repoconflictingpkgs
-    # global deps depsAname aurdepspkgs aurconflictingpkgs aurconflictingpkgskeep aurconflictingpkgsrm json
+    # global deps depsAname aurdepspkgs aurconflictingpkgs aurconflictingpkgskeep aurconflictingpkgsrm
     # global depsQver repodepspkgs repoconflictingpkgskeep repoconflictingpkgsrm repoprovidersconflictingpkgs
     Note "i" $"looking for inter-conflicts..."
 
@@ -789,8 +789,8 @@ ConflictChecks() {
 
     # AUR conflicts
     Aprovides=("${depsAname[@]}")
-    Aprovides+=($(GetJson "$json" "Provides"))
-    Aconflicts=($(GetJson "$json" "Conflicts"))
+    Aprovides+=($(GetInfo "Provides"))
+    Aconflicts=($(GetInfo "Conflicts"))
     # remove AUR versioning
     Aprovides=("${Aprovides[@]%%[><=]*}")
     Aconflicts=("${Aconflicts[@]%%[><=]*}")
@@ -802,7 +802,7 @@ ConflictChecks() {
         unset aurAconflicts
         [[ " ${depsAname[*]} " =~ " $i " ]] && aurAconflicts=("$i")
         for j in "${depsAname[@]}"; do
-            [[ " $(GetJson "$json" "Conflicts" "$j") " =~ " $i " ]] && aurAconflicts+=("$j")
+            [[ " $(GetInfo "Conflicts" "$j") " =~ " $i " ]] && aurAconflicts+=("$j")
         done
 
         for j in "${aurAconflicts[@]}"; do
@@ -820,7 +820,7 @@ ConflictChecks() {
                     for l in "${!depsAname[@]}"; do
                         [[ " ${depsAname[$l]} " =~ "$k" ]] && read -rd' ' < <(expac -Qs '%v' "^$k$") depsQver[$l]
                     done
-                    Aprovides+=($(GetJson "$json" "Provides" "$j"))
+                    Aprovides+=($(GetInfo "Provides" "$j"))
                     # remove AUR versioning
                     Aprovides=("${Aprovides[@]%%[><=]*}")
                     [[ ! " ${Aprovides[*]} ${aurconflictingpkgsrm[*]} " =~ " $k " ]] && CheckRequires "$k"
@@ -836,7 +836,7 @@ ConflictChecks() {
                     fi
                 fi
             fi
-            Aprovides+=($(GetJson "$json" "Provides" "$j"))
+            Aprovides+=($(GetInfo "Provides" "$j"))
             # remove AUR versioning
             Aprovides=("${Aprovides[@]%%[><=]*}")
             [[ ! " ${Aprovides[*]} ${aurconflictingpkgsrm[*]} " =~ " $k " ]] && CheckRequires "$k"
@@ -880,7 +880,7 @@ ConflictChecks() {
     for i in "${repoconflicts[@]}"; do
         unset Qprovides
         unset j && read -rd' ' < <(expac -Ss '%n %C %S' "^$i$") j
-        unset k && read -rd' ' < <(expac -Qs '%n %C %S' "^$i$") k
+	    unset k && read -rd' ' < <(expac -Qs '%n %C %S' "^$i$") k
         [[ "$j" = "$k" || ! "$k" ]] && continue # skip when no conflict with repopkgs
         if [[ ! "$noconfirm" && ! " ${repoconflictingpkgs[*]} " =~ " $k " ]]; then
             if ! Proceed "n" $"$j and $k are in conflict ($i). Remove $k?"; then
@@ -939,7 +939,7 @@ OutofdateChecks() {
     local i
     # global depsAname depsAver depsAood
     for i in "${!depsAname[@]}"; do
-        [[ "${depsAood[$i]}" -gt 0 ]] &&
+        [[ "${depsAood[$i]}" -gt 1969 ]] &&
             Note "w" $"${colorW}${depsAname[$i]}-${depsAver[$i]}${reset} has been flagged ${colorR}out of date${reset} on ${colorY}$(date -d "@${depsAood[$i]}" "+%c")${reset}"
     done
 }
@@ -1146,9 +1146,9 @@ EditPkgs() {
 
 MakePkgs() {
     local i j k oldorphanpkgs neworphanpkgs orphanpkgs oldoptionalpkgs newoptionalpkgs optionalpkgs
-    local errinstall pkgsdepslist vcsclients vcschecked aurdevelpkgsAver aurdevelpkgsQver
+    local errinstall pkgsdepslist vcsclients vcschecked aurpkgsAver aurpkgsQver
     local builtpkgs builtdepspkgs basepkgsupdate checkpkgsdepslist deplist isaurdeps makedeps
-    # global deps basepkgs sudoloop pkgsbase pkgsdeps aurpkgs aurdepspkgs builtpkg errmakepkg json
+    # global deps basepkgs sudoloop pkgsbase pkgsdeps aurpkgs aurdepspkgs builtpkg errmakepkg
     # global repoprovidersconflictingpkgs
 
     # download
@@ -1196,14 +1196,14 @@ MakePkgs() {
         unset builtpkg
         if [[ ! "${basepkgs[$i]}" =~ $vcs ]]; then
             for j in "${pkgsdepslist[@]}"; do
-                [[ "$PKGDEST" && ! "$rebuild" ]] && GetBuiltPkg "$j-$(GetJson "$json" "Version" "$j")" "$PKGDEST"
+                [[ "$PKGDEST" && ! "$rebuild" ]] && GetBuiltPkg "$j-$(GetInfo "Version" "$j")" "$PKGDEST"
             done
         fi
 
         # install vcs clients (checking pkgbase extension only does not take fetching specific
         # commit into account)
         unset vcsclients
-        makedeps=($(GetJson "$json" "MakeDepends" "${basepkgs[$i]}"))
+        makedeps=($(GetInfo "MakeDepends" "${basepkgs[$i]}"))
         for k in git subversion mercurial bzr cvs darcsl; do
             [[ " ${makedeps[*]} " =~ " $k " ]] && vcsclients+=("$k")
         done
@@ -1263,15 +1263,15 @@ MakePkgs() {
 
         cd "$clonedir/${basepkgs[$i]}" || exit "$E_MISSING_FILE"
         # retrieve updated version
-        mapfile -d'-' -t < <(makepkg --packagelist) k && aurdevelpkgsAver="${k[-3]}-${k[-2]}"; unset k
+        mapfile -d'-' -t < <(makepkg --packagelist) k && aurpkgsAver="${k[-3]}-${k[-2]}"; unset k
         # build devel if necessary only (supported protocols only)
         if [[ "${basepkgs[$i]}" =~ $vcs ]]; then
             # check split packages update
             unset basepkgsupdate checkpkgsdepslist
             for j in "${pkgsdepslist[@]}"; do
-                read -rd' ' < <(expac -Qs '%v' "^$j$") aurdevelpkgsQver
-                if [[ "$needed" && ! "$rebuild" && "$aurdevelpkgsQver" ]] &&
-                    [[ "$(vercmp "$aurdevelpkgsQver" "$aurdevelpkgsAver")" -ge 0 ]]; then
+                read -rd' ' < <(expac -Qs '%v' "^$j$") aurpkgsQver
+                if [[ "$needed" && ! "$rebuild" && "$aurpkgsQver" ]] &&
+                    [[ "$(vercmp "$aurpkgsQver" "$aurpkgsAver")" -ge 0 ]]; then
                     Note "w" $"${colorW}$j${reset} is up-to-date -- skipping" && continue
                 else
                     basepkgsupdate='true'; checkpkgsdepslist+=("$j")
@@ -1283,7 +1283,7 @@ MakePkgs() {
         # check package cache
         for j in "${pkgsdepslist[@]}"; do
             unset builtpkg
-            [[ "$PKGDEST" && ! "$rebuild" ]] && GetBuiltPkg "$j-$aurdevelpkgsAver" "$PKGDEST"
+            [[ "$PKGDEST" && ! "$rebuild" ]] && GetBuiltPkg "$j-$aurpkgsAver" "$PKGDEST"
             if [[ "$builtpkg" ]]; then
                 if [[ " ${aurdepspkgs[*]} " =~ " $j " || "$installpkg" ]]; then
                     Note "i" $"Installing ${colorW}$j${reset} cached package..."
@@ -1327,9 +1327,9 @@ MakePkgs() {
         for j in "${pkgsdepslist[@]}"; do
             unset builtpkg
             if [[ "$PKGDEST" ]]; then
-                GetBuiltPkg "$j-$aurdevelpkgsAver" "$PKGDEST"
+                GetBuiltPkg "$j-$aurpkgsAver" "$PKGDEST"
             else
-                GetBuiltPkg "$j-$aurdevelpkgsAver" "${clonedir:?}/${basepkgs[$i]}"
+                GetBuiltPkg "$j-$aurpkgsAver" "${clonedir:?}/${basepkgs[$i]}"
             fi
             [[ " ${aurdepspkgs[*]} " =~ " $j " ]] && builtdepspkgs+=("$builtpkg") || builtpkgs+=("$builtpkg")
         done
@@ -1515,33 +1515,40 @@ GetBuiltPkg() {
 GetPkgbase() {
     local i
     # global pkgsbase basepkgs
-    SetJson "$@"
+    SetInfo "$@"
     for i in "$@"; do
-        pkgsbase+=($(GetJson "$json" "PackageBase" "$i"))
+        pkgsbase+=($(GetInfo "PackageBase" "$i"))
     done
     for i in "${pkgsbase[@]}"; do
         [[ " ${basepkgs[*]} " =~ " $i " ]] || basepkgs+=("$i")
     done
 }
 
-declare -A jsoncache
-SetJson() {
-    if [[ "$#" -eq 0 ]]; then
-        json="{}"
-    else
-        # global json
-        [[ "${jsoncache[$@]}" ]] || jsoncache[$@]="$(auracle rawinfo -- "$@")"
-        json="${jsoncache[$@]}"
-    fi
+SetInfo() {
+    unset Name PackageBase Version Maintainer OOD Groups {,Make,Check}Depends Provides Conflicts
+    [[ "$*" ]] || return
+    declare -gA Name PackageBase Version Maintainer OOD Groups {,Make,Check}Depends Provides Conflicts
+    while IFS=$'\037' read -r Aname Abase Aver Amain Aood Agrp Adeps Amakedeps Acheckdeps Aprovs Aconfs; do
+        Name[$Aname]="$Aname"
+        PackageBase[$Aname]="$Abase"
+        Version[$Aname]="$Aver"
+        Maintainer[$Aname]="$Amain"
+        OOD[$Aname]="$Aood"
+        Groups[$Aname]="$Agrps"
+        Depends[$Aname]="$Adeps"
+        CheckDepends[$Aname]="$Acheckdeps"
+        Provides[$Aname]="$Aprovs"
+        Conflicts[$Aname]="$Aconfs"
+    done < <(auracle info "$@" -F \
+        $'{name}\037{pkgbase}\037{version}\037{maintainer}\037{outofdate:%s}\037{groups: }\037{depends: }\037{makedepends: }\037{checkdepends: }\037{provides: }\037{conflicts: }')
 }
 
-GetJson() {
-    local filter="." json="$1" field="$2" pkgname="$3"
+GetInfo() {
+    local field="$1" pkgname="$2"
 
-    [[ "$pkgname" ]] && filter="select(.Name == \"$pkgname\")"
+    [[ "$pkgname" ]] && field="${field}[$pkgname]" || field="${field}[@]"
 
-    jq -rM ".results[] | $filter | select(.$field) .$field | if type==\"array\" then .[] else . end" <<< "$json" 2> /dev/null ||
-        Note "e" $"Failed to parse JSON" "$E_FAIL"
+    printf '%s\n' "${!field}"
 }
 
 CheckRequires() {
