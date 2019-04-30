@@ -293,14 +293,14 @@ DepsSolver() {
                     [[ "$j" = "${errdepsnover[$i]}" ]] && break
                 done
                 # reverse deps order
-                for i in "${!tsorterrdeps[@]}"; do
-                    tsorterrdepsrev[$i]="${tsorterrdeps[-(($i+1))]}"
+                for j in "${!tsorterrdeps[@]}"; do
+                    tsorterrdepsrev[$j]="${tsorterrdeps[-(($j+1))]}"
                 done
                 tsorterrdeps=("${tsorterrdepsrev[@]}") && unset tsorterrdepsrev
                 errdepslist+=("${tsorterrdeps[0]}")
                 FindDepsAurError "${tsorterrdeps[@]}"
-                for i in "${!errdepslist[@]}"; do
-                    errdepslistrev[$i]="${errdepslist[-(($i+1))]}"
+                for j in "${!errdepslist[@]}"; do
+                    [[ "${errdepslist[-(($j+1))]}" ]] && errdepslistrev+=("${errdepslist[-(($j+1))]}")
                 done
                 errdepslist=("${errdepslistrev[@]}") && unset errdepslistrev
                 Note "f" $"no results found for ${errdeps[$i]} (dependency tree: ${errdepslist[*]})"
