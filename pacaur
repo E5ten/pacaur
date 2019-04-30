@@ -326,14 +326,10 @@ FindDepsAur() {
     unset aurversionpkgs
     if [[ "${depspkgsaur[*]}" ]]; then
         SetInfo "${depspkgsaur[@]}"
-        for i in "${prevdepspkgsaur[@]}"; do
-            [[ "$i" =~ [\>\<=] ]] && aurversionpkgs+=("$i")
-        done
+        aurversionpkgs=("${prevdepspkgsaur[@]}")
     else
         SetInfo "${aurpkgsnover[@]}"
-        for i in "${aurpkgs[@]}"; do
-            [[ "$i" =~ [\>\<=] ]] && aurversionpkgs+=("$i")
-        done
+        aurversionpkgs=("${aurpkgs[@]}")
     fi
 
     # versioning check
