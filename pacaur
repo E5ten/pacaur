@@ -4,7 +4,13 @@
 #
 
 shopt -s extglob
-declare -r version="4.8.6"
+
+# gettext initialization
+export LC_COLLATE=C
+export TEXTDOMAIN='pacaur'
+export TEXTDOMAINDIR='/usr/share/locale'
+
+declare -r version=4.8.6
 
 #
 # Config
@@ -14,11 +20,6 @@ declare -r version="4.8.6"
 unset aur asdeps asexplicit checkdeps cleancache ccount dcount devel downloadonly edit info
 unset installpkg native needed noconfirm nodeps noedit noop operation pac pace pacQ pacS quiet
 unset readline rebuild refresh repo search upgrade var vcs ver
-
-# internationalization
-declare -xr LC_COLLATE=C
-declare -xr TEXTDOMAIN='pacaur'
-declare -xr TEXTDOMAINDIR='/usr/share/locale'
 
 # determine config location
 if [[ "${XDG_CONFIG_DIRS}" ]]; then
@@ -1707,7 +1708,7 @@ while true; do
         --ignore) ignoredpkgs+=("$2"); shift;;
         --color) color="$2"; shift;;
         --literal) auropts+=("$1");;
-        --@(by|searchby)) auropts+=("$1=$2"); shift;;
+        --@(by|searchby)) auropts+=("--searchby=$2"); shift;;
         --sort) sortorder="ascending"; sortby="$2"; shift;;
         --rsort) sortorder="descending"; sortby="$2"; shift;;
         -d|--nodeps) nodeps=1; makeopts+=("$1"); ((dcount++));;
