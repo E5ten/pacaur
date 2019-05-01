@@ -272,7 +272,7 @@ DepsSolver() {
     # get AUR packages info
     depsAname=($(GetInfo "Name"))
     depsAver=($(GetInfo "Version"))
-    depsAood=($(GetInfo "OOD"))
+    depsAood=($(GetInfo "OutOfDate"))
     depsAmain=($(GetInfo "Maintainer"))
     for i in "${!depsAname[@]}"; do
         read -rd' ' < <(expac -Qs '%v' "^${depsAname[$i]}$") depsQver[$i]
@@ -294,13 +294,13 @@ DepsSolver() {
                 done
                 # reverse deps order
                 for j in "${!tsorterrdeps[@]}"; do
-                    tsorterrdepsrev[$j]="${tsorterrdeps[-(($j+1))]}"
+                    tsorterrdepsrev[$j]="${tsorterrdeps[-j-1]}"
                 done
                 tsorterrdeps=("${tsorterrdepsrev[@]}") && unset tsorterrdepsrev
                 errdepslist+=("${tsorterrdeps[0]}")
                 FindDepsAurError "${tsorterrdeps[@]}"
                 for j in "${!errdepslist[@]}"; do
-                    [[ "${errdepslist[-(($j+1))]}" ]] && errdepslistrev+=("${errdepslist[-(($j+1))]}")
+                    [[ "${errdepslist[-j-1]}" ]] && errdepslistrev+=("${errdepslist[-j-1]}")
                 done
                 errdepslist=("${errdepslistrev[@]}") && unset errdepslistrev
                 Note "f" $"no results found for ${errdeps[$i]} (dependency tree: ${errdepslist[*]})"
@@ -1215,7 +1215,7 @@ MakePkgs() {
             if [[ "$silent" = true ]]; then
                 makepkg -f --verifysource "${makeopts[@]}" &>/dev/null
             else
-                makepkg -f --verifysource "${makeopts[@]}"
+                makepkg -f --verifysource "${makeopts[@]}" >/dev/null
             fi
             (($? > 0)) && errmakepkg+=("${pkgsdeps[$i]}")
             # extraction, prepare and pkgver update
@@ -1519,17 +1519,18 @@ GetPkgbase() {
 }
 
 SetInfo() {
-    unset Name PackageBase Version Maintainer OOD Groups {,Make,Check}Depends Provides Conflicts
+    unset Name PackageBase Version Maintainer OutOfDate Groups {,Make,Check}Depends Provides Conflicts
     [[ "$*" ]] || return
-    declare -gA Name PackageBase Version Maintainer OOD Groups {,Make,Check}Depends Provides Conflicts
-    while IFS=$'\037' read -r Aname Abase Aver Amain Aood Agrp Adeps Amakedeps Acheckdeps Aprovs Aconfs; do
+    declare -gA Name PackageBase Version Maintainer OutOfDate Groups {,Make,Check}Depends Provides Conflicts
+    while IFS=$'\037' read -r Aname Abase Aver Amain Aood Agrps Adeps Amakedeps Acheckdeps Aprovs Aconfs; do
         Name[$Aname]="$Aname"
         PackageBase[$Aname]="$Abase"
         Version[$Aname]="$Aver"
         Maintainer[$Aname]="$Amain"
-        OOD[$Aname]="$Aood"
+        OutOfDate[$Aname]="$Aood"
         Groups[$Aname]="$Agrps"
         Depends[$Aname]="$Adeps"
+        MakeDepends[$Aname]="$Amakedeps"
         CheckDepends[$Aname]="$Acheckdeps"
         Provides[$Aname]="$Aprovs"
         Conflicts[$Aname]="$Aconfs"
@@ -1796,7 +1797,7 @@ case "$operation" in
                 exitrepo=$?
             fi
             if [[ ! "$repo" ]]; then
-                auracle search ${auropts[@]} -- ${pkgs[@]}; exitaur=$?
+                auracle search ${auropts[@]} -- ${pkgs[@]}; exitaur="$?"
             fi
             # exit code
             [[ "$exitrepo" = 0 || "$exitaur" = 0 ]] && exit "$E_OK" || exit "$E_FAIL"
