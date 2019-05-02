@@ -810,7 +810,7 @@ ConflictChecks() {
                     aurconflictingpkgs+=("$j" "$k")
                     aurconflictingpkgskeep+=("$j")
                     aurconflictingpkgsrm+=("$k")
-                    for l in "${!depsAname[@]}"; do
+                    for k in "${!depsAname[@]}"; do
                         [[ " ${depsAname[$l]} " =~ "$k" ]] && read -rd' ' < <(expac -Qs '%v' "^$k$") depsQver[$l]
                     done
                     Aprovides+=($(GetInfo "Provides" "$j"))
@@ -1241,7 +1241,7 @@ MakePkgs() {
 
     # set build lock
     [[ -e "$tmpdir/pacaur.build.lck" ]] && Note "e" $"pacaur.build.lck exists in $tmpdir" "$E_FAIL"
-    touch "$tmpdir/pacaur.build.lck"
+    > "$tmpdir/pacaur.build.lck"
 
     # install provider packages and repo conflicting packages that makepkg --noconfirm cannot handle
     if [[ "${repoprovidersconflictingpkgs[*]}" ]]; then
@@ -1288,8 +1288,8 @@ MakePkgs() {
                 fi
                 pkgsdeps=("${pkgsdeps[@]/#$j,}"); pkgsdeps=("${pkgsdeps[@]/%,$j}")
                 pkgsdeps=("${pkgsdeps[@]//,$j,/,}")
-                for i in "${!pkgsdeps[@]}"; do
-                    [[ "${pkgsdeps[i]}" = "$j" ]] && pkgsdeps[i]='%'
+                for k in "${!pkgsdeps[@]}"; do
+                    [[ "${pkgsdeps[k]}" = "$j" ]] && pkgsdeps[k]='%'
                 done
                 continue
             fi
@@ -1623,7 +1623,7 @@ NothingToDo() {
 }
 
 SudoV() {
-    touch "$tmpdir/pacaur.sudov.lck"
+    > "$tmpdir/pacaur.sudov.lck"
     while [[ -e "$tmpdir/pacaur.sudov.lck" ]]; do
         sudo "$pacmanbin" -V > /dev/null
         sleep 298
