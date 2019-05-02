@@ -81,15 +81,12 @@ check_buildoption "check" "y" && checkdeps=1
 # determine whether we have gettext; make it a no-op if we do not
 type -p gettext >/dev/null || gettext() { printf '%s\n' "$@"; }
 
-# set up directories
-declare -r clonedir="$(canonicalize_path "$clonedir")"
-install -dm700 "$clonedir"
-
 # define vcs packages
 declare -r vcs='-(cvs|svn|git|hg|bzr|darcs|daily.*|nightly.*)$'
 
-# set variables to readonly
-declare -r configdir userconfigdir userpacmandir usercachedir tmpdir
+# set variables to readonly and setup clonedir
+declare -r clonedir configdir userconfigdir userpacmandir usercachedir tmpdir
+mkdir -pm700 "$clonedir"
 
 #
 # Functions
@@ -554,7 +551,7 @@ FindDepsRepo() {
     [[ "${repodeps[*]}" ]] || return
 
     # reduce root binary deps
-    repodeps=($(sort -u < <(printf '%s\n' "${repodeps[@]}")))
+    repodeps=($(printf '%s\n' "${repodeps[@]}" | sort -u))
 
     # add initial repodeps
     [[ "${repodepspkgs[*]}" ]] || repodepspkgs=("${repodeps[@]}")
@@ -1174,11 +1171,11 @@ MakePkgs() {
 
     # reverse deps order
     for i in "${!basepkgs[@]}"; do
-        basepkgsrev[$i]="${basepkgs[-(($i+1))]}"
+        basepkgsrev[$i]="${basepkgs[-i-1]}"
     done
     basepkgs=("${basepkgsrev[@]}") && unset basepkgsrev
     for i in "${!pkgsdeps[@]}"; do
-        pkgsdepsrev[$i]="${pkgsdeps[-(($i+1))]}"
+        pkgsdepsrev[$i]="${pkgsdeps[-i-1]}"
     done
     pkgsdeps=("${pkgsdepsrev[@]}") && unset pkgsdepsrev
 
@@ -1288,7 +1285,11 @@ MakePkgs() {
                 else
                     Note "w" $"Package ${colorW}$j${reset} already available in cache"
                 fi
-                pkgsdeps=($(printf '%s\n' "${pkgsdeps[@]}" | sed "s/^$j,//g;s/,$j$//g;s/,$j,/,/g;s/^$j$/%/g"))
+                pkgsdeps=("${pkgsdeps[@]/#$j,}"); pkgsdeps=("${pkgsdeps[@]/%,$j}")
+                pkgsdeps=("${pkgsdeps[@]//,$j,/,}")
+                for i in "${!pkgsdeps[@]}"; do
+                    [[ "${pkgsdeps[i]}" = "$j" ]] && pkgsdeps[i]='%'
+                done
                 continue
             fi
         done
@@ -1520,6 +1521,10 @@ GetPkgbase() {
 }
 
 SetInfo() {
+    # Usage: SetJson $@
+    # Use auracle formatted info output for all aur packages passed to SetInfo, and sort it into
+    # associated arrays, with the key always being a pkgname fields are delimited by \037, the unit
+    # separator, to prevent the delimiter from being in the input and shifting the entire array
     unset Name PackageBase Version Maintainer OutOfDate Groups {,Make,Check}Depends Provides Conflicts
     [[ "$*" ]] || return
     declare -gA Name PackageBase Version Maintainer OutOfDate Groups {,Make,Check}Depends Provides Conflicts
@@ -1700,7 +1705,7 @@ while true; do
         -i|--info) info=1;;
         -e|--edit) pace=1;;
         -u|--upgrades|--sysupgrade) upgrade=1; installpkg=1;;
-        -q|--quiet) quiet=1; auropts+=("$1");;
+        -q|--quiet) export QUIET=1; quiet=1; auropts+=("$1");;
         -c|--clean) cleancache=1 && ((ccount++));;
         -n|--native) native=1;;
         -r|--repo) repo=1;;
