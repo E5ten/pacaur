@@ -729,7 +729,7 @@ ProviderChecks() {
                     read -r nb
                     ;;
                     *)
-                    read -r -n "$(printf '%s' "$providersnb" | wc -m)" nb
+                    read -r -n "${#providersnb}" nb
                     printf '\n'
                     ;;
                 esac
