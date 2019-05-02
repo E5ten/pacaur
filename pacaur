@@ -710,7 +710,8 @@ ProviderChecks() {
 
         # skip if already provided
         if [[ "${providerspkgs[*]}" ]]; then
-            providerspkgs=($(tr ' ' '|' <<< "${providerspkgs[@]}"))
+            providerspkgs=($(printf '%s|' "${providerspkgs[@]}"))
+            providerspkgs=("${providerspkgs[@]%|}")
             provided+=($(expac -Ss '%S' "^(${providerspkgs[*]})$"))
             [[ " ${provided[*]} " =~ " ${providersdeps[$i]} " ]] && continue
         fi
