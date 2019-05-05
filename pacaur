@@ -1554,7 +1554,7 @@ GetInfo() {
 }
 
 CheckRequires() {
-    local Qrequires=($(expac -Q '%N'))
+    local Qrequires=($(expac -Q '%N' "$@"))
     if [[ "${Qrequires[*]}" ]]; then
         Note "f" $"failed to prepare transaction (could not satisfy dependencies)"
         Note "e" $"${Qrequires[@]}: requires $@" "$E_INSTALL_DEPS_FAILED"
