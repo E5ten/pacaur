@@ -4,8 +4,9 @@
 # Dependencies: makepkg (pacman), pacman, expac, auracle (auracle-git)
 #
 
-# gettext initialization
 export LC_COLLATE=C
+
+# gettext initialization
 export TEXTDOMAIN='pacaur'
 export TEXTDOMAINDIR='/usr/share/locale'
 
@@ -167,7 +168,7 @@ while true; do
         --rsort) sortorder="descending"; sortby="$2"; shift;;
         -d|--nodeps) NODEPS=1; MAKEPKG_OPTS+=("$1"); ((++DCOUNT));;
         --assume-installed) assumeinstalled+=("$2"); shift;;
-        -[DFRTUV--@(database|files|remove|deptest|upgrade)) ((++PAC));;
+        -[DFRTUV]|--@(database|files|remove|deptest|upgrade)) ((++PAC));;
         --@(asdeps|asexplicit|devel|needed|noconfirm|noedit|rebuild)) i="${1#--}"; declare "${i^^}"=1; unset i;;
         -[glp]|--@(groups|list|print)) NOOP=1;;
         -w|--downloadonly) DOWNLOADONLY=1;;
