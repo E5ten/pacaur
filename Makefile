@@ -47,7 +47,8 @@ doc:
 install: doc
 	@echo "Installing..."
 	@install -Dm644 ./config $(DESTDIR)$(DOCDIR)/config.example
-	@install -Dm755 ./pacaur -t $(DESTDIR)$(BINDIR)
+	@install -Dm755 -t $(DESTDIR)$(BINDIR) ./pacaur
+	@install -Dm644 -t $(DESTDIR)$(DATAROOTDIR)/pacaur ./libpacaur/*.sh
 	@sed -i "s%declare -r pacaur_version=.*%declare -r pacaur_version=\'$(VERSION)\'%" $(DESTDIR)$(BINDIR)/pacaur
 	@install -Dm644 ./completions/bash.completion $(DESTDIR)$(DATAROOTDIR)/bash-completion/completions/pacaur
 	@install -Dm644 ./completions/zsh.completion $(DESTDIR)$(DATAROOTDIR)/zsh/site-functions/_pacaur
