@@ -1352,7 +1352,7 @@ MakePkgs() {
         [[ "${aurdepspkgs[*]}" ]] && aurdepspkgs=($(expac -Q '%n' "${aurdepspkgs[@]}"))
         [[ "${aurdepspkgs[*]}" ]] && Note "i" $"Removing installed AUR dependencies..." &&
             sudo "$pacmanbin" -Rsn "${aurdepspkgs[@]}" --noconfirm
-        # readd removed conflicting packages
+        # re-add removed conflicting packages
         [[ "${aurconflictingpkgsrm[*]}" ]] &&
             sudo "$pacmanbin" -S ${aurconflictingpkgsrm[@]} --ask 36 --asdeps --needed --noconfirm
         [[ "${repoconflictingpkgsrm[*]}" ]] &&
