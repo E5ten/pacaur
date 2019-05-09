@@ -4,12 +4,12 @@
 #   functions: SetInfo GetInfo
 #
 
-[[ "$LIBPACAUR_INFO_SH" ]] && return
+[[ -v LIBPACAUR_INFO_SH ]] && return
 LIBPACAUR_INFO_SH=1
 
 # Get information from AUR RPC and sort into associative arrays by field with
 # pkgnames as indices
-# Usage: SetInfo <package(s)>
+# Usage: SetInfo( $packages )
 SetInfo() {
     # Use auracle formatted info output for all aur packages passed to SetInfo, and sort it into
     # associated arrays, with the key always being a pkgname fields are delimited by \037, the unit
@@ -37,7 +37,7 @@ SetInfo() {
 # obtained through auracle in SetInfo
 # Usage: GetInfo <field> (optional pkgname)
 GetInfo() {
-    local field="$1" pkgname="$2"
+    local field="$1" pkgname="${2:-}"
 
     [[ "$pkgname" ]] && field="${field}[$pkgname]" || field="${field}[@]"
 

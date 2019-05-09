@@ -22,10 +22,12 @@ ASEXPLICIT=0
 AUR=0
 CCOUNT=0
 CHECKDEPS=0
+CLEANCACHE=0
 COLOR=''
 DCOUNT=0
 DEVEL=0
 DOWNLOADONLY=0
+HELP=0
 INFO=0
 INSTALLPKG=0
 NATIVE=0
@@ -35,6 +37,9 @@ NODEPS=0
 NOOP=0
 OPERATION=''
 PAC=0
+PACE=0
+PACQ=0
+PACS=0
 REBUILD=0
 REFRESH=0
 REPO=0
@@ -52,7 +57,7 @@ AURACLE_OPTS=()
 shopt -s extglob
 
 # Import libmakepkg
-for lib in parseopts util option error; do
+for lib in error option parseopts util; do
     source "${LIBRARY}/util/${lib}.sh"
 done
 check_buildoption "check" "y" && CHECKDEPS=1
@@ -63,7 +68,7 @@ for lib in "$LIBPACAUR"/*.sh; do
 done
 
 # determine config location
-if [[ "${XDG_CONFIG_DIRS}" ]]; then
+if [[ -v XDG_CONFIG_DIRS ]]; then
     for dir in ${XDG_CONFIG_DIRS//:/ }; do
         [[ -d "$dir/pacaur" ]] && export XDG_CONFIG_DIRS="$dir" && break
     done
@@ -79,6 +84,7 @@ mapfile -td$'\n' restore_envvars < \
     <(declare -p PACMAN {PKG,SRC}{DEST,EXT} {SRCPKG,LOG}DEST BUILDDIR GPGKEY PACKAGER CARCH 2>/dev/null)
 
 # source makepkg variables
+MAKEPKG_CONF="${MAKEPKG_CONF:-$confdir/makepkg.conf}"
 if [[ -r "$MAKEPKG_CONF" ]]; then
     source "$MAKEPKG_CONF"
 else
@@ -149,34 +155,35 @@ while true; do
         [[ "$1": = "--$i" ]] && PACMAN_OPTS+=("$1=$2")
     done
     case "$1" in
-        -S|--sync) PACS=1; INSTALLPKG=1; OPERATION=sync; ((++PAC));;
-        -Q|--query) PACQ=1; ((++PAC));;
-        -s|--search) SEARCH=1;;
-        -i|--info) INFO=1;;
-        -e|--edit) PACE=1;;
-        -u|--upgrades|--sysupgrade) UPGRADE=1;;
-        -q|--quiet) QUIET=1; AURACLE_OPTS+=("$1");;
-        -c|--clean) CLEANCACHE=1 && ((++CCOUNT));;
-        -n|--native) NATIVE=1;;
-        -r|--repo) REPO=1;;
-        -a|--aur) AUR=1;;
-        --ignore) ignoredpkgs+=("$2"); shift;;
-        --color) COLOR="$2"; shift;;
-        --literal) AURACLE_OPTS+=("$1");;
-        --*(search)by) AURACLE_OPTS+=("--searchby=$2"); shift;;
-        --sort) sortorder="ascending"; sortby="$2"; shift;;
-        --rsort) sortorder="descending"; sortby="$2"; shift;;
-        -d|--nodeps) NODEPS=1; MAKEPKG_OPTS+=("$1"); ((++DCOUNT));;
-        --assume-installed) assumeinstalled+=("$2"); shift;;
+        -S|--sync)                      PACS=1; INSTALLPKG=1; OPERATION=sync; ((++PAC));;
+        -Q|--query)                     PACQ=1; ((++PAC));;
+        -s|--search)                    SEARCH=1;;
+        -i|--info)                      INFO=1;;
+        -e|--edit)                      PACE=1;;
+        -u|--upgrades|--sysupgrade)     UPGRADE=1;;
+        -q|--quiet)                     QUIET=1; AURACLE_OPTS+=("$1");;
+        -c|--clean)                     CLEANCACHE=1 && ((++CCOUNT));;
+        -n|--native)                    NATIVE=1;;
+        -r|--repo)                      REPO=1;;
+        -a|--aur)                       AUR=1;;
+        --ignore)                       ignoredpkgs+=("$2"); shift;;
+        --color)                        COLOR="$2"; shift;;
+        --literal)                      AURACLE_OPTS+=("$1");;
+        --*(search)by)                  AURACLE_OPTS+=("--searchby=$2"); shift;;
+        --sort)                         sortorder="ascending"; sortby="$2"; shift;;
+        --rsort)                        sortorder="descending"; sortby="$2"; shift;;
+        -d|--nodeps)                    NODEPS=1; MAKEPKG_OPTS+=("$1"); ((++DCOUNT));;
+        --assume-installed)             assumeinstalled+=("$2"); shift;;
+        -[glp]|--@(groups|list|print))  NOOP=1;;
+        -w|--downloadonly)              DOWNLOADONLY=1;;
+        -y|--refresh)                   REFRESH=1;;
+        -h|--help)                      HELP=1;;
+        -v)                             VER=1;;
+        --version)                      OPERATION=version; ((++PAC));;
+        --silent)                       silent=true; PACMAN_ARGS+=('-q');
+                                        AURACLE_OPTS+=('-q') MAKEPKG_OPTS+=('-L');;
         -[DFRTUV]|--@(database|files|remove|deptest|upgrade)) ((++PAC));;
         --@(asdeps|asexplicit|devel|needed|noconfirm|noedit|rebuild)) i="${1#--}"; declare "${i^^}"=1; unset i;;
-        -[glp]|--@(groups|list|print)) NOOP=1;;
-        -w|--downloadonly) DOWNLOADONLY=1;;
-        --silent) silent=true; PACMAN_ARGS+=("-q"); AURACLE_OPTS+=("-q") MAKEPKG_OPTS+=("-L");;
-        -y|--refresh) REFRESH=1;;
-        -h|--help) HELP=1;;
-        --version) OPERATION=version; ((++PAC));;
-        -v) VER=1;;
         --) shift; break;;
     esac
     shift
@@ -210,7 +217,7 @@ fi
 
 # sanity check
 (( AUR )) && REFRESH=0
-(( PAC == 0 && PACE )) && OPERATION=edit
+(( ! PAC && PACE )) && OPERATION=edit
 (( PACQ && PACE )) && PACMAN_OPTS+=('-e')
 (( PACQ && UPGRADE )) && OPERATION=upgrades
 (( PACQ && NATIVE )) && REPO=1
@@ -219,7 +226,7 @@ fi
 (( PACS && NOOP )) && OPERATION=''
 (( PACS && CLEANCACHE )) && SEARCH=0 INFO=0 UPGRADE=0
 (( PAC > 1 )) && Note "e" $"only one operation may be used at a time" "$E_FAIL"
-[[ "$OPERATION" = sync ]] && (( ! SEARCH && ! INFO && ! CLEANCACHE && EUID == 0 )) &&
+[[ "$OPERATION" = sync ]] && (( ! SEARCH && ! INFO && ! CLEANCACHE && ! EUID )) &&
     Note "e" $"you cannot perform this operation as root" "$E_ROOT"
 (( PACS && SEARCH && INFO )) &&
     Note "e" $"invalid option: '--info' and '--search' may not be used together" "$E_INVALID_OPTION"
@@ -229,9 +236,9 @@ fi
     Note "e" $"you cannot use ${WHITE}pacaur${ALL_OFF} as PACMAN environment variable" "$E_FAIL"
 [[ -w "$clonedir" ]] ||
     Note "e" $"${WHITE}$clonedir${ALL_OFF} does not have write permission" "$E_FS_PERMISSIONS"
-(( ! REFRESH && ! UPGRADE && ! CLEANCACHE )) && [[ "${pkgs[*]}" && "$OPERATION" =~ (sync|edit) ]] &&
+(( ! REFRESH && ! UPGRADE && ! CLEANCACHE )) && [[ ! "${pkgs[*]}" && "$OPERATION" =~ (sync|edit) ]] &&
     Note "e" $"no targets specified (use -h for help)" "$E_FAIL"
-    (( ! HELP )) && [[ ! "${pkgs[*]}" && " ${PACMAN_ARGS[*]} " =~ ' '-[RU]' ' ]] &&
+(( ! HELP )) && [[ ! "${pkgs[*]}" && " ${PACMAN_ARGS[*]} " =~ ' '-[RU]' ' ]] &&
     Note "e" $"no targets specified (use -h for help)" "$E_FAIL"
 (( AUR && REPO )) && AUR=0 && REPO=0 &&
     Note "w" $"invalid option: '-r/--repo' and '-a/--aur' may not be used together, disabling both"

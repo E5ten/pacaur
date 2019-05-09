@@ -5,15 +5,15 @@
 #    ReinstallChecks OutOfDateChecks OrphanChecks CheckRequires
 #
 
-[[ "$LIBPACAUR_CHECKS_SH" ]] && return
+[[ -v LIBPACAUR_CHECKS_SH ]] && return
 LIBPACAUR_CHECKS_SH=1
 
-LIBPACAUR="${LIBPACAUR:-'/usr/share/pacaur'}"
+LIBPACAUR="${LIBPACAUR:-/usr/share/pacaur}"
 
 source "$LIBPACAUR/info.sh"
 
 # Check packages to be ignored during installation or upgrade
-# Usage: IgnoreChecks
+# usage: IgnoreChecks()
 IgnoreChecks() {
     local checkaurpkgs checkaurpkgsAver checkaurpkgsQver checkaurpkgsgrp i
     # global aurpkgs rmaurpkgs
@@ -71,7 +71,7 @@ IgnoreChecks() {
 }
 
 # Check packages needed as dependencies to see if they're ignored
-# Usage: IgnoreDepsChecks
+# usage: IgnoreDepsChecks()
 IgnoreDepsChecks() {
     local i
     # global ignoredpkgs aurpkgs aurdepspkgs aurdepspkgsgrp repodepspkgsgrp rmaurpkgs deps repodepspkgs
@@ -135,7 +135,7 @@ IgnoreDepsChecks() {
 }
 
 # Check package and dependency providers
-# Usage: ProviderChecks
+# usage: ProviderChecks()
 ProviderChecks() {
     local providersdeps providersdepsnover providers repodepspkgsprovided providerspkgs provided
     local nb providersnb
@@ -252,7 +252,7 @@ ProviderChecks() {
 }
 
 # Check conflicting packages and dependencies
-# Usage: ConflictChecks
+# usage: ConflictChecks()
 ConflictChecks() {
     local allQprovides allQconflicts Aprovides Aconflicts aurconflicts aurAconflicts Qrequires i j
     local k l repodepsprovides repodepsconflicts checkedrepodepsconflicts repodepsconflictsname
@@ -386,7 +386,7 @@ ConflictChecks() {
 }
 
 # Check which packages are going to be reinstalled
-# Usage: ReinstallChecks
+# usage: ReinstallChecks()
 ReinstallChecks() {
     local i depsAtmp
     # global aurpkgs aurdepspkgs deps aurconflictingpkgs depsAname depsQver depsAver depsAood depsAmain
@@ -416,7 +416,7 @@ ReinstallChecks() {
 }
 
 # Check out of date packages
-# Usage: OutOfDateChecks
+# usage: OutOfDateChecks()
 OutOfDateChecks() {
     local i
     # global depsAname depsAver depsAood
@@ -427,7 +427,7 @@ OutOfDateChecks() {
 }
 
 # Check orphaned packages
-# Usage: OrphanChecks
+# usage: OrphanChecks()
 OrphanChecks() {
     local i
     # global depsAname depsAver depsAmain
@@ -438,7 +438,7 @@ OrphanChecks() {
 }
 
 # Check that all dependencies are satisfied
-# Usage: CheckRequires <packages>
+# usage: CheckRequires( $packages )
 CheckRequires() {
     local Qrequires=($(expac -Q '%N' "$@"))
     if [[ "${Qrequires[*]}" ]]; then

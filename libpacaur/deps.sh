@@ -5,17 +5,17 @@
 #   FindDepsRepoProvider
 #
 
-[[ "$LIBPACAUR_DEPS_SH" ]] && return
+[[ -v LIBPACAUR_DEPS_SH ]] && return
 LIBPACAUR_DEPS_SH=1
 
-LIBPACAUR="${LIBPACAUR:-'/usr/share/pacaur'}"
+LIBPACAUR="${LIBPACAUR:-/usr/share/pacaur}"
 
 source "$LIBPACAUR/info.sh"
 source "$LIBPACAUR/utils.sh"
 source "$LIBPACAUR/pkgs.sh"
 
 # Dependency solver for both repo and AUR dependencies
-# Usage: DepsSolver
+# usage: DepsSolver()
 DepsSolver() {
     local i aurpkgsconflicts
     # global aurpkgs aurpkgsnover aurpkgsproviders aurdeps deps errdeps
@@ -108,7 +108,7 @@ DepsSolver() {
 }
 
 # Find dependencies of of AUR packages
-# Usage: FindDepsAur <aur package(s)>...
+# usage: FindDepsAur( $packages )
 FindDepsAur() {
     local depspkgs depspkgstmp depspkgsaurtmp builtpkg vcsdepspkgs assumedepspkgs aurversionpkgs
     local aurversionpkgsname aurversionpkgsver aurversionpkgsaurver aurversionpkgsverdiff i j
@@ -257,7 +257,7 @@ FindDepsAur() {
 }
 
 # Sort dependencies to ensure correct order
-# Usage: SortDepsAur <aur package(s)>...
+# usage: SortDepsAur( $packages )
 SortDepsAur() {
     local i j sortaurpkgs sortdepspkgs sortdepspkgsaur
     # global checkedsortdepspkgsaur allcheckedsortdepspkgsaur errdepsnover
@@ -308,7 +308,7 @@ SortDepsAur() {
 }
 
 # Find dependency errors in AUR packages
-# Usage: FindDepsAurError <sorted_dependencies>
+# usage: FindDepsAurError( $sorted_dependencies )
 FindDepsAurError() {
     local i nexterrdep nextallerrdeps
     # global errdepsnover errdepslist tsorterrdeps currenterrdep
@@ -345,7 +345,7 @@ FindDepsAurError() {
 }
 
 # Find dependencies of repository packages
-# Usage: FindDepsRepo <repo package(s)>
+# usage: FindDepsRepo( $repo_packages )
 FindDepsRepo() {
     local allrepodepspkgs repodepspkgstmp
     # global repodeps repodepspkgs
@@ -370,7 +370,7 @@ FindDepsRepo() {
 }
 
 # Find dependency providers of packages
-# Usage: FindDepsRepoProvider <repo package(s)>
+# usage: FindDepsRepoProvider( $repo_packages )
 FindDepsRepoProvider() {
     local allrepodepspkgs providerrepodepspkgstmp
     # global repodeps repodepspkgs

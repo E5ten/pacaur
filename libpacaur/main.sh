@@ -4,10 +4,10 @@
 #   functions: Core Prompt Usage Cancel
 #
 
-[[ "$LIBPACAUR_MAIN_SH" ]] && return
+[[ -v LIBPACAUR_MAIN_SH ]] && return
 LIBPACAUR_MAIN_SH=1
 
-LIBPACAUR="${LIBPACAUR:-'/usr/share/pacaur'}"
+LIBPACAUR="${LIBPACAUR:-/usr/share/pacaur}"
 
 source "$LIBPACAUR/utils.sh"
 source "$LIBPACAUR/pkgs.sh"

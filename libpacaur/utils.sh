@@ -4,6 +4,9 @@
 #   functions: Proceed Note GetLength NothingToDo SudoV CommArr
 #
 
+[[ -v LIBPACAUR_UTILS_SH ]] && return
+LIBPACAUR_UTILS_SH=1
+
 # Print string and accept or cancel operation based on user input
 # Usage: Proceed <default option ("y" or "n")> <string>
 Proceed() {

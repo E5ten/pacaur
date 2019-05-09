@@ -3,16 +3,16 @@
 #   aur.sh -- functions related to cache management
 #   functions: UpgradeAur CleanCache
 
-[[ "$LIBPACAUR_CACHE_SH" ]] && return
+[[ "${LIBPACAUR_CACHE_SH:-}" ]] && return
 LIBPACAUR_CACHE_SH=1
 
-LIBPACAUR="${LIBPACAUR:-'/usr/share/pacaur'}"
+LIBPACAUR="${LIBPACAUR:-/usr/share/pacaur}"
 
 source "$LIBPACAUR/utils.sh"
 source "$LIBPACAUR/info.sh"
 
 # Upgrade needed AUR packages
-# Usage: UpgradeAur
+# usage: UpgradeAur()
 UpgradeAur() {
     local foreignpkgs allaurpkgs aurforeignpkgs i
     # global aurpkgs
@@ -47,7 +47,7 @@ UpgradeAur() {
 
 # Clean AUR cache, including sources and clone directories. This function lets
 # users select what content is deleted
-# Usage: CleanCache <package(s)>
+# usage: CleanCache( $packages )
 CleanCache() {
     local i cachepkgs
     cachedir=($(pacman-conf CacheDir))

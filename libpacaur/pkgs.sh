@@ -5,10 +5,10 @@
 #   GetIgnoredGrps GetBuiltPkg GetPkgBase GetInstallScripts
 #
 
-[[ "$LIBPACAUR_PKGS_SH" ]] && return
+[[ -v LIBPACAUR_PKGS_SH ]] && return
 LIBPACAUR_PKGS_SH=1
 
-LIBPACAUR="${LIBPACAUR:-'/usr/share/pacaur'}"
+LIBPACAUR="${LIBPACAUR:-/usr/share/pacaur}"
 source "$LIBPACAUR/info.sh"
 source "$LIBPACAUR/utils.sh"
 
