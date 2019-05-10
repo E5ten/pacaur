@@ -1147,7 +1147,7 @@ MakePkgs() {
             MakePkg -f --verifysource >/dev/null || errmakepkgs+=("${pkgsdeps[i]}")
             # extraction, prepare and pkgver update
             info $"Preparing %s..." "${colorW}${pkgsdeps[i]}${reset}"
-            MakePkg -od --skipinteg || errmakepkgs+=("${pkgsdeps[i]}")
+            MakePkg -Cod --skipinteg || errmakepkgs+=("${pkgsdeps[i]}")
         fi
     done
     if [[ "${errmakepkgs[*]}" ]]; then
