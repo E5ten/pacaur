@@ -53,7 +53,7 @@ fi
 
 # restore environment variables
 for i in "${var[@]/#/_}"; do
-    declare -x "${i//_}"="${!i:-${!i//_}}"
+    [[ "${!i}" ]] && declare -x "${i//_}"="${!i:-${!i//_}}"
 done
 
 # set default config variables
@@ -1633,7 +1633,7 @@ SudoV() {
 CommArr() {
     # args are names of 2 arrays and outputs elements that are only in the 2nd
     local array1="$1[@]" array2="$2[@]"
-    comm <(printf '%s\n' "${!array1}" | sort -u) <(printf '%s\n' "${!array2}" | sort -u) "$3"
+    comm <(sort -u <(printf '%s\n' "${!array1}")) <(sort -u <(printf '%s\n' "${!array2}")) "$3"
 }
 
 trap Cancel INT
@@ -1700,8 +1700,8 @@ while true; do
         [[ "$1": = "--$i" ]] && pacopts+=("$1=$2")
     done
     case "$1" in
-        -S|--sync) pacS=1; installpkg=1; operation=sync; ((pac++));;
-        -Q|--query) pacQ=1; ((pac++));;
+        -S|--sync) pacS=1; installpkg=1; operation=sync; ((++pac));;
+        -Q|--query) pacQ=1; ((++pac));;
         -s|--search) search=1;;
         -i|--info) info=1;;
         -e|--edit) pace=1;;
@@ -1719,14 +1719,14 @@ while true; do
         --rsort) sortorder="descending"; sortby="$2"; shift;;
         -d|--nodeps) nodeps=1; makeopts+=("$1"); ((dcount++));;
         --assume-installed) assumeinstalled+=("$2"); shift;;
-        -[DFRTUV]|--@(database|files|remove|deptest|upgrade)) ((pac++));;
+        -[DFRTUV]|--@(database|files|remove|deptest|upgrade)) ((++pac));;
         --@(asdeps|asexplicit|devel|needed|noconfirm|noedit|rebuild)) declare "${1/--}"=1;;
         -[glp]|--@(groups|list|print)) noop=1;;
         -w|--downloadonly) downloadonly=1;;
         --silent) silent=true; pacopts+=("--quiet"); auropts+=("--quiet") makeopts+=("--log");;
         -y|--refresh) refresh=1;;
         -h|--help) help=1;;
-        --version) operation=version; ((pac++));;
+        --version) operation=version; ((++pac));;
         -v) ver=1;;
         --) shift; break;;
     esac
@@ -1779,7 +1779,7 @@ fi
     Note "e" $"you cannot use ${colorW}pacaur${reset} as PACMAN environment variable" "$E_FAIL"
 [[ -w "$clonedir" ]] ||
     Note "e" $"${colorW}$clonedir${reset} does not have write permission" "$E_FS_PERMISSIONS"
-[[ ! "${pkgs[*]}" && ! "${refresh}${upgrade}${cleancache}" && "$operation" =~ (sync|edit) ]] &&
+[[ ! "${pkgs[*]}" && ! "${help}${refresh}${upgrade}${cleancache}" && "$operation" =~ (sync|edit) ]] &&
     Note "e" $"no targets specified (use -h for help)" "$E_FAIL"
 [[ ! "${pkgs[*]}" && " ${pacmanarg[*]} " =~ ' '-[RU]' ' && ! "$help" ]] &&
     Note "e" $"no targets specified (use -h for help)" "$E_FAIL"
@@ -1840,6 +1840,8 @@ case "$operation" in
                 Note "i" $"Package(s) ${colorW}${aurpkgs[*]}${reset} not found in repositories, trying ${colorM}AUR${reset}..."
             fi
             [[ ! "$repo" ]] && Core
+        elif [[ "$help" ]]; then
+            "$pacmanbin" ${pacmanarg[@]} ${pacopt[@]} -- ${pkg[@]}
         # sync (-S, -y), downloadonly (-Sw, -m), refresh (-Sy)
         else
             if [[ ! "${pkgs[*]}" ]]; then
