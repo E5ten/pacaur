@@ -1537,39 +1537,61 @@ GetPkgbase() {
 }
 
 SetInfo() {
-    # Usage: SetJson $@
+    # Usage: SetInfo $@
     # Use auracle formatted info output for all aur packages passed to SetInfo, and sort it into
-    # associated arrays, with the key always being a pkgname fields are delimited by \037, the unit
-    # separator, to prevent the delimiter from being in the input and shifting the entire array
-    unset Name PackageBase Version Maintainer OutOfDate Groups {,Make,Check}Depends Provides Conflicts
+    # associated arrays
+    local fields=(Name PackageBase Version Maintainer OutOfDate Groups {,Make,Check}Depends Provides Conflicts)
+    local auracle_packages=("$@") cache_array=() info_arrays=() i j
+
+    # cache previous info arrays in temporary arrays of the same names, but prefixed with c
+    if [[ "${Name[*]}" ]]; then
+        mapfile -t cache_array < <(declare -p "${fields[@]}")
+        local -A "${cache_array[@]/#declare -A /c}"
+    fi
+
+    unset "${fields[@]}"
     [[ "$*" ]] || return
-    declare -gA Name PackageBase Version Maintainer OutOfDate Groups {,Make,Check}Depends Provides Conflicts
-    while IFS=$'\037' read -r Aname Abase Aver Amain Aood Agrps Adeps Amakedeps Acheckdeps Aprovs Aconfs; do
-        Name[$Aname]="$Aname"
-        PackageBase[$Aname]="$Abase"
-        Version[$Aname]="$Aver"
-        Maintainer[$Aname]="$Amain"
-        OutOfDate[$Aname]="$Aood"
-        Groups[$Aname]="$Agrps"
-        Depends[$Aname]="$Adeps"
-        MakeDepends[$Aname]="$Amakedeps"
-        CheckDepends[$Aname]="$Acheckdeps"
-        Provides[$Aname]="$Aprovs"
-        Conflicts[$Aname]="$Aconfs"
-    done < <(auracle info "$@" -F \
-        $'{name}\037{pkgbase}\037{version}\037{maintainer}\037{outofdate:%s}\037{groups: }\037{depends: }\037{makedepends: }\037{checkdepends: }\037{provides: }\037{conflicts: }')
+    declare -Ag "${fields[@]}"
+
+    for i in "${!cName[@]}"; do
+        if [[ " $* " = *" ${cName[$i]} "* ]]; then
+            for j in "${!auracle_packages[@]}"; do
+                [[ "${cName[$i]}" != "${auracle_packages[j]}" ]] || unset "auracle_packages[$j]"
+            done
+            Name[$i]="${cName[$i]}"
+            PackageBase[$i]="${cPackageBase[$i]}"
+            Version[$i]="${cVersion[$i]}"
+            Maintainer[$i]="${cMaintainer[$i]}"
+            OutOfDate[$i]="${cOutOfDate[$i]}"
+            Groups[$i]="${cGroups[$i]}"
+            Depends[$i]="${cDepends[$i]}"
+            MakeDepends[$i]="${cMakeDepends[$i]}"
+            CheckDepends[$i]="${cCheckDepends[$i]}"
+            Provides[$i]="${cProvides[$i]}"
+            Conflicts[$i]="${cConflicts[$i]}"
+        fi
+    done
+
+    if [[ "${auracle_packages[*]}" ]]; then
+        mapfile -t info_arrays < <(auracle info "${auracle_packages[@]}" -F \
+            $'Name[{name}]={name}\nPackageBase[{name}]={pkgbase}\nVersion[{name}]={version}\nMaintainer[{name}]={maintainer}\nOutOfDate[{name}]={outofdate:%s}\nGroups[{name}]={groups:\037}\nDepends[{name}]={depends:\037}\nMakeDepends[{name}]={makedepends:\037}\nCheckDepends[{name}]={checkdepends:\037}\nProvides[{name}]={provides:\037}\nConflicts[{name}]={conflicts:\037}')
+        [[ ! "${info_arrays[*]}" ]] || declare -g "${info_arrays[@]}"
+   fi
 }
 
 GetInfo() {
-    local field="$1" pkgname="${2-}"
+    local -n field="$1"
 
-    [[ "$pkgname" ]] && field="${field}[$pkgname]" || field="${field}[@]"
-
-    printf '%s\n' "${!field-}"
+    if [[ "$2" ]]; then
+        printf '%s\n' "${field[$2]//$'\037'/ }"
+    else
+        printf '%s\n' "${field[@]//$'\037'/ }"
+    fi
 }
 
 CheckRequires() {
-    local Qrequires=($(expac -Q '%N' "$@"))
+    local -a Qrequires
+    mapfile -t Qrequires < <(expac -Q '%N' "$@")
     if [[ "${Qrequires[*]}" ]]; then
         fail $"failed to prepare transaction (could not satisfy dependencies)"
         error $"%s: requires %s" "${Qrequires[*]}" "$*" "$E_INSTALL_DEPS_FAILED"
@@ -1579,10 +1601,15 @@ CheckRequires() {
 Proceed() {
     local answer ret readline=0
 
-    [[ "$TERM" = dumb ]] || ((cleancache)) && readline=1
+    if [[ "$TERM" = dumb ]] || ((cleancache)); then
+        readline=1
+    fi
     case "$1" in
-        y)  printf "${colorB}%s${reset} ${colorW}%s${reset}" "::" "$2 [Y/n] "
-            ((noconfirm)) && printf '\n' && return 0
+        y)  printf "%s %s" "${colorB}::${reset}" "${colorW}$2 [Y/n] ${reset}"
+            if ((noconfirm)); then
+                printf '\n'
+                return 0
+            fi
             while true; do
                 if ((readline)); then
                     read -r answer
@@ -1595,8 +1622,11 @@ Proceed() {
                     *) ((readline)) && ret=1 && break;;
                 esac
             done;;
-        n)  printf "${colorB}%s${reset} ${colorW}%s${reset}" "::" "$2 [y/N] "
-            ((noconfirm)) && printf '\n' && return 0
+        n)  printf "%s %s" "${colorB}::${reset}" "${colorW}$2 [y/N] ${reset}"
+            if ((noconfirm)); then
+                printf '\n'
+                return 0
+            fi
             while true; do
                 if ((readline)); then
                     read -r answer
