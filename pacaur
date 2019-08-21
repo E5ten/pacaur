@@ -1154,8 +1154,8 @@ EditPkgs() {
 
 MakePkgs() {
     local i j k oldorphanpkgs neworphanpkgs orphanpkgs oldoptionalpkgs newoptionalpkgs optionalpkgs
-    local errinstall pkgsdepslist vcsclients vcschecked aurpkgsAver aurpkgsQver
-    local builtpkgs builtdepspkgs basepkgsupdate checkpkgsdepslist deplist isaurdeps makedeps
+    local errinstall pkgsdepslist vcsclients vcschecked aurpkgsAver aurpkgsQver built{,deps}pkgs
+    local basepkgsupdate checkpkgsdepslist isaurdeps makedeps {basepkgs,pkgsdeps}rev
     # global deps basepkgs sudoloop pkgsbase pkgsdeps aurpkgs aurdepspkgs builtpkg errmakepkg
     # global repoprovidersconflictingpkgs
 
@@ -1169,37 +1169,47 @@ MakePkgs() {
     oldoptionalpkgs=($(CommArr 'oldorphanpkgs' 'oldoptionalpkgs' '-13'))
 
     # initialize sudo
-    if sudo -n "${pacmanbin}" -V > /dev/null || sudo -v; then
+    if sudo -n "${pacmanbin}" -V &>/dev/null || sudo -v; then
         [[ "$sudoloop" = true ]] && SudoV &
     fi
 
     # split packages support
     for i in "${!pkgsbase[@]}"; do
         for j in "${!deps[@]}"; do
-            [[ "${pkgsbase[$i]}" = "${pkgsbase[$j]}" && ! " ${pkgsdeps[*]} " = *" ${deps[$j]} "* ]] &&
+            [[ "${pkgsbase[$i]}" = "${pkgsbase[$j]}" && " ${pkgsdeps[*]} " != *" ${deps[$j]} "* ]] &&
                 pkgsdeps+=("${deps[$j]}")
         done
         pkgsdeps+=('%')
     done
-    deplist="${pkgsdeps[*]}"; deplist="${deplist// % /|}"; deplist="${deplist//%}"
-    deplist="${deplist// /,}"; deplist="${deplist//|/ }"; deplist="${deplist%, }"
-    pkgsdeps=($(printf '%s\n' ${deplist% ,})); pkgsdeps=("${pkgsdeps[@]%,}")
+    for i in "${!pkgsdeps[@]}"; do
+        [[ "${pkgsdeps[i]}" != '%' ]] || continue
+        for j in "${!pkgsdeps[@]}"; do
+            ((j > i)) || continue
+            if [[ "${pkgsdeps[j]}" != '%' ]]; then
+                pkgsdeps[i]="${pkgsdeps[i]},${pkgsdeps[j]}"; unset 'pkgsdeps[j]'
+            else
+                break
+            fi
+        done
+    done
+    for i in "${!pkgsdeps[@]}"; do
+        [[ "${pkgsdeps[i]}" != '%' ]] || unset 'pkgsdeps[i]'
+    done
+    pkgsdeps=("${pkgsdeps[@]}") # remove empty array indices
 
     # reverse deps order
     for i in "${!basepkgs[@]}"; do
-        basepkgsrev[$i]="${basepkgs[-i-1]}"
+        basepkgsrev[i]="${basepkgs[-i-1]}"
     done
-    basepkgs=("${basepkgsrev[@]}") && unset basepkgsrev
-
+    basepkgs=("${basepkgsrev[@]}")
     for i in "${!pkgsdeps[@]}"; do
-        pkgsdepsrev[$i]="${pkgsdeps[-i-1]}"
+        pkgsdepsrev[i]="${pkgsdeps[-i-1]}"
     done
-    pkgsdeps=("${pkgsdepsrev[@]}") && unset pkgsdepsrev
+    pkgsdeps=("${pkgsdepsrev[@]}")
 
     # integrity check
     for i in "${!basepkgs[@]}"; do
-        # get split packages list
-        read -rd',' -a pkgsdepslist <<< "${pkgsdeps[$i]}"
+        IFS=',' read -ra pkgsdepslist <<< "${pkgsdeps[i]}" # get split packages list
 
         # cache check
         unset builtpkg
@@ -1218,7 +1228,7 @@ MakePkgs() {
         done
         unset makedeps
         for j in "${vcsclients[@]}"; do
-            if [[ ! " ${vcschecked[*]} " = *" $j "* ]]; then
+            if [[ " ${vcschecked[*]} " != *" $j "* ]]; then
                 expac -Qs '' "^$j$" || sudo "${pacmanbin}" -S --asdeps --noconfirm -- "$j"
                 vcschecked+=("$j")
             fi
@@ -1267,8 +1277,7 @@ MakePkgs() {
 
     # main
     for i in "${!basepkgs[@]}"; do
-        # get split packages list
-        read -rd',' -a pkgsdepslist <<< "${pkgsdeps[$i]}"
+        IFS=',' read -ra pkgsdepslist <<< "${pkgsdeps[i]}" # get split packages list
 
         cd "$clonedir/${basepkgs[$i]}" || exit "${E_MISSING_FILE}"
         # retrieve updated version
@@ -1310,7 +1319,7 @@ MakePkgs() {
                 continue
             fi
         done
-        [[ "${pkgsdeps[$i]}" = '%' ]] && continue
+        [[ "${pkgsdeps[i]}" != '%' ]] || continue
 
         # build
         info $"Building %s package(s)..." "${colorW}${pkgsdeps[$i]}${reset}"
