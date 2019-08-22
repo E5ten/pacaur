@@ -142,8 +142,8 @@ msgstr ""
 "markiert"
 
 #: pacaur:718
-msgid "(cached)"
-msgstr "(im Cache)"
+msgid "cached"
+msgstr "im Cache"
 
 #: pacaur:723 pacaur:745
 msgid "Name"

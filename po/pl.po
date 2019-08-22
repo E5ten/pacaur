@@ -141,8 +141,8 @@ msgstr ""
 "\"+%Y-%m-%d\")${reset}"
 
 #: pacaur:718
-msgid "(cached)"
-msgstr "(w pamięci podręcznej)"
+msgid "cached"
+msgstr "w pamięci podręcznej"
 
 #: pacaur:723 pacaur:745
 msgid "Name"

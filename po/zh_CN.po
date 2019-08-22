@@ -157,8 +157,8 @@ msgstr ""
 "维护的${reset}"
 
 #: pacaur:1014
-msgid "(cached)"
-msgstr "(已缓存)"
+msgid "cached"
+msgstr "已缓存"
 
 #: pacaur:1019 pacaur:1052
 msgid "AUR Packages  (${#deps[@]})"

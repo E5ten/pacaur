@@ -173,8 +173,8 @@ msgstr ""
 "orfano${reset} in AUR"
 
 #: pacaur:1002
-msgid "(cached)"
-msgstr "(in cache)"
+msgid "cached"
+msgstr "in cache"
 
 #: pacaur:1007 pacaur:1040
 msgid "AUR Packages  (${#deps[@]})"

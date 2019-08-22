@@ -119,7 +119,7 @@ msgid ""
 msgstr ""
 
 #: pacaur:813
-msgid "(cached)"
+msgid "cached"
 msgstr ""
 
 #: pacaur:818 pacaur:851

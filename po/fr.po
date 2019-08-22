@@ -135,8 +135,8 @@ msgstr ""
 "%Y\")${reset}"
 
 #: pacaur:707
-msgid "(cached)"
-msgstr "(dans le cache)"
+msgid "cached"
+msgstr "dans le cache"
 
 #: pacaur:711 pacaur:733
 msgid "Name"

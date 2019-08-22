@@ -153,8 +153,8 @@ msgstr ""
 "${reset} in de AUR"
 
 #: pacaur:830
-msgid "(cached)"
-msgstr "(gecached)"
+msgid "cached"
+msgstr "gecached"
 
 #: pacaur:835 pacaur:868
 msgid "AUR Packages  (${#deps[@]})"

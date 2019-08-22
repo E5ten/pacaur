@@ -137,8 +137,8 @@ msgstr ""
 "${reset} olarak işaretlenmiş."
 
 #: pacaur:707
-msgid "(cached)"
-msgstr "(önbellekte)"
+msgid "cached"
+msgstr "önbellekte"
 
 #: pacaur:711 pacaur:733
 msgid "Name"

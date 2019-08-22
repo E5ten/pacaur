@@ -166,8 +166,8 @@ msgstr ""
 "${reset} en el AUR"
 
 #: pacaur:1002
-msgid "(cached)"
-msgstr "(en caché)"
+msgid "cached"
+msgstr "en caché"
 
 #: pacaur:1007 pacaur:1040
 msgid "AUR Packages  (${#deps[@]})"

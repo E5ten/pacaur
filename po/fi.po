@@ -150,8 +150,8 @@ msgstr ""
 "${reset} AUR:ssa"
 
 #: pacaur:831
-msgid "(cached)"
-msgstr "(välimuistissa)"
+msgid "cached"
+msgstr "välimuistissa"
 
 #: pacaur:836 pacaur:869
 msgid "AUR Packages  (${#deps[@]})"

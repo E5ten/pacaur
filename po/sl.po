@@ -165,8 +165,8 @@ msgstr ""
 "${reset} v AUR"
 
 #: pacaur:896
-msgid "(cached)"
-msgstr "(predpomnjen)"
+msgid "cached"
+msgstr "predpomnjen"
 
 #: pacaur:901 pacaur:934
 msgid "AUR Packages  (${#deps[@]})"

@@ -140,8 +140,8 @@ msgstr ""
 "\")${reset}"
 
 #: pacaur:707
-msgid "(cached)"
-msgstr "(en memòria cau)"
+msgid "cached"
+msgstr "en memòria cau"
 
 #: pacaur:711 pacaur:733
 msgid "Name"

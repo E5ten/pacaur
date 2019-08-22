@@ -134,8 +134,8 @@ msgstr ""
 "of date${reset} になっています"
 
 #: pacaur:712
-msgid "(cached)"
-msgstr "(キャッシュ済み)"
+msgid "cached"
+msgstr "キャッシュ済み"
 
 #: pacaur:716 pacaur:738
 msgid "Name"

@@ -134,8 +134,8 @@ msgstr ""
 "%m-%d\")${reset}"
 
 #: pacaur:712
-msgid "(cached)"
-msgstr "(gyorsítótárban)"
+msgid "cached"
+msgstr "gyorsítótárban"
 
 #: pacaur:716 pacaur:738
 msgid "Name"
