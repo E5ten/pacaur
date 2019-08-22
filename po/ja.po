@@ -174,12 +174,8 @@ msgid "Repo Installed Size:"
 msgstr "インストール済みのパッケージの容量:"
 
 #: pacaur:756
-msgid "$sumk MiB"
-msgstr "$sumk MiB"
-
-#: pacaur:756
-msgid "$summ MiB"
-msgstr "$summ MiB"
+msgid "MiB"
+msgstr "MiB"
 
 #: pacaur:765
 msgid "installation"

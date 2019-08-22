@@ -177,12 +177,8 @@ msgid "Repo Installed Size:"
 msgstr "Depo Kurulu Boyut:"
 
 #: pacaur:751
-msgid "$sumk MiB"
-msgstr "$sumk MiB"
-
-#: pacaur:751
-msgid "$summ MiB"
-msgstr "$summ MiB"
+msgid "MiB"
+msgstr "MiB"
 
 #: pacaur:760
 msgid "installation"

@@ -180,12 +180,8 @@ msgid "Repo Installed Size:"
 msgstr "Mida de la instal·lació des de repositoris:"
 
 #: pacaur:751
-msgid "$sumk MiB"
-msgstr "$sumk MiB"
-
-#: pacaur:751
-msgid "$summ MiB"
-msgstr "$summ MiB"
+msgid "MiB"
+msgstr "MiB"
 
 #: pacaur:760
 msgid "installation"

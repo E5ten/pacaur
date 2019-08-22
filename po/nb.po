@@ -155,11 +155,7 @@ msgid "Repo Installed Size:"
 msgstr ""
 
 #: pacaur:856
-msgid "$sumk MiB"
-msgstr ""
-
-#: pacaur:856
-msgid "$summ MiB"
+msgid "MiB"
 msgstr ""
 
 #: pacaur:864 pacaur:972

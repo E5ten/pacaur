@@ -193,12 +193,8 @@ msgid "Repo Installed Size:"
 msgstr "软件库安装大小:"
 
 #: pacaur:1057
-msgid "$sumk MiB"
-msgstr "$sumk MiB"
-
-#: pacaur:1057
-msgid "$summ MiB"
-msgstr "$summ MiB"
+msgid "MiB"
+msgstr "MiB"
 
 #: pacaur:1065 pacaur:1173
 msgid "installation"
