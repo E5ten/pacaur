@@ -1176,26 +1176,12 @@ MakePkgs() {
     # split packages support
     for i in "${!pkgsbase[@]}"; do
         for j in "${!deps[@]}"; do
-            [[ "${pkgsbase[$i]}" = "${pkgsbase[$j]}" && " ${pkgsdeps[*]} " != *" ${deps[$j]} "* ]] &&
-                pkgsdeps+=("${deps[$j]}")
-        done
-        pkgsdeps+=('%')
-    done
-    for i in "${!pkgsdeps[@]}"; do
-        [[ "${pkgsdeps[i]}" != '%' ]] || continue
-        for j in "${!pkgsdeps[@]}"; do
-            ((j > i)) || continue
-            if [[ "${pkgsdeps[j]}" != '%' ]]; then
-                pkgsdeps[i]="${pkgsdeps[i]},${pkgsdeps[j]}"; unset 'pkgsdeps[j]'
-            else
-                break
+            if [[ "${pkgsbase[i]}" = "${pkgsbase[j]}" && ! "${pkgsdeps[*]}" =~ ",${deps[j]}"(,|$) ]]; then
+                pkgsdeps[i]+=",${deps[j]}"
             fi
         done
     done
-    for i in "${!pkgsdeps[@]}"; do
-        [[ "${pkgsdeps[i]}" != '%' ]] || unset 'pkgsdeps[i]'
-    done
-    pkgsdeps=("${pkgsdeps[@]}") # remove empty array indices
+    pkgsdeps=("${pkgsdeps[@]#,}") # remove empty array indices and leading ','
 
     # reverse deps order
     for i in "${!basepkgs[@]}"; do
