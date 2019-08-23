@@ -6,7 +6,7 @@
 shopt -s extglob
 
 # gettext initialization
-export LC_COLLATE=C
+export LC_COLLATE='C'
 export TEXTDOMAIN='pacaur'
 export TEXTDOMAINDIR='/usr/share/locale'
 
@@ -26,7 +26,7 @@ pacmanarg=() pacopts=() auropts=() makeopts=()
 
 # determine config location
 if [[ "${XDG_CONFIG_DIRS-}" ]]; then
-    while IFS=: read -rd: i; do
+    while IFS=':' read -rd: i; do
         if [[ -d "$i/pacaur" ]]; then
             export XDG_CONFIG_DIRS="$i"
             break
@@ -120,13 +120,13 @@ ClassifyPkgs() {
             noaurpkgs+=("$i")
         done
         [[ "${noaurpkgs[*]}" ]] &&
-            mapfile -t norepopkgs < <(LC_ALL=C "${pacmanbin}" -Sp "${noaurpkgs[@]}" 2>&1 >/dev/null)
+            mapfile -t norepopkgs < <(LC_ALL='C' "${pacmanbin}" -Sp "${noaurpkgs[@]}" 2>&1 >/dev/null)
             norepopkgs=("${norepopkgs[@]#error: target not found: }")
         for i in "${norepopkgs[@]}"; do
             # do not search repo/pkgs in AUR
             [[ " ${noaurpkgs[*]} " = *' '+([a-zA-Z0-9.+-])/"$i "* ]] || aurpkgs+=("$i")
         done
-        repopkgs=($(CommArr 'aurpkgs' 'noaurpkgs' '-13'))
+        mapfile -t repopkgs < <(CommArr 'aurpkgs' 'noaurpkgs' '-13')
     fi
 }
 
@@ -155,13 +155,13 @@ UpgradeAur() {
     allaurpkgs=($(GetInfo "Name"))
 
     # foreign packages check
-    aurforeignpkgs=($(CommArr 'allaurpkgs' 'foreignpkgs' '-13'))
+    mapfile -t aurforeignpkgs < <(CommArr 'allaurpkgs' 'foreignpkgs' '-13')
     for i in "${aurforeignpkgs[@]}"; do
         warn $"%s is %snot present%s in AUR -- skipping" "${colorW}$i${reset}" "${colorY}" "${reset}"
     done
 
     # use auracle to find out of date AUR packages
-    mapfile -t < <(auracle sync -q) aurpkgs
+    mapfile -t aurpkgs < <(auracle sync -q)
 
     # add devel packages
     if ((devel)); then
@@ -189,11 +189,11 @@ IgnoreChecks() {
     # check targets
     SetInfo "${aurpkgsnover[@]}"
     checkaurpkgs=($(GetInfo "Name"))
-    errdeps=($(CommArr 'aurpkgsnover' 'checkaurpkgs' '-3'))
+    mapfile -t errdeps < <(CommArr 'aurpkgsnover' 'checkaurpkgs' '-3')
     aurpkgsnover=()
 
     checkaurpkgsAver=($(GetInfo "Version"))
-    mapfile -t < <(expac -Qv '%v' "${checkaurpkgs[@]}" 2>&1) checkaurpkgsQver
+    mapfile -t checkaurpkgsQver < <(expac -Qv '%v' "${checkaurpkgs[@]}" 2>&1)
     for i in "${!checkaurpkgs[@]}"; do
         [[ "${checkaurpkgs[i]}" != *'-'${vcs} ]] || checkaurpkgsAver[i]=$"latest"
         isignored=0
@@ -255,7 +255,7 @@ DepsSolver() {
     aurpkgsconflicts=($(GetInfo "Conflicts"))
     if [[ "${aurpkgsconflicts[*]}" ]]; then
         aurpkgsconflicts=("${aurpkgsconflicts[@]%%[><=]*}")
-        aurpkgsconflicts=($(CommArr 'aurpkgsproviders' 'aurpkgsconflicts' '-12'))
+        mapfile -t aurpkgsconflicts < <(CommArr 'aurpkgsproviders' 'aurpkgsconflicts' '-12')
         for i in "${aurpkgsconflicts[@]}"; do
             [[ " ${aurpkgsnover[*]} " = *" $i "* ]] || continue
             [[ " $(GetInfo "Conflicts" "$i") " != *" $i "* ]] || continue
@@ -270,7 +270,7 @@ DepsSolver() {
     FindDepsAur "${aurpkgsnover[@]}"
 
     # avoid possible duplicate
-    deps=($(CommArr 'aurdepspkgs' 'deps' '-13'))
+    mapfile -t deps < <(CommArr 'aurdepspkgs' 'deps' '-13')
     deps+=("${aurdepspkgs[@]}")
 
     # ensure correct dependency order
@@ -393,7 +393,7 @@ FindDepsAur() {
     fi
 
     # remove deps provided by targets
-    [[ "${aurpkgsproviders[*]}" ]] && depspkgs=($(CommArr 'aurpkgsproviders' 'depspkgs' '-13'))
+    [[ "${aurpkgsproviders[*]}" ]] && mapfile -t depspkgs < <(CommArr 'aurpkgsproviders' 'depspkgs' '-13')
 
     # workaround for limited RPC support of architecture dependent fields
     if [[ "${CARCH}" = 'i686' ]]; then
@@ -423,7 +423,7 @@ FindDepsAur() {
         done
         # reorder devel
         depspkgs=($("${pacmanbin}" -T -- "${depspkgs[@]}" | sort -u))
-        depspkgs=($(CommArr 'depspkgs' 'vcsdepspkgs' '-3'))
+        mapfile -t depspkgs < <(CommArr 'depspkgs' 'vcsdepspkgs' '-3')
     fi
 
     # split repo and AUR depends pkgs
@@ -444,18 +444,18 @@ FindDepsAur() {
                         depspkgs[j]="${assumeinstalled[i]}";
                 done
             done
-            depspkgs=($(CommArr 'assumeinstalled' 'depspkgs' '-13'))
+            mapfile -t depspkgs < <(CommArr 'assumeinstalled' 'depspkgs' '-13')
         fi
         if [[ "${depspkgs[*]}" ]]; then
-            mapfile -t depspkgsaur < <(LC_ALL=C "${pacmanbin}" -Sp "${depspkgs[@]}" 2>&1 >/dev/null) &&
+            mapfile -t depspkgsaur < <(LC_ALL='C' "${pacmanbin}" -Sp "${depspkgs[@]}" 2>&1 >/dev/null) &&
                 depspkgsaur=("${depspkgsaur[@]#error: target not found: }")
-            repodeps+=($(CommArr 'depspkgsaur' 'depspkgs' '-13'))
+            mapfile -tO "${#repodeps[@]}" repodeps < <(CommArr 'depspkgsaur' 'depspkgs' '-13')
         fi
     fi
     unset depspkgs
 
     # remove duplicate
-    [[ "${depspkgsaur[*]}" ]] && depspkgsaur=($(CommArr 'aurdepspkgs' 'depspkgsaur' '-13'))
+    [[ "${depspkgsaur[*]}" ]] && mapfile -t depspkgsaur < <(CommArr 'aurdepspkgs' 'depspkgsaur' '-13')
 
     # dependency cycle check
     [[ "${prevdepspkgsaur[*]}" && "${prevdepspkgsaur[*]}" = "${depspkgsaur[*]}" ]] &&
@@ -508,7 +508,7 @@ SortDepsAur() {
         fi
 
         # filter non checked deps
-        sortdepspkgsaur=($(CommArr 'allcheckedsortdepspkgsaur' 'sortdepspkgsaur' '-13'))
+        mapfile -t sortdepspkgsaur < <(CommArr 'allcheckedsortdepspkgsaur' 'sortdepspkgsaur' '-13')
         if [[ "${sortdepspkgsaur[*]}" ]]; then
             checkedsortdepspkgsaur+=("${sortdepspkgsaur[@]}")
             allcheckedsortdepspkgsaur+=("${sortdepspkgsaur[@]}")
@@ -574,7 +574,7 @@ FindDepsRepo() {
     [[ "${allrepodepspkgs[*]}" ]] && repodepspkgstmp=($("${pacmanbin}" -T -- "${allrepodepspkgs[@]}" | sort -u))
 
     # remove duplicate
-    [[ "${repodepspkgstmp[*]}" ]] && repodepspkgstmp=($(CommArr 'repodepspkgs' 'repodepspkgstmp' '-13'))
+    [[ "${repodepspkgstmp[*]}" ]] && mapfile -t repodepspkgstmp < <(CommArr 'repodepspkgs'{,'tmp'} '-13')
     [[ "${repodepspkgstmp[*]}" ]] && repodepspkgs+=("${repodepspkgstmp[@]}") &&
         repodeps=("${repodepspkgstmp[@]}") && FindDepsRepo "${repodeps[@]}"
 }
@@ -596,7 +596,7 @@ FindDepsRepoProvider() {
 
     # remove duplicate
     [[ "${providerrepodepspkgstmp[*]}" ]] &&
-        providerrepodepspkgstmp=($(CommArr 'repodepspkgs' 'providerrepodepspkgstmp' '-13'))
+        mapfile -t providerrepodepspkgstmp < <(CommArr 'repodepspkgs' 'providerrepodepspkgstmp' '-13')
 
     [[ "${providerrepodepspkgstmp[*]}" ]] && repodepspkgs+=("${providerrepodepspkgstmp[@]}") &&
         providerspkgs=("${providerrepodepspkgstmp[@]}") && FindDepsRepoProvider "${providerspkgs[@]}"
@@ -672,7 +672,7 @@ ProviderChecks() {
 
     # filter directly provided deps
     noprovidersdeps=($(expac -S1 '%n' "${repodepspkgs[@]}"))
-    providersdeps=($(CommArr 'noprovidersdeps' 'repodepspkgs' '-13'))
+    mapfile -t providersdeps < <(CommArr 'noprovidersdeps' 'repodepspkgs' '-13')
 
     # remove installed providers
     providersdeps=($("${pacmanbin}" -T -- "${providersdeps[@]}" | sort -u))
@@ -710,7 +710,7 @@ ProviderChecks() {
         providers=($(expac -Ss '%n' "^${providersdeps[i]}$" | sort -u))
 
         # filter out non matching versioned providers
-        [[ "${providersdepsnover[*]}" ]] && providers=($(CommArr 'providersdepsnover' 'providers' '-12'))
+        [[ "${providersdepsnover[*]}" ]] && mapfile -t providers < <(CommArr 'providers'{'depsnover',} '-12')
 
         # skip if provided in dependency chain
         repodepspkgsprovided=0
@@ -797,8 +797,8 @@ ConflictChecks() {
     # remove AUR versioning
     Aprovides=("${Aprovides[@]%%[><=]*}")
     Aconflicts=("${Aconflicts[@]%%[><=]*}")
-    aurconflicts=($(CommArr 'Aprovides' 'allQconflicts' '-12'))
-    aurconflicts+=($(CommArr 'Aconflicts' 'allQprovides' '-12'))
+    mapfile -t aurconflicts < <(CommArr 'Aprovides' 'allQconflicts' '-12')
+    mapfile -tO "${#aurconflicts[@]}" aurconflicts < <(CommArr 'Aconflicts' 'allQprovides' '-12')
     aurconflicts=($(printf '%s\n' "${aurconflicts[@]}" | sort -u))
 
     for i in "${aurconflicts[@]}"; do
@@ -875,8 +875,9 @@ ConflictChecks() {
             fi
         done
 
-        repoconflicts+=($(CommArr 'repodepsprovides' 'allQconflicts' '-12'))
-        repoconflicts+=($(CommArr 'checkedrepodepsconflicts' 'allQprovides' '-12'))
+        mapfile -tO "${#repoconflicts[@]}" repoconflicts < <(CommArr 'repodepsprovides' 'allQconflicts' '-12')
+        mapfile -tO "${#repoconflicts[@]}" repoconflicts < \
+            <(CommArr 'checkedrepodepsconflicts' 'allQprovides' '-12')
         repoconflicts=($(printf '%s\n' "${repoconflicts[@]}" | sort -u))
     fi
 
@@ -927,7 +928,7 @@ ReinstallChecks() {
                 warn $"%s-%s is up to date -- reinstalling" "${colorW}${depsAname[i]}" "${depsQver[i]}${reset}"
             else
                 warn $"%s-%s is up to date -- skipping" "${colorW}${depsAname[i]}" "${depsQver[i]}${reset}"
-                mapfile -t < <(printf ' %s \n' "${deps[@]}") deps
+                mapfile -t deps < <(printf ' %s \n' "${deps[@]}")
                 deps=($(printf '%s\n' "${deps[@]// ${depsAname[i]} /}"))
                 unset 'depsAname[i]' 'depsQver[i]' 'depsAver[i]' 'depsAood[i]' 'depsAmain[i]'
             fi
@@ -1164,7 +1165,7 @@ MakePkgs() {
     # current orphan and optional packages
     oldorphanpkgs=($("${pacmanbin}" -Qdtq))
     oldoptionalpkgs=($("${pacmanbin}" -Qdttq))
-    oldoptionalpkgs=($(CommArr 'oldorphanpkgs' 'oldoptionalpkgs' '-13'))
+    mapfile -t oldoptionalpkgs < <(CommArr 'oldorphanpkgs' 'oldoptionalpkgs' '-13')
 
     # initialize sudo
     if sudo -n "${pacmanbin}" -V &>/dev/null || sudo -v; then
@@ -1263,7 +1264,7 @@ MakePkgs() {
 
         cd "${clonedir}/${basepkgs[i]}" || exit "${E_MISSING_FILE}"
         # retrieve updated version
-        mapfile -d'-' -t < <(makepkg --packagelist) k && aurpkgsAver="${k[-3]}-${k[-2]}"; unset k
+        mapfile -td'-' k < <(makepkg --packagelist); aurpkgsAver="${k[-3]}-${k[-2]}"; unset k
         # build devel if necessary only (supported protocols only)
         if [[ "${basepkgs[i]}" = *'-'${vcs} ]]; then
             # check split packages update
@@ -1377,13 +1378,13 @@ MakePkgs() {
 
     # new orphan and optional packages check
     orphanpkgs=($("${pacmanbin}" -Qdtq))
-    neworphanpkgs=($(CommArr 'oldorphanpkgs' 'orphanpkgs' '-13'))
+    mapfile -t neworphanpkgs < <(CommArr 'oldorphanpkgs' 'orphanpkgs' '-13')
     for i in "${neworphanpkgs[@]}"; do
         warn $"%s is now an %sorphan%s package" "${colorW}$i${reset}" "${colorY}" "${reset}"
     done
-    optionalpkgs=($("${pacmanbin}" -Qdttq))
-    optionalpkgs=($(CommArr 'orphanpkgs' 'optionalpkgs' '-13'))
-    newoptionalpkgs=($(CommArr 'oldoptionalpkgs' 'optionalpkgs' '-13'))
+    mapfile -t optionalpkgs < <("${pacmanbin}" -Qdttq)
+    mapfile -t optionalpkgs < <(CommArr 'orphanpkgs' 'optionalpkgs' '-13')
+    mapfile -t newoptionalpkgs < <(CommArr 'oldoptionalpkgs' 'optionalpkgs' '-13')
     for i in "${newoptionalpkgs[@]}"; do
         warn $"%s is now an %soptional%s package" "${colorW}$i${reset}" "${colorY}" "${reset}"
     done
@@ -1448,8 +1449,8 @@ CleanCache() {
             mapfile -t foreignpkgsbase < <(expac -Q '%e' "${foreignpkgs[@]}")
             # get target
             if [[ "${pkgs[*]}" ]]; then
-                mapfile -t < <(expac -Q '%e' "${pkgs[@]}") pkgsbase
-                mapfile -t < <(CommArr 'pkgsbase' 'foreignpkgsbase' '-12') aurpkgsbase
+                mapfile -t pkgsbase < <(expac -Q '%e' "${pkgs[@]}")
+                mapfile -t aurpkgsbase < <(CommArr 'pkgsbase' 'foreignpkgsbase' '-12')
                 if Proceed "y" $"Do you want to remove ${aurpkgsbase[*]} clones from AUR clone directory?"; then
                     printf '%s\n\n' $"removing uninstalled clones from AUR clone cache..."
                     for i in "${aurpkgsbase[@]}"; do
@@ -1655,7 +1656,7 @@ fail() {
 }
 
 error() {
-    printf "%serror:%s $1\n" "${colorR}" "${reset}" "${@:2:$(($# - 2))}" >&2
+    printf "%serror:%s $1\n" "${colorR}" "${reset}" "${@:2:$#-2}" >&2
     exit "${!#}"
 }
 
@@ -1749,7 +1750,7 @@ while true; do
         [[ "$1": != "--$i" ]] || pacopts+=("$1=$2")
     done
     case "$1" in
-        -S|--sync) pacS=1; installpkg=1; operation=sync; ((++pac));;
+        -S|--sync) pacS=1; installpkg=1; operation='sync'; ((++pac));;
         -Q|--query) pacQ=1; ((++pac));;
         -s|--search) search=1;;
         -i|--info) info=1;;
@@ -1772,10 +1773,10 @@ while true; do
         --@(asdeps|asexplicit|devel|needed|noconfirm|noedit|rebuild)) declare "${1/--}"=1;;
         -[glp]|--@(groups|list|print)) noop=1;;
         -w|--downloadonly) downloadonly=1;;
-        --silent) silent=true pacopts+=('--quiet') auropts+=('--quiet') makeopts+=('--log');;
+        --silent) silent='true' pacopts+=('--quiet') auropts+=('--quiet') makeopts+=('--log');;
         -y|--refresh) refresh=1;;
         -h|--help) help=1;;
-        --version) operation=version; ((++pac));;
+        --version) operation='version'; ((++pac));;
         -v) ver=1;;
         --) shift; break;;
     esac
@@ -1800,8 +1801,8 @@ pkgs=("$@")
     color='never' || color='auto'
 pacopts+=("--color=${color}") auropts+=("--color=${color}")
 if [[ ! "${color}" = never ]]; then
-    reset=$'\e[0m' colorR=$'\e[1;31m' colorG=$'\e[1;32m' colorY=$'\e[1;33m'
-    colorB=$'\e[1;34m' colorM=$'\e[1;35m' colorW=$'\e[1;39m'
+    reset=$'\033[0m' colorR=$'\033[1;31m' colorG=$'\033[1;32m' colorY=$'\033[1;33m'
+    colorB=$'\033[1;34m' colorM=$'\033[1;35m' colorW=$'\033[1;39m'
 else
     reset='' colorR='' colorG='' colorY='' colorB='' colorM='' colorW=''
     makeopts+=('--nocolor')
@@ -1813,13 +1814,13 @@ if ((aur)); then
     refresh=0
 fi
 if ((! pac && pace)); then
-    operation=edit
+    operation='edit'
 fi
 if ((pacQ && pace)); then
     pacopts+=('-e')
 fi
 if ((pacQ && upgrade)); then
-    operation=upgrades
+    operation='upgrades'
 fi
 if ((pacQ && native)); then
     repo=1
@@ -1842,7 +1843,7 @@ fi
 if ((pacS && search && info)); then
     error $"invalid option: '--info' and '--search' may not be used together" "${E_INVALID_OPTION}"
 fi
-[[ "$(command -v "${editor%% *}")" ]] ||
+command -v "${editor%% *}" >/dev/null ||
     error $"%s\$VISUAL%s and %s\$EDITOR%s environment variables not set or defined %seditor%s not found" \
         "${colorW}" "${reset}" "${colorW}" "${reset}" "${colorW}" "${reset}" "${E_MISSING_FILE}"
 if [[ "${PACMAN-}" = "${0##*/}" ]]; then
