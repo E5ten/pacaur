@@ -20,7 +20,7 @@ declare -r version='4.8.6'
 aur=0 asdeps=0 asexplicit=0 checkdeps=0 cleancache=0 ccount=0 color='' dcount=0
 devel=0 downloadonly=0 help=0 info=0 installpkg=0 native=0 needed=0 noconfirm=0
 nodeps=0 noedit=0 noop=0 operation='' pac=0 pace=0 pacQ=0 pacS=0 rebuild=0
-refresh=0 repo=0 search=0 upgrade=0 ver=0
+refresh=0 repo=0 search=0 upgrade=0 ver=0 QUIET=0
 
 pacmanarg=() pacopts=() auropts=() makeopts=()
 
@@ -113,7 +113,7 @@ ClassifyPkgs() {
     if ((! repo && ! aur)); then
         noaurpkgs=()
         for i in "${pkgs[@]}"; do
-            if [[ "${i}" = aur/* ]]; then
+            if [[ "${i}" = 'aur/'* ]]; then
                 aurpkgs+=("${i:4}") # search aur/pkgs in AUR
                 continue
             fi
@@ -150,7 +150,7 @@ UpgradeAur() {
     local foreignpkgs allaurpkgs aurforeignpkgs i
     # global aurpkgs
     info $"%sStarting AUR upgrade...%s" "${colorW}" "${reset}"
-    foreignpkgs=($("${pacmanbin}" -Qmq))
+    mapfile -t foreignpkgs < <("${pacmanbin}" -Qmq)
     SetInfo "${foreignpkgs[@]}"
     allaurpkgs=($(GetInfo "Name"))
 
@@ -201,7 +201,7 @@ IgnoreChecks() {
             isignored=1
         elif [[ "${ignoredgrps[*]}" ]]; then
             checkaurpkgsgrp=($(GetInfo "Groups" "${checkaurpkgs[i]}"))
-            checkaurpkgsgrp+=($(expac -Q '%G' "${checkaurpkgs[i]}"))
+            mapfile -tO "${#checkaurpkgsgrp[@]}" checkaurpkgsgrp < <(expac -Ql'\n' '%G' "${checkaurpkgs[i]}")
             for j in "${checkaurpkgsgrp[@]}"; do
                 [[ " ${ignoredgrps[*]} " != *" ${j} "* ]] || isignored=1
             done
@@ -267,7 +267,7 @@ DepsSolver() {
 
     deps=("${aurpkgsnover[@]}")
 
-    [[ "${foreignpkgs[*]}" ]] || foreignpkgs=($("${pacmanbin}" -Qmq))
+    [[ "${foreignpkgs[*]}" ]] || mapfile -t foreignpkgs < <("${pacmanbin}" -Qmq)
     FindDepsAur "${aurpkgsnover[@]}"
 
     # avoid possible duplicate
@@ -277,7 +277,8 @@ DepsSolver() {
     # ensure correct dependency order
     SetInfo "${deps[@]}"
     SortDepsAur "${aurpkgs[@]}"
-    deps=($(tsort <<< "${tsortdeps[@]}")) || error $"dependency cycle detected" "${E_INSTALL_DEPS_FAILED}"
+    mapfile -t deps < <(tsort <<< "${tsortdeps[@]}" 2>/dev/null)
+    wait "$!" || error $"dependency cycle detected" "${E_INSTALL_DEPS_FAILED}"
 
     # get AUR packages info
     depsAname=($(GetInfo "Name"))
@@ -352,8 +353,8 @@ FindDepsAur() {
             aurversionpkgsverdiff="$(vercmp "${aurversionpkgsaurver}" "${aurversionpkgsver}")"
 
             # not found in AUR nor repo
-            [[ ! "${aurversionpkgsaurver}" && ! " ${errdeps[*]} " = *" ${aurversionpkgs[i]} "* ]] &&
-                errdeps+=("${aurversionpkgs[i]}") && continue
+            [[ "${aurversionpkgsaurver}" || " ${errdeps[*]} " = *" ${aurversionpkgs[i]} "* ]] ||
+                { errdeps+=("${aurversionpkgs[i]}"); continue; }
 
             case "${aurversionpkgs[i]}" in
                 *">"*|*"<"*|*"="*)
@@ -408,12 +409,12 @@ FindDepsAur() {
     depspkgs=("${depspkgs[@]%%[><=]*}")
     # remove installed deps
     if ((! devel)); then
-        depspkgs=($("${pacmanbin}" -T -- "${depspkgs[@]}" | sort -u))
+        mapfile -t depspkgs < <("${pacmanbin}" -T -- "${depspkgs[@]}" | sort -u)
     else
         # check providers
         unset vcsdepspkgs
         for i in "${!depspkgs[@]}"; do
-            unset j; read -rd' ' j < <(expac -Qs '%n %P' "^${depspkgs[i]}$")
+            read -rd' ' j < <(expac -Qs '%n %P' "^${depspkgs[i]}$")
             if [[ "${j}" ]]; then
                 depspkgs[i]="${j}"
                 ((devel)) && [[ " ${ignoredpkgs[*]} " != *" ${j} "* && "${j}" = *'-'${vcs} ]] &&
@@ -423,7 +424,7 @@ FindDepsAur() {
             fi
         done
         # reorder devel
-        depspkgs=($("${pacmanbin}" -T -- "${depspkgs[@]}" | sort -u))
+        mapfile -t depspkgs < <("${pacmanbin}" -T -- "${depspkgs[@]}" | sort -u)
         mapfile -t depspkgs < <(CommArr 'depspkgs' 'vcsdepspkgs' '-3')
     fi
 
@@ -532,7 +533,7 @@ FindDepsAurError() {
     done
 
     [[ "${currenterrdep[*]}" ]] || currenterrdep="${tsorterrdeps[0]}"
-    if [[ ! " ${aurpkgs[*]} " = *" ${nexterrdep} "* ]]; then
+    if [[ " ${aurpkgs[*]} " != *" ${nexterrdep} "* ]]; then
         nextallerrdeps=($(GetInfo "Depends" "${nexterrdep}"))
         nextallerrdeps+=($(GetInfo "MakeDepends" "${nexterrdep}"))
         ((checkdeps)) && nextallerrdeps+=($(GetInfo "CheckDepends" "${nexterrdep}"))
@@ -572,13 +573,14 @@ FindDepsRepo() {
     # get non installed binary deps
     unset allrepodepspkgs repodepspkgstmp
     # no version check needed as all deps are repo deps
-    [[ "${repodeps[*]}" ]] && allrepodepspkgs=($(expac -S1 '%E' "${repodeps[@]}"))
-    [[ "${allrepodepspkgs[*]}" ]] && repodepspkgstmp=($("${pacmanbin}" -T -- "${allrepodepspkgs[@]}" | sort -u))
+    [[ ! "${repodeps[*]}" ]] || mapfile -t allrepodepspkgs < <(expac -S1l'\n' '%E' "${repodeps[@]}")
+    [[ ! "${allrepodepspkgs[*]}" ]] ||
+        mapfile -t repodepspkgstmp < <("${pacmanbin}" -T -- "${allrepodepspkgs[@]}" | sort -u)
 
     # remove duplicate
-    [[ "${repodepspkgstmp[*]}" ]] && mapfile -t repodepspkgstmp < <(CommArr 'repodepspkgs'{,'tmp'} '-13')
-    [[ "${repodepspkgstmp[*]}" ]] && repodepspkgs+=("${repodepspkgstmp[@]}") &&
-        repodeps=("${repodepspkgstmp[@]}") && FindDepsRepo "${repodeps[@]}"
+    [[ ! "${repodepspkgstmp[*]}" ]] || mapfile -t repodepspkgstmp < <(CommArr 'repodepspkgs'{,'tmp'} '-13')
+    [[ ! "${repodepspkgstmp[*]}" ]] || { repodepspkgs+=("${repodepspkgstmp[@]}")
+        repodeps=("${repodepspkgstmp[@]}"); FindDepsRepo "${repodeps[@]}"; }
 }
 
 FindDepsRepoProvider() {
@@ -591,17 +593,18 @@ FindDepsRepoProvider() {
 
     # get non installed repo deps
     unset allproviderrepodepspkgs providerrepodepspkgstmp
-    [[ "${providerspkgs[*]}" ]] && allproviderrepodepspkgs=($(expac -S1 '%E' "${providerspkgs[@]}"))
+    [[ ! "${providerspkgs[*]}" ]] ||
+        mapfile -t allproviderrepodepspkgs < <(expac -S1l'\n' '%E' "${providerspkgs[@]}")
     # no version check needed as all deps are binary
     [[ "${allproviderrepodepspkgs[*]}" ]] &&
-        providerrepodepspkgstmp=($("${pacmanbin}" -T -- "${allproviderrepodepspkgs[@]}" | sort -u))
+        mapfile -t providerrepodepspkgstmp < <("${pacmanbin}" -T -- "${allproviderrepodepspkgs[@]}" | sort -u)
 
     # remove duplicate
     [[ "${providerrepodepspkgstmp[*]}" ]] &&
         mapfile -t providerrepodepspkgstmp < <(CommArr 'repodepspkgs' 'providerrepodepspkgstmp' '-13')
 
-    [[ "${providerrepodepspkgstmp[*]}" ]] && repodepspkgs+=("${providerrepodepspkgstmp[@]}") &&
-        providerspkgs=("${providerrepodepspkgstmp[@]}") && FindDepsRepoProvider "${providerspkgs[@]}"
+    [[ ! "${providerrepodepspkgstmp[*]}" ]] || { repodepspkgs+=("${providerrepodepspkgstmp[@]}")
+        providerspkgs=("${providerrepodepspkgstmp[@]}"); FindDepsRepoProvider "${providerspkgs[@]}"; }
 }
 
 IgnoreDepsChecks() {
@@ -619,8 +622,8 @@ IgnoreDepsChecks() {
             isignored=1
         elif [[ "${ignoredgrps[*]}" ]]; then
             unset repodepspkgsSgrp repodepspkgsQgrp
-            repodepspkgsgrp=($(expac -S1 '%G' "${i}"))
-            repodepspkgsgrp+=($(expac -Q '%G' "${i}"))
+            mapfile -t repodepspkgsgrp < <(expac -S1l'\n' '%G' "${i}")
+            mapfile -tO "${#repodepspkgsgrp[@]}" repodepspkgsgrp < <(expac -Ql'\n' '%G' "${i}")
             for j in "${repodepspkgsgrp[@]}"; do
                 [[ " ${ignoredgrps[*]} " = *" ${j} "* ]] && isignored=1
             done
@@ -644,7 +647,7 @@ IgnoreDepsChecks() {
         elif [[ "${ignoredgrps[*]}" ]]; then
             unset aurdepspkgsgrp
             aurdepspkgsgrp=($(GetInfo "Groups" "${i}"))
-            aurdepspkgsgrp+=($(expac -Q '%G' "${i}"))
+            mapfile -tO "${#aurdepspkgsgrp[@]}" aurdepspkgsgrp < <(expac -Ql'\n' '%G' "${i}")
             for j in "${aurdepspkgsgrp[@]}"; do
                 [[ " ${ignoredgrps[*]} " = *" ${j} "* ]] && isignored=1
             done
@@ -673,19 +676,19 @@ ProviderChecks() {
     [[ "${repodepspkgs[*]}" ]] || return
 
     # filter directly provided deps
-    noprovidersdeps=($(expac -S1 '%n' "${repodepspkgs[@]}"))
+    mapfile -t noprovidersdeps < <(expac -S1 '%n' "${repodepspkgs[@]}")
     mapfile -t providersdeps < <(CommArr 'noprovidersdeps' 'repodepspkgs' '-13')
 
     # remove installed providers
-    providersdeps=($("${pacmanbin}" -T -- "${providersdeps[@]}" | sort -u))
+    mapfile -t providersdeps < <("${pacmanbin}" -T -- "${providersdeps[@]}" | sort -u)
 
     for i in "${!providersdeps[@]}"; do
         # check versioning
         unset providersdepsname providersdepsver providersdepsSname providersdepsSver
         providersdepsname="${providersdeps[i]%%[><=]*}"
         providersdepsver="${providersdeps[i]##*[><=]}"
-        providersdepsSname=($(expac -Ss '%n' "^${providersdepsname[i]}$"))
-        providersdepsSver=($(expac -Ss '%v' "^${providersdepsname[i]}$"))
+        mapfile -t providersdepsSname < <(expac -Ss '%n' "^${providersdepsname[i]}$")
+        mapfile -t providersdepsSver < <(expac -Ss '%v' "^${providersdepsname[i]}$")
 
         case "${providersdeps[i]}" in
             *">"*|*"<"*|*"="*)
@@ -709,7 +712,7 @@ ProviderChecks() {
         providersdeps[i]="${providersdeps[i]%%[><=]*}"
 
         # list providers
-        providers=($(expac -Ss '%n' "^${providersdeps[i]}$" | sort -u))
+        mapfile -t providers < <(expac -Ss '%n' "^${providersdeps[i]}$" | sort -u)
 
         # filter out non matching versioned providers
         [[ "${providersdepsnover[*]}" ]] && mapfile -t providers < <(CommArr 'providers'{'depsnover',} '-12')
@@ -725,7 +728,7 @@ ProviderChecks() {
         if [[ "${providerspkgs[*]}" ]]; then
             providerspkgs=($(printf '%s|' "${providerspkgs[@]}"))
             providerspkgs=("${providerspkgs[@]%|}")
-            provided+=($(expac -Ss '%S' "^(${providerspkgs[*]})$"))
+            mapfile -tO "${#provided[@]}" provided < <(expac -Ssl'\n' '%S' "^(${providerspkgs[*]})$")
             [[ " ${provided[*]} " != *" ${providersdeps[i]} "* ]] || continue
         fi
 
@@ -774,10 +777,10 @@ ProviderChecks() {
 
     # get binary packages info
     if [[ "${repodepspkgs[*]}" ]]; then
-        repodepspkgs=($(expac -S1 '%n' "${repodepspkgs[@]}" | sort -u))
-        repodepsSver=($(expac -S1 '%v' "${repodepspkgs[@]}"))
-        repodepsQver=($(expac -Q '%v' "${repodepspkgs[@]}"))
-        repodepsSrepo=($(expac -S1 '%r/%n' "${repodepspkgs[@]}"))
+        mapfile -t repodepspkgs < <(expac -S1 '%n' "${repodepspkgs[@]}" | sort -u)
+        mapfile -t repodepsSver < <(expac -S1 '%v' "${repodepspkgs[@]}")
+        mapfile -t repodepsQver < <(expac -Q '%v' "${repodepspkgs[@]}")
+        mapfile -t repodepsSrepo < <(expac -S1 '%r/%n' "${repodepspkgs[@]}")
     fi
 }
 
@@ -789,9 +792,9 @@ ConflictChecks() {
     # global depsQver repodepspkgs repoconflictingpkgskeep repoconflictingpkgsrm repoprovidersconflictingpkgs
     printf '%s\n' $"looking for inter-conflicts..."
 
-    allQprovides=($(expac -Q '%n'))
-    allQprovides+=($(expac -Q '%S')) # no versioning
-    allQconflicts=($(expac -Q '%C'))
+    mapfile -t allQprovides < <(expac -Q '%n')
+    mapfile -tO "${#allQprovides[@]}" allQprovides < <(expac -Ql'\n' '%S') # no versioning
+    mapfile -t allQconflicts < <(expac -Ql'\n' '%C')
 
     # AUR conflicts
     Aprovides=("${depsAname[@]}")
@@ -812,13 +815,13 @@ ConflictChecks() {
         done
 
         for j in "${aurAconflicts[@]}"; do
-            unset k Aprovides
-            read -rd' ' < <(expac -Qs '%n %P' "^${i}$") k
-            ((! installpkg)) && [[ ! " ${aurdepspkgs[*]} " = *" ${j} "* ]] && continue # download only
+            unset Aprovides
+            read -rd' ' k < <(expac -Qs '%n %P' "^${i}$")
+            ((! installpkg)) && [[ " ${aurdepspkgs[*]} " != *" ${j} "* ]] && continue # download only
             [[ "${j}" = "${k}" || ! "${k}" ]] && continue # skip if reinstalling or if no conflict exists
 
             Aprovides=("${j}")
-            if ((! noconfirm)) && [[ ! " ${aurconflictingpkgs[*]} " = *" ${k} "* ]]; then
+            if ((! noconfirm)) && [[ " ${aurconflictingpkgs[*]} " != *" ${k} "* ]]; then
                 if ! Proceed "n" $"${j} and ${k} are in conflict (${i}). Remove ${k}?"; then
                     aurconflictingpkgs+=("${j}" "${k}")
                     aurconflictingpkgskeep+=("${j}")
@@ -830,13 +833,13 @@ ConflictChecks() {
                     Aprovides+=($(GetInfo "Provides" "${j}"))
                     # remove AUR versioning
                     Aprovides=("${Aprovides[@]%%[><=]*}")
-                    [[ ! " ${Aprovides[*]} ${aurconflictingpkgsrm[*]} " = *" ${k} "* ]] && CheckRequires "${k}"
+                    [[ " ${Aprovides[*]} ${aurconflictingpkgsrm[*]} " = *" ${k} "* ]] || CheckRequires "${k}"
                     break
                 else
                     fail $"unresolvable package conflicts detected"
                     fail $"failed to prepare transaction (conflicting dependencies)"
                     if ((upgrade)); then
-                        Qrequires=($(expac -Q '%N' "${i}"))
+                        mapfile -t Qrequires < <(expac -Ql'\n' '%N' "${i}")
                         error $"%s and %s are in conflict (required by %s)" "${j}" "${k}" "${Qrequires[*]}" \
                             "${E_INSTALL_DEPS_FAILED}"
                     else
@@ -847,7 +850,7 @@ ConflictChecks() {
             Aprovides+=($(GetInfo "Provides" "${j}"))
             # remove AUR versioning
             Aprovides=("${Aprovides[@]%%[><=]*}")
-            [[ ! " ${Aprovides[*]} ${aurconflictingpkgsrm[*]} " = *" ${k} "* ]] && CheckRequires "${k}"
+            [[ " ${Aprovides[*]} ${aurconflictingpkgsrm[*]} " = *" ${k} "* ]] || CheckRequires "${k}"
         done
     done
 
@@ -856,8 +859,9 @@ ConflictChecks() {
     # repo conflicts
     if [[ "${repodepspkgs[*]}" ]]; then
         repodepsprovides=("${repodepspkgs[@]}")
-        repodepsprovides+=($(expac -S1 '%S' "${repodepspkgs[@]}")) # no versioning
-        repodepsconflicts=($(expac -S1 '%H' "${repodepspkgs[@]}"))
+        # no versioning
+        mapfile -tO "${#repodepsprovides[@]}" repodepsprovides < <(expac -S1l'\n' '%S' "${repodepspkgs[@]}")
+        mapfile -t repodepsconflicts < <(expac -S1l'\n' '%H' "${repodepspkgs[@]}")
 
         # versioning check
         unset checkedrepodepsconflicts
@@ -888,23 +892,23 @@ ConflictChecks() {
 
     for i in "${repoconflicts[@]}"; do
         unset Qprovides
-        unset j && read -rd' ' < <(expac -Ss '%n %C %S' "^${i}$") j
-	    unset k && read -rd' ' < <(expac -Qs '%n %C %S' "^${i}$") k
+        read -rd' ' j < <(expac -Ss '%n %C %S' "^${i}$")
+	    read -rd' ' k < <(expac -Qs '%n %C %S' "^${i}$")
         [[ "${j}" = "${k}" || ! "${k}" ]] && continue # skip when no conflict with repopkgs
-        if ((! noconfirm)) && [[ ! " ${repoconflictingpkgs[*]} " = *" ${k} "* ]]; then
+        if ((! noconfirm)) && [[ " ${repoconflictingpkgs[*]} " != *" ${k} "* ]]; then
             if ! Proceed "n" $"${j} and ${k} are in conflict (${i}). Remove ${k}?"; then
                 repoconflictingpkgs+=("${j}" "${k}")
                 repoconflictingpkgskeep+=("${j}")
                 repoconflictingpkgsrm+=("${k}")
                 repoprovidersconflictingpkgs+=("${j}")
-                Qprovides=($(expac -Ss '%S' "^${k}$"))
-                [[ ! " ${Qprovides[*]} ${repoconflictingpkgsrm[*]} " = *" ${k} "* ]] && CheckRequires "${k}"
+                mapfile -t Qprovides < <(expac -Ssl'\n' '%S' "^${k}$")
+                [[ " ${Qprovides[*]} ${repoconflictingpkgsrm[*]} " = *" ${k} "* ]] || CheckRequires "${k}"
                 break
             else
                 fail $"unresolvable package conflicts detected"
                 fail $"failed to prepare transaction (conflicting dependencies)"
                 if ((upgrade)); then
-                    Qrequires=($(expac -Q '%N' "${i}"))
+                    mapfile -t Qrequires < <(expac -Ql'\n' '%N' "${i}")
                     error $"%s and %s are in conflict (required by %s)" "${j}" "${k}" "${Qrequires[*]}" \
                         "${E_INSTALL_DEPS_FAILED}"
                 else
@@ -912,8 +916,8 @@ ConflictChecks() {
                 fi
             fi
         fi
-        Qprovides=($(expac -Ss '%S' "^${k}$"))
-        [[ ! " ${Qprovides[*]} " = *" ${k} "* ]] && CheckRequires "${k}"
+        mapfile -t Qprovides < <(expac -Ssl'\n' '%S' "^${k}$")
+        [[ " ${Qprovides[*]} " = *" ${k} "* ]] || CheckRequires "${k}"
     done
 }
 
@@ -922,11 +926,10 @@ ReinstallChecks() {
     # global aurpkgs aurdepspkgs deps aurconflictingpkgs depsAname depsQver depsAver depsAood depsAmain
     depsAtmp=("${depsAname[@]}")
     for i in "${!depsAtmp[@]}"; do
-        [[ ! " ${aurpkgs[*]} " = *" ${depsAname[i]} "* ]] ||
-            [[ " ${aurconflictingpkgs[*]} " = *" ${depsAname[i]} "* ]] && continue
-        [[ ! "${depsQver[i]}" || "${depsQver[i]}" = '%' ]] ||
-            [[ "$(vercmp "${depsAver[i]}" "${depsQver[i]}")" -gt 0 ]] && continue
-        ((! installpkg)) && [[ ! " ${aurdepspkgs[*]} " = *" ${depsAname[i]} "* ]] && continue
+        [[ " ${aurpkgs[*]} " = *" ${depsAname[i]} "* &&
+            " ${aurconflictingpkgs[*]} " != *" ${depsAname[i]} "* ]] || continue
+        [[ "${depsQver[i]}" != ?('%') && "$(vercmp "${depsAver[i]}" "${depsQver[i]}")" -le 0 ]] || continue
+        ((installpkg)) || [[ " ${aurdepspkgs[*]} " = *" ${depsAname[i]} "* ]] || continue
         if [[ "${depsAname[i]}" = *'-'${vcs} ]]; then
             warn $"%s latest revision -- fetching" "${colorW}${depsAname[i]}${reset}"
         else
@@ -970,8 +973,8 @@ Prompt() {
     # global deps depsQver repodepspkgs repodepsSrepo repodepsQver repodepsSver
     # compute binary size
     if [[ "${repodepspkgs[*]}" ]]; then
-        binaryksize=($(expac -S1 '%k' "${repodepspkgs[@]}"))
-        binarymsize=($(expac -S1 '%m' "${repodepspkgs[@]}"))
+        mapfile -t binaryksize < <(expac -S1 '%k' "${repodepspkgs[@]}")
+        mapfile -t binarymsize < <(expac -S1 '%m' "${repodepspkgs[@]}")
         sumk=0
         summ=0
         for i in "${!repodepspkgs[@]}"; do
@@ -1169,8 +1172,8 @@ MakePkgs() {
     EditPkgs "${basepkgs[@]}"
 
     # current orphan and optional packages
-    oldorphanpkgs=($("${pacmanbin}" -Qdtq))
-    oldoptionalpkgs=($("${pacmanbin}" -Qdttq))
+    mapfile -t oldorphanpkgs < <("${pacmanbin}" -Qdtq)
+    mapfile -t oldoptionalpkgs < <("${pacmanbin}" -Qdttq)
     mapfile -t oldoptionalpkgs < <(CommArr 'oldorphanpkgs' 'oldoptionalpkgs' '-13')
 
     # initialize sudo
@@ -1204,7 +1207,7 @@ MakePkgs() {
 
         # cache check
         unset builtpkg
-        if [[ ! "${basepkgs[i]}" = *'-'${vcs} ]]; then
+        if [[ "${basepkgs[i]}" != *'-'${vcs} ]]; then
             for j in "${pkgsdepslist[@]}"; do
                 [[ "${PKGDEST}" ]] && ((! rebuild)) &&
                     GetBuiltPkg "${j}-$(GetInfo "Version" "${j}")" "${PKGDEST}"
@@ -1369,7 +1372,7 @@ MakePkgs() {
 
     # remove AUR deps
     if ((! installpkg)); then
-        [[ "${aurdepspkgs[*]}" ]] && aurdepspkgs=($(expac -Q '%n' "${aurdepspkgs[@]}"))
+        [[ "${aurdepspkgs[*]}" ]] && mapfile -t aurdepspkgs < <(expac -Q '%n' "${aurdepspkgs[@]}")
         [[ "${aurdepspkgs[*]}" ]] && info $"Removing installed AUR dependencies..." &&
             sudo "${pacmanbin}" -Rsn "${aurdepspkgs[@]}" --noconfirm
         # re-add removed conflicting packages
@@ -1384,7 +1387,7 @@ MakePkgs() {
     rm -f "${tmpdir:?}/pacaur.sudov.lck"
 
     # new orphan and optional packages check
-    orphanpkgs=($("${pacmanbin}" -Qdtq))
+    mapfile -t orphanpkgs < <("${pacmanbin}" -Qdtq)
     mapfile -t neworphanpkgs < <(CommArr 'oldorphanpkgs' 'orphanpkgs' '-13')
     for i in "${neworphanpkgs[@]}"; do
         warn $"%s is now an %sorphan%s package" "${colorW}${i}${reset}" "${colorY}" "${reset}"
@@ -1408,7 +1411,7 @@ MakePkgs() {
 
 CleanCache() {
     local i cachepkgs foreignpkgs foreignpkgsbase
-    cachedir=($(pacman-conf CacheDir))
+    mapfile -t cachedir < <(pacman-conf CacheDir)
     [[ "${cachedir[*]}" ]] && cachedir=("${cachedir[@]%/}") && PKGDEST="${PKGDEST%/}"
     if [[ "${PKGDEST}" && " ${cachedir[*]} " != *" ${PKGDEST} "* ]]; then
         ((ccount == 1)) && printf '\n%s\n %s\n' $"Packages to keep:" $"All locally installed packages"
@@ -1468,7 +1471,7 @@ CleanCache() {
                 if Proceed "y" $"Do you want to remove all uninstalled clones from AUR clone directory?"; then
                     printf '%s\n\n' $"removing uninstalled clones from AUR clone cache..."
                     for i in "${clonedir:?}/"*; do
-                        [[ -d "${i}" && ! " ${foreignpkgsbase[*]} " = *" ${i} "* ]] &&
+                        [[ ! -d "${i}" || " ${foreignpkgsbase[*]} " = *" ${i} "* ]] ||
                             rm -rf "${clonedir:?}/${i}"
                     done
                 fi
@@ -1496,20 +1499,20 @@ CleanCache() {
 
 GetIgnoredPkgs() {
     # global ignoredpkgs
-    ignoredpkgs+=($(pacman-conf IgnorePkg))
+    mapfile -tO "${#ignoredpkgs[@]}" ignoredpkgs < <(pacman-conf IgnorePkg)
     ignoredpkgs=("${ignoredpkgs[@]//,/ }")
 }
 
 GetIgnoredGrps() {
     # global ignoredgrps
-    ignoredgrps+=($(pacman-conf IgnoreGroup))
+    mapfile -tO "${#ignoredgrps[@]}" ignoredgrps < <(pacman-conf IgnoreGroup)
     ignoredgrps=("${ignoredgrps[@]//,/ }")
 }
 
 GetInstallScripts() {
     local installscriptspath
     # global installscripts
-    [[ ! -d "${clonedir}/$1" ]] && return
+    [[ -d "${clonedir}/$1" ]] || return
     unset installscriptspath installscripts
     shopt -s nullglob
     installscriptspath=("${clonedir}/$1/"*'.install')
@@ -1597,7 +1600,7 @@ GetInfo() {
 
 CheckRequires() {
     local -a Qrequires
-    mapfile -t Qrequires < <(expac -Q '%N' "$@")
+    mapfile -t Qrequires < <(expac -Ql'\n' '%N' "$@")
     if [[ "${Qrequires[*]}" ]]; then
         fail $"failed to prepare transaction (could not satisfy dependencies)"
         error $"%s: requires %s" "${Qrequires[*]}" "$*" "${E_INSTALL_DEPS_FAILED}"
@@ -1804,17 +1807,16 @@ esac
 pkgs=("$@")
 
 # color
-[[ ! "${color}" && (! "$(pacman-conf Color)" || "${operation}" = upgrades || "${QUIET}" && "${search}") ]] &&
-    color='never' || color='auto'
+[[ ! "${color}" && (! "$(pacman-conf Color)" || "${operation}" = upgrades ||
+    "${QUIET}" -ne 0 && "${search}" -ne 0) ]] && color='never' || color='auto'
 pacopts+=("--color=${color}") auropts+=("--color=${color}")
-if [[ ! "${color}" = never ]]; then
-    reset=$'\033[0m' colorR=$'\033[1;31m' colorG=$'\033[1;32m' colorY=$'\033[1;33m'
-    colorB=$'\033[1;34m' colorM=$'\033[1;35m' colorW=$'\033[1;39m'
+if [[ "${color}" != 'never' ]]; then
+    declare -r reset=$'\033[0m' colorR=$'\033[1;31m' colorG=$'\033[1;32m' colorY=$'\033[1;33m' \
+        colorB=$'\033[1;34m' colorM=$'\033[1;35m' colorW=$'\033[1;39m'
 else
-    reset='' colorR='' colorG='' colorY='' colorB='' colorM='' colorW=''
-    makeopts+=('--nocolor')
+    declare -r reset='' colorR='' colorG='' colorY='' colorB='' colorM='' colorW=''
+    makeopts+=('-m')
 fi
-declare -r reset colorR colorG colorY colorB colorM colorW
 
 # sanity check
 if ((aur)); then
