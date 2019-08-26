@@ -17,10 +17,10 @@ declare -r version='4.8.6'
 #
 
 # Options
-aur=0 asdeps=0 asexplicit=0 checkdeps=0 cleancache=0 ccount=0 color='' dcount=0
-devel=0 downloadonly=0 help=0 info=0 installpkg=0 native=0 needed=0 noconfirm=0
-nodeps=0 noedit=0 noop=0 operation='' pac=0 pace=0 pacQ=0 pacS=0 rebuild=0
-refresh=0 repo=0 search=0 upgrade=0 ver=0 QUIET=0
+aur=0 asdeps=0 asexplicit=0 checkdeps=0 cleancache=0 color='' devel=0 downloadonly=0 help=0
+info=0 installpkg=0 native=0 needed=0 noconfirm=0 nodeps=0 noedit=0 noop=0 operation=''
+pace=0 pacQ=0 pacS=0 rebuild=0 refresh=0 repo=0 search=0 upgrade=0 ver=0 QUIET=0
+declare -i ccount=0 dcount=0 pac=0
 pacmanarg=() pacopts=() auropts=() makeopts=()
 
 # determine config location
@@ -131,7 +131,7 @@ Core() {
 }
 
 UpgradeAur() {
-    local foreignpkgs allaurpkgs aurforeignpkgs i
+    local foreignpkgs allaurpkgs i
     # global aurpkgs
     info $"%sStarting AUR upgrade...%s" "${colorW}" "${reset}"
     mapfile -t foreignpkgs < <("${pacmanbin}" -Qmq)
@@ -139,18 +139,16 @@ UpgradeAur() {
     mapfile -t allaurpkgs < <(GetInfo Name)
 
     # foreign packages check
-    mapfile -t aurforeignpkgs < <(CommArr 'allaurpkgs' 'foreignpkgs' '-13')
-    for i in "${aurforeignpkgs[@]}"; do
+    while read -r i; do
         warn $"%s is %snot present%s in AUR -- skipping" "${colorW}${i}${reset}" "${colorY}" "${reset}"
-    done
+    done < <(CommArr 'allaurpkgs' 'foreignpkgs' '-13')
 
-    # use auracle to find out of date AUR packages
-    mapfile -t aurpkgs < <(auracle sync -q)
+    mapfile -t aurpkgs < <(auracle sync -q) # use auracle to find out of date AUR packages
 
     # add devel packages
     if ((devel)); then
         for i in "${allaurpkgs[@]}"; do
-            [[ "${i}" = *${vcs} && " ${aurpkgs[*]} " != *" ${i} "* ]] && aurpkgs+=("${i}")
+            [[ "${i}" != *${vcs} || " ${aurpkgs[*]} " = *" ${i} "* ]] || aurpkgs+=("${i}")
         done
     fi
 
@@ -364,8 +362,7 @@ FindDepsAur() {
         depspkgs+=($(GetInfo MakeDepends))
         ((checkdeps)) && depspkgs+=($(GetInfo CheckDepends))
     else
-        [[ ! "${depspkgsaur[*]}" ]] && depspkgsaurtmp=("${aurpkgs[@]}") ||
-            depspkgsaurtmp=("${depspkgsaur[@]}")
+        depspkgsaurtmp=("${depspkgsaur[@]:-${aurpkgs[@]}}")
         for i in "${!depspkgsaurtmp[@]}"; do
             depAname="$(GetInfo Name "${depspkgsaurtmp[i]}")"
             depAver="$(GetInfo Version "${depspkgsaurtmp[i]}")"
@@ -427,7 +424,7 @@ FindDepsAur() {
                 for j in "${!depspkgs[@]}"; do
                     assumedepspkgs[j]="${depspkgs[j]%%[><=]*}"
                     [[ " ${assumedepspkgs[*]} " = *" ${assumeinstalled[i]} "* ]] &&
-                        depspkgs[j]="${assumeinstalled[i]}";
+                        depspkgs[j]="${assumeinstalled[i]}"
                 done
             done
             mapfile -t depspkgs < <(CommArr 'assumeinstalled' 'depspkgs' '-13')
@@ -454,15 +451,13 @@ FindDepsAur() {
         depspkgsaur=($(printf '%s\n' "${depspkgsaur[@]%%[><=]*}" | sort -u))
     fi
 
-    [[ "${depspkgsaur[*]}" ]] && aurdepspkgs+=("${depspkgsaur[@]}") &&
-        FindDepsAur "${depspkgsaur[@]}"
+    [[ ! "${depspkgsaur[*]}" ]] || { aurdepspkgs+=("${depspkgsaur[@]}"); FindDepsAur "${depspkgsaur[@]}"; }
 }
 
 SortDepsAur() {
     local i j sortaurpkgs sortdepspkgs sortdepspkgsaur
     # global checkedsortdepspkgsaur allcheckedsortdepspkgsaur errdepsnover
-    [[ "${checkedsortdepspkgsaur[*]}" ]] && sortaurpkgs=("${checkedsortdepspkgsaur[@]}") ||
-        sortaurpkgs=("${aurpkgs[@]}")
+    sortaurpkgs=("${checkedsortdepspkgsaur[@]:-${aurpkgs[@]}}")
 
     unset checkedsortdepspkgsaur
     for i in "${!sortaurpkgs[@]}"; do
@@ -511,8 +506,7 @@ FindDepsAurError() {
     # global errdepsnover errdepslist tsorterrdeps currenterrdep
 
     for i in "${tsorterrdeps[@]}"; do
-        [[ " ${errdepsnover[*]} " = *" ${i} "* || " ${errdepslist[*]} " = *" ${i} "* ]] && break ||
-            nexterrdep="${i}"
+        [[ " ${errdepsnover[*]} ${errdepslist[*]} " = *" ${i} "* ]] && break || nexterrdep="${i}"
     done
 
     [[ "${currenterrdep[*]}" ]] || currenterrdep="${tsorterrdeps[0]}"
@@ -524,20 +518,21 @@ FindDepsAurError() {
         # remove versioning
         nextallerrdeps=("${nextallerrdeps[@]%%[><=]*}")
 
-        [[ " ${nextallerrdeps[*]} " = *" ${currenterrdep} "* ]] && errdepslist+=("${nexterrdep}") \
-            currenterrdep="${tsorterrdeps[0]}"
+        [[ " ${nextallerrdeps[*]} " = *" ${currenterrdep} "* ]] &&
+            errdepslist+=("${nexterrdep}") currenterrdep="${tsorterrdeps[0]}"
         tsorterrdeps=("${tsorterrdeps[@]:1}")
         FindDepsAurError "${tsorterrdeps[@]}"
     else
         for i in "${!aurpkgs[@]}"; do
-            nextallerrdeps=($(GetInfo Depends "${aurpkgs[i]}"))
-            nextallerrdeps+=($(GetInfo MakeDepends "${aurpkgs[i]}"))
-            ((checkdeps)) && nextallerrdeps+=($(GetInfo CheckDepends "${aurpkgs[i]}"))
+            mapfile -t nextallerrdeps < <(GetInfo Depends "${aurpkgs[i]}")
+            mapfile -tO "${#nextallerrdeps[@]}" nextallerrdeps < <(GetInfo MakeDepends "${aurpkgs[i]}")
+            ((! checkdeps)) ||
+                mapfile -tO "${#nextallerrdeps[@]}" nextallerrdeps < <(GetInfo CheckDepends "${aurpkgs[i]}")
 
             # remove versioning
             nextallerrdeps=("${nextallerrdeps[@]%%[><=]*}")
 
-            [[ " ${nextallerrdeps[*]} " = *" ${currenterrdep} "* ]] && errdepslist+=("${aurpkgs[i]}")
+            [[ " ${nextallerrdeps[*]} " != *" ${currenterrdep} "* ]] || errdepslist+=("${aurpkgs[i]}")
         done
     fi
 }
@@ -723,24 +718,19 @@ ProviderChecks() {
             while ((nb < 0 || nb >= "${#providers}")); do
                 printf '\n%s ' $"Enter a number (default=0):"
                 case "${TERM}" in
-                    dumb)
-                    read -r nb
-                    ;;
-                    *)
-                    read -r -n "${#providersnb}" nb
-                    printf '\n'
-                    ;;
+                    dumb)   read -r nb;;
+                    *)      read -rn "${#providersnb}" nb; printf '\n';;
                 esac
 
                 case "${nb}" in
-                    [0-9]|[0-9][0-9]) if ((nb < 0 || nb >= "${#providers[@]}")); then
+                    +([0-9])) if ((nb < 0 || nb >= "${#providers[@]}")); then
                             printf '\n'
-                            fail $"invalid value: %s is not between 0 and %s" "${nb}" "${providersnb}" && ((--i))
+                            fail $"invalid value: %s is not between 0 and %s" "${nb}" "${providersnb}"; ((--i))
                         else
                             break
                         fi;;
                     '') nb=0;;
-                    *) fail $"invalid number: %s" "${nb}";;
+                    *)  fail $"invalid number: %s" "${nb}";;
                 esac
             done
         else
@@ -957,8 +947,7 @@ Prompt() {
     if [[ "${repodepspkgs[*]}" ]]; then
         mapfile -t binaryksize < <(expac -S1 '%k' "${repodepspkgs[@]}")
         mapfile -t binarymsize < <(expac -S1 '%m' "${repodepspkgs[@]}")
-        sumk=0
-        summ=0
+        sumk=0 summ=0
         for i in "${!repodepspkgs[@]}"; do
             GetBuiltPkg "${repodepspkgs[i]}-${repodepsSver[i]}" "$(pacman-conf CacheDir)"
             [[ "${builtpkg}" ]] && binaryksize[i]=0
@@ -994,7 +983,7 @@ Prompt() {
             "${straurname}" "${stroldver}" "${strnewver}"
         for i in "${!deps[@]}"; do
             printf "%-${lname}s  ${colorR}%-${lver}s${reset}  ${colorG}%-${lver}s${reset}  %${lsize}s\n" \
-                "${depsArepo[i]}" "${depsQver[i]}" "${depsAver[i]}" "${depsAcached[i]}";
+                "${depsArepo[i]}" "${depsQver[i]}" "${depsAver[i]}" "${depsAcached[i]}"
         done
 
         if [[ "${repodepspkgs[*]}" ]]; then
@@ -1133,7 +1122,7 @@ EditPkgs() {
         exit "${E_FAIL}"
     fi
 
-    if [[ "${displaybuildfiles}" = diff ]] && ((viewed)); then
+    if [[ "${displaybuildfiles}" = 'diff' ]] && ((viewed)); then
         if ((installpkg)); then
             Proceed y $"Proceed with installation?" || exit
         else
@@ -1160,7 +1149,7 @@ MakePkgs() {
 
     # initialize sudo
     if sudo -n "${pacmanbin}" -V &>/dev/null || sudo -v; then
-        [[ "${sudoloop}" = true ]] && SudoV &
+        [[ "${sudoloop}" = 'true' ]] && SudoV &
     fi
 
     # split packages support
@@ -1214,14 +1203,14 @@ MakePkgs() {
         if [[ ! "${builtpkg-}" ]] || ((rebuild)); then
             cd "${clonedir:?}/${basepkgs[i]}" || exit "${E_MISSING_FILE}"
             info $"Checking %s integrity..." "${colorW}${pkgsdeps[i]}${reset}"
-            if [[ "${silent}" = true ]]; then
+            if [[ "${silent}" = 'true' ]]; then
                 makepkg -f --verifysource "${makeopts[@]}" &>/dev/null || errmakepkg+=("${pkgsdeps[i]}")
             else
                 makepkg -f --verifysource "${makeopts[@]}"  >/dev/null || errmakepkg+=("${pkgsdeps[i]}")
             fi
             # extraction, prepare and pkgver update
             info $"Preparing %s..." "${colorW}${pkgsdeps[i]}${reset}"
-            if [[ "${silent}" = true ]]; then
+            if [[ "${silent}" = 'true' ]]; then
                 makepkg -od --skipinteg "${makeopts[@]}" &>/dev/null || errmakepkg+=("${pkgsdeps[i]}")
             else
                 makepkg -od --skipinteg "${makeopts[@]}" || errmakepkg+=("${pkgsdeps[i]}")
@@ -1284,7 +1273,7 @@ MakePkgs() {
             if [[ "${builtpkg}" ]]; then
                 if [[ " ${aurdepspkgs[*]} " = *" ${j} "* ]] || ((installpkg)); then
                     info $"Installing %s cached package..." "${colorW}${j}${reset}"
-                    sudo "${pacmanbin}" -U --ask 36 "${pacopts[@]/--quiet}" --noconfirm -- "${builtpkg}"
+                    sudo "${pacmanbin}" -U --ask 36 --noconfirm "${pacopts[@]//--quiet}" -- "${builtpkg}"
                     [[ " ${aurpkgs[*]} " = *" ${j} "* ]] ||
                         sudo "${pacmanbin}" -D "${j}" --asdeps "${pacopts[@]}" &>/dev/null
                 else
@@ -1315,7 +1304,7 @@ MakePkgs() {
         fi
 
         # skip install for packages that fail to build
-        if [[ "${silent}" = true ]]; then
+        if [[ "${silent}" = 'true' ]]; then
             makepkg -sefc "${makeopts[@]}" --noconfirm &>/dev/null ||
                 { errmakepkgs+=("${pkgsdeps[i]}"); continue; }
         else
@@ -1339,7 +1328,7 @@ MakePkgs() {
         if ((installpkg)) || [[ ! "${builtpkgs[*]}" ]]; then
             info $"Installing %s package(s)..." "${colorW}${pkgsdeps[i]}${reset}"
             sudo "${pacmanbin}" -U "${builtdepspkgs[@]}" "${builtpkgs[@]}" \
-                --ask 36 "${pacopts[@]/--quiet}" --noconfirm
+                --ask 36 "${pacopts[@]//--quiet}" --noconfirm
         fi
 
         # set dep status
@@ -1354,14 +1343,12 @@ MakePkgs() {
 
     # remove AUR deps
     if ((! installpkg)); then
-        [[ "${aurdepspkgs[*]}" ]] && mapfile -t aurdepspkgs < <(expac -Q '%n' "${aurdepspkgs[@]}")
-        [[ "${aurdepspkgs[*]}" ]] && info $"Removing installed AUR dependencies..." &&
-            sudo "${pacmanbin}" -Rsn "${aurdepspkgs[@]}" --noconfirm
+        [[ ! "${aurdepspkgs[*]}" ]] || mapfile -t aurdepspkgs < <(expac -Q '%n' "${aurdepspkgs[@]}")
+        [[ ! "${aurdepspkgs[*]}" ]] || { info $"Removing installed AUR dependencies..."
+            sudo "${pacmanbin}" -Rsn "${aurdepspkgs[@]}" --noconfirm; }
         # re-add removed conflicting packages
-        [[ "${aurconflictingpkgsrm[*]}" ]] &&
-            sudo "${pacmanbin}" -S "${aurconflictingpkgsrm[@]}" --ask 36 --asdeps --needed --noconfirm
-        [[ "${repoconflictingpkgsrm[*]}" ]] &&
-            sudo "${pacmanbin}" -S "${repoconflictingpkgsrm[@]}" --ask 36 --asdeps --needed --noconfirm
+        [[ ! "${aurconflictingpkgsrm[*]}${repoconflictingpkgsrm[*]}" ]] || sudo "${pacmanbin}" -S \
+             "${aurconflictingpkgsrm[@]}" "${repoconflictingpkgsrm[@]}" --ask 36 --asdeps --needed --noconfirm
     fi
 
     # remove locks
@@ -1394,7 +1381,7 @@ MakePkgs() {
 CleanCache() {
     local i cachepkgs foreignpkgs foreignpkgsbase
     mapfile -t cachedir < <(pacman-conf CacheDir)
-    [[ "${cachedir[*]}" ]] && cachedir=("${cachedir[@]%/}") && PKGDEST="${PKGDEST%/}"
+    [[ ! "${cachedir[*]}" ]] || cachedir=("${cachedir[@]%/}") PKGDEST="${PKGDEST%/}"
     if [[ "${PKGDEST}" && " ${cachedir[*]} " != *" ${PKGDEST} "* ]]; then
         ((ccount == 1)) && printf '\n%s\n %s\n' $"Packages to keep:" $"All locally installed packages"
         printf '\n%s %s\n' $"AUR cache directory:" "${PKGDEST}"
@@ -1408,8 +1395,8 @@ CleanCache() {
             fi
         else
             Proceed n $"Do you want to remove ALL files from AUR cache?" ||
-                printf '%s\n' $"removing all files from AUR cache..." &&
-                rm "${PKGDEST:?}"/* &>/dev/null
+                { printf '%s\n' $"removing all files from AUR cache..."
+                    rm "${PKGDEST:?}/"* &>/dev/null; }
         fi
     fi
 
@@ -1575,7 +1562,7 @@ GetInfo() {
     local -n field="$1"
 
     if [[ "$2" ]]; then
-        printf '%s\n' "${field[$2]//$'\037'/ }"
+        printf '%s\n' "${field[$2]//$'\037'/$'\n'}"
     else
         printf '%s\n' "${field[@]//$'\037'/ }"
     fi
@@ -1593,7 +1580,7 @@ CheckRequires() {
 Proceed() {
     local answer ret readline=0
 
-    if [[ "${TERM}" = dumb ]] || ((cleancache)); then
+    if [[ "${TERM-}" = 'dumb' ]] || ((cleancache)); then
         readline=1
     fi
     case "$1" in
@@ -1656,8 +1643,7 @@ error() {
 GetLength() {
     local length=0 i
     for i in "$@"; do
-        x="${#i}"
-        ((x > length)) && length="${x}"
+        (("${#i}" > length)) && length="${#i}"
     done
     printf '%s\n' "${length}"
 }
@@ -1722,11 +1708,11 @@ Usage() {
 # options
 shortopts="DFQRSTUVacdefghiklmnopqrstuvwxy"
 longopts=('help' 'database' 'files' 'query' 'remove' 'sync' 'deptest' 'upgrade')
-longopts+=('asdeps' 'asexplicit' 'cascade' 'changelog' 'check' 'confirm' 'dbonly' 'debug' 'deps'
-           'disable-download-timeout' 'downloadonly' 'explicit' 'file' 'foreign' 'groups' 'info'
-           'list' 'machinereadable' 'native' 'needed' 'noconfirm' 'nodeps' 'noprogressbar' 'nosave'
-           'noscriptlet' 'owns' 'print' 'recursive' 'refresh' 'regex' 'quiet' 'search' 'sysupgrade'
-           'unneeded' 'unrequired' 'upgrades' 'verbose')
+longopts+=('asdeps' 'asexplicit' 'cascade' 'changelog' 'check' 'clean' 'confirm' 'dbonly' 'debug'
+           'deps' 'disable-download-timeout' 'downloadonly' 'explicit' 'file' 'foreign' 'groups'
+           'info' 'list' 'machinereadable' 'native' 'needed' 'noconfirm' 'nodeps' 'noprogressbar'
+           'nosave' 'noscriptlet' 'owns' 'print' 'recursive' 'refresh' 'regex' 'quiet' 'search'
+           'sysupgrade' 'unneeded' 'unrequired' 'upgrades' 'verbose')
 longopts+=('arch:' 'assume-installed:' 'cachedir:' 'color:' 'config:' 'dbpath:' 'gpgdir:' 'hookdir:'
            'ignore:' 'ignoregroup:' 'logfile:' 'overwrite:' 'print-format:' 'root:' 'sysroot:')
 longopts_aur=('aur' 'by:' 'devel' 'edit' 'literal' 'noedit' 'rebuild' 'repo' 'rsort:' 'searchby:'
@@ -1743,33 +1729,33 @@ while true; do
         [[ "$1": != "--${i}" ]] || pacopts+=("$1=$2")
     done
     case "$1" in
-        -S|--sync) pacS=1; installpkg=1; operation='sync'; ((++pac));;
-        -Q|--query) pacQ=1; ((++pac));;
+        -S|--sync)  pacS=1 pac+=1 installpkg=1 operation='sync';;
+        -Q|--query) pacQ=1 pac+=1;;
         -s|--search) search=1;;
         -i|--info) info=1;;
         -e|--edit) pace=1;;
-        -u|--upgrades|--sysupgrade) upgrade=1; installpkg=1;;
+        -u|--upgrades|--sysupgrade) upgrade=1 installpkg=1;;
         -q|--quiet) declare -x QUIET=1; auropts+=("$1");;
-        -c|--clean) cleancache=1 && ((++ccount));;
+        -c|--clean) cleancache=1 ccount+=1;;
         -n|--native) native=1;;
         -r|--repo) repo=1;;
         -a|--aur) aur=1;;
         --ignore) ignoredpkgs+=("$2"); shift;;
         --color) color="$2"; shift;;
         --literal) auropts+=("$1");;
-        --@(by|searchby)) auropts+=("--searchby=$2"); shift;;
+        --?(search)by) auropts+=("--searchby=$2"); shift;;
         --sort) sortorder='ascending' sortby="$2"; shift;;
         --rsort) sortorder='descending' sortby="$2"; shift;;
-        -d|--nodeps) nodeps=1; makeopts+=("$1"); ((++dcount));;
+        -d|--nodeps) nodeps=1 makeopts+=("$1") dcount+=1;;
         --assume-installed) assumeinstalled+=("$2"); shift;;
-        -[DFRTUV]|--@(database|files|remove|deptest|upgrade)) ((++pac));;
-        --@(asdeps|asexplicit|devel|needed|noconfirm|noedit|rebuild)) declare "${1/--}"=1;;
+        -[DFRTUV]|--@(database|files|remove|deptest|upgrade)) pac+=1;;
+        --@(asdeps|asexplicit|devel|needed|noconfirm|noedit|rebuild)) declare "${1#--}"=1;;
         -[glp]|--@(groups|list|print)) noop=1;;
         -w|--downloadonly) downloadonly=1;;
         --silent) silent='true' pacopts+=('--quiet') auropts+=('--quiet') makeopts+=('--log');;
         -y|--refresh) refresh=1;;
         -h|--help) help=1;;
-        --version) operation='version'; ((++pac));;
+        --version) operation='version' pac+=1;;
         -v) ver=1;;
         --) shift; break;;
     esac
@@ -1777,7 +1763,7 @@ while true; do
 done
 
 # help or version
-[[ "${operation}" = version ]] || ((! pac && ver)) && printf '%s\n' "pacaur ${version}" && exit "${E_OK}"
+[[ "${operation}" = 'version' ]] || ((! pac || ver)) && { printf 'pacaur %s\n' "${version}"; exit "${E_OK}"; }
 ((! pac && help)) && Usage
 
 # sorting
@@ -1790,7 +1776,7 @@ esac
 pkgs=("$@")
 
 # color
-[[ ! "${color}" && (! "$(pacman-conf Color)" || "${operation}" = upgrades ||
+[[ ! "${color}" && (! "$(pacman-conf Color)" || "${operation}" = 'upgrades' ||
     "${QUIET}" -ne 0 && "${search}" -ne 0) ]] && color='never' || color='auto'
 pacopts+=("--color=${color}") auropts+=("--color=${color}")
 if [[ "${color}" != 'never' ]]; then
@@ -1810,12 +1796,9 @@ fi
 ((! pacS || ! downloadonly)) || installpkg=0
 ((! pacS || ! noop)) || operation=''
 ((! pacS || ! cleancache)) || search=0 info=0 upgrade=0
-if ((pac > 1)); then
-    error $"only one operation may be used at a time" "${E_FAIL}"
-fi
-if [[ "${operation}" = sync ]] && ((! search && ! info && ! cleancache && ! EUID)); then
+((pac <= 1)) || error $"only one operation may be used at a time" "${E_FAIL}"
+[[ "${operation}" != sync ]] || ((search || info || cleancache || EUID)) ||
     error $"you cannot perform this operation as root" "${E_ROOT}"
-fi
 ((! pacS || ! search || ! info)) ||
     error $"invalid option: '--info' and '--search' may not be used together" "${E_INVALID_OPTION}"
 command -v "${editor%% *}" >/dev/null ||
@@ -1825,13 +1808,8 @@ command -v "${editor%% *}" >/dev/null ||
     error $"you cannot use %spacaur%s as PACMAN environment variable" "${colorW}" "${reset}" "${E_FAIL}"
 [[ -w "${clonedir}" ]] ||
     error $"%s does not have write permission" "${colorW}${clonedir}${reset}" "${E_FS_PERMISSIONS}"
-if [[ ! "${pkgs[*]}" && "${operation}" = @(sync|edit) ]] &&
-    ! ((help + refresh + upgrade + cleancache + info)); then
-        error $"no targets specified (use -h for help)" "${E_FAIL}"
-fi
-if [[ ! "${pkgs[*]}" && " ${pacmanarg[*]} " = *' -'[RU]' '* ]] && ((! help)); then
-    error $"no targets specified (use -h for help)" "${E_FAIL}"
-fi
+[[ "${pkgs[*]}" || ("${operation}" != @(sync|edit) && " ${pacmanarg[*]} " != *' -'[RU]' '*) ]] ||
+    ((help+refresh+upgrade+cleancache+info)) || error $"no targets specified (use -h for help)" "${E_FAIL}"
 ((! repo || ! aur)) || { aur=0 repo=0
     warn $"invalid option: '-r/--repo' and '-a/--aur' may not be used together, disabling both"; }
 
@@ -1852,7 +1830,7 @@ case "${operation}" in
                 fi
                 exitrepo="$?"
             fi
-            if ((! repo)); then
+            if ((! repo)) && [[ "${pkgs[*]}" ]]; then
                 auracle search "${auropts[@]}" -- "${pkgs[@]#aur/}"; exitaur="$?"
             fi
             # exit code
