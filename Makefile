@@ -11,6 +11,7 @@ DATAROOTDIR = $(PREFIX)/share
 DOCDIR = $(DATAROOTDIR)/doc/pacaur
 MANPREFIX = $(DATAROOTDIR)/man
 MSGFMT = $(shell command -v msgfmt 2>/dev/null)
+POD2MAN = $(shell command -v pod2man 2>/dev/null)
 
 TRANSLATIONS = \
 	ca \
@@ -39,16 +40,20 @@ all: doc
 
 # documentation
 doc:
+ifneq ($(POD2MAN),)
 	@echo "Generating documentation..."
 	@pod2man --utf8 --section=8 --center="Pacaur Manual" --name="PACAUR" \
 	--release="pacaur $(VERSION)" ./README.pod ./pacaur.8
+endif
 
 # aux
 install: doc
 	@echo "Installing..."
 	@install -Dm644 ./config $(DESTDIR)$(DOCDIR)/config.example
 	@install -Dm755 ./pacaur -t $(DESTDIR)$(BINDIR)
-	@sed -i "s%declare -r version=.*%declare -r version=\'$(VERSION)\'%" $(DESTDIR)$(BINDIR)/pacaur
+	@sed -e "s%(declare -r version=).*%\1\'$(VERSION)\'%" \
+		 -e "s%/usr/share/makepkg%$(shell pkg-config --variable=libmakepkgdir libmakepkg)%" \
+		 -Ei $(DESTDIR)$(BINDIR)/pacaur
 	@install -Dm644 ./completions/bash.completion $(DESTDIR)$(DATAROOTDIR)/bash-completion/completions/pacaur
 	@install -Dm644 ./completions/zsh.completion $(DESTDIR)$(DATAROOTDIR)/zsh/site-functions/_pacaur
 	@install -Dm644 ./LICENSE -t $(DESTDIR)$(DATAROOTDIR)/licenses/pacaur

@@ -13,13 +13,13 @@ msgstr ""
 "X-Generator: Poedit 1.8.5\n"
 
 #: pacaur:115
-msgid "${colorW}Starting AUR upgrade...${reset}"
-msgstr "${colorW}S'està iniciant una actualització AUR...${reset}"
+msgid "%sStarting AUR upgrade...%s"
+msgstr "%sS'està iniciant una actualització AUR...%s"
 
 #: pacaur:129
-msgid "${colorW}$i${reset} is ${colorY}not present${reset} in AUR -- skipping"
+msgid "%s is %snot present%s in AUR -- skipping"
 msgstr ""
-"${colorW}$i${reset} ${colorY}no està present${reset} en l'AUR -- s'està "
+"%s %sno està present%s en l'AUR -- s'està "
 "saltant"
 
 #: pacaur:159 pacaur:215 pacaur:1111
@@ -27,78 +27,78 @@ msgid "latest"
 msgstr "últim"
 
 #: pacaur:164
-msgid "${checkaurpkgs[$i]} is in IgnorePkg/IgnoreGroup. Install anyway?"
+msgid "%s is in IgnorePkg/IgnoreGroup. Install anyway?"
 msgstr ""
-"${checkaurpkgs[$i]} és en IgnorePkg/IgnoreGroup. S'ha d'instal·lar igualment?"
+"%s és en IgnorePkg/IgnoreGroup. S'ha d'instal·lar igualment?"
 
 #: pacaur:165
-msgid "${colorW}${checkaurpkgs[$i]}${reset}: ignoring package upgrade"
+msgid "%s: ignoring package upgrade"
 msgstr ""
-"${colorW}${checkaurpkgs[$i]}${reset}: s'està ignorant l'actualització de "
+"%s: s'està ignorant l'actualització de "
 "paquet"
 
 #: pacaur:170
 msgid ""
-"${colorW}${checkaurpkgs[$i]}${reset}: ignoring package upgrade "
-"(${colorR}${checkaurpkgsQver[$i]}${reset} => "
-"${colorG}${checkaurpkgsAver[$i]}${reset})"
+"%s: ignoring package upgrade "
+"(%s => "
+"%s)"
 msgstr ""
-"${colorW}${checkaurpkgs[$i]}${reset}: s'està ignorant l'actualització de "
-"paquet (${colorR}${checkaurpkgsQver[$i]}${reset} => "
-"${colorG}${checkaurpkgsAver[$i]}${reset})"
+"%s: s'està ignorant l'actualització de "
+"paquet (%s => "
+"%s)"
 
 #: pacaur:184
 msgid "resolving dependencies..."
 msgstr "s'estan resolent les dependències..."
 
 #: pacaur:220
-msgid "no results found for $i"
-msgstr "no s'ha trobat cap resultat per a $i"
+msgid "no results found for %s"
+msgstr "no s'ha trobat cap resultat per a %s"
 
 #: pacaur:358
 msgid "dependency cycle detected"
 msgstr "s'ha detectat un cicle de dependències"
 
 #: pacaur:426 pacaur:441
-msgid "${colorW}$i${reset}: ignoring package upgrade"
-msgstr "${colorW}$i${reset}: s'està ignorant l'actualització de paquet"
+msgid "%s: ignoring package upgrade"
+msgstr "%s: s'està ignorant l'actualització de paquet"
 
 #: pacaur:427 pacaur:433 pacaur:438 pacaur:442
-msgid "Unresolved dependency '${colorW}$i${reset}'"
-msgstr "No s'ha resolt la dependència '${colorW}$i${reset}'"
+msgid "Unresolved dependency '%s'"
+msgstr "No s'ha resolt la dependència '%s'"
 
 #: pacaur:437
-msgid "$i dependency is in IgnorePkg/IgnoreGroup. Install anyway?"
+msgid "%s dependency is in IgnorePkg/IgnoreGroup. Install anyway?"
 msgstr ""
-"La dependència $i és en IgnorePkg/IgnoreGroup. S'ha d'instal·lar igualment?"
+"La dependència %s és en IgnorePkg/IgnoreGroup. S'ha d'instal·lar igualment?"
 
 #: pacaur:470
 msgid ""
-"${colorW}There are ${#providers[@]} providers available for "
-"${providersdeps[$i]}:${reset}"
+"%sThere are %s providers available for "
+"%s:%s"
 msgstr ""
-"${colorW}Hi ha ${#providers[@]} proveïdors disponibles per "
-"${providersdeps[$i]}:${reset}"
+"%sHi ha %s proveïdors disponibles per "
+"%s:%s"
 
 #: pacaur:477
 msgid "Enter a number (default=0):"
 msgstr "Introduïu un número (per defecte=0):"
 
 #: pacaur:482
-msgid "invalid value: $nb is not between 0 and $providersnb"
-msgstr "valor no vàlid: $nb no està entre 0 i $providersnb"
+msgid "invalid value: %s is not between 0 and %s"
+msgstr "valor no vàlid: %s no està entre 0 i %s"
 
 #: pacaur:484
-msgid "invalid number: $nb"
-msgstr "el nombre no és vàlid: $nb"
+msgid "invalid number: %s"
+msgstr "el nombre no és vàlid: %s"
 
 #: pacaur:526
 msgid "looking for inter-conflicts..."
 msgstr "s'estan cercant interconflictes..."
 
 #: pacaur:562 pacaur:631
-msgid "$j and $k are in conflict ($i). Remove $k?"
-msgstr "$j i $k tenen conflictes ($i). S'elimina $k?"
+msgid "%s and %s are in conflict (%s). Remove %s?"
+msgstr "%s i %s tenen conflictes (%s). S'elimina %s?"
 
 #: pacaur:576 pacaur:639
 msgid "unresolvable package conflicts detected"
@@ -109,35 +109,33 @@ msgid "failed to prepare transaction (conflicting dependencies)"
 msgstr "ha fallat en preparar la transacció (dependències conflictives)"
 
 #: pacaur:578 pacaur:641
-msgid "$j and $k are in conflict"
-msgstr "$j i $k tenen conflictes"
+msgid "%s and %s are in conflict"
+msgstr "%s i %s tenen conflictes"
 
 #: pacaur:659
-msgid "${colorW}${depsAname[$i]}${reset} latest revision -- fetching"
-msgstr "última revisió de ${colorW}${depsAname[$i]}${reset} -- s'està obtenint"
+msgid "%s latest revision -- fetching"
+msgstr "última revisió de %s -- s'està obtenint"
 
 #: pacaur:662
 msgid ""
-"${colorW}${depsAname[$i]}-${depsQver[$i]}${reset} is up to date -- "
+"%s-%s is up to date -- "
 "reinstalling"
 msgstr ""
-"${colorW}${depsAname[$i]}-${depsQver[$i]}${reset} és al dia -- s'està "
+"%s-%s és al dia -- s'està "
 "reinstal·lant"
 
 #: pacaur:664
 msgid ""
-"${colorW}${depsAname[$i]}-${depsQver[$i]}${reset} is up to date -- skipping"
-msgstr "${colorW}${depsAname[$i]}-${depsQver[$i]}${reset} és al dia -- saltant"
+"%s-%s is up to date -- skipping"
+msgstr "%s-%s és al dia -- saltant"
 
 #: pacaur:679
 msgid ""
-"${colorW}${depsAname[$i]}-${depsAver[$i]}${reset} has been flagged ${colorR}"
-"out of date${reset} on ${colorY}$(date -d \"@${depsAood[$i]}\" \"+%Y-%m-%d"
-"\")${reset}"
+"%s-%s has been flagged %s"
+"out of date%s on %s"
 msgstr ""
-"${colorW}${depsAname[$i]}-${depsAver[$i]}${reset} s'ha marcat com a ${colorR}"
-"fora de data${reset} en ${colorY}$(date -d \"@${depsAood[$i]}\" \"+%Y-%m-%d"
-"\")${reset}"
+"%s-%s s'ha marcat com a %s"
+"fora de data%s en %s"
 
 #: pacaur:707
 msgid "cached"
@@ -160,16 +158,16 @@ msgid "Download Size"
 msgstr "Mida de la baixada"
 
 #: pacaur:722 pacaur:746
-msgid "AUR Packages  (${#deps[@]}):"
-msgstr "Paquets AUR            (${#deps[@]}):"
+msgid "AUR Packages  "
+msgstr "Paquets AUR            "
 
 #: pacaur:732 pacaur:747
-msgid "Repo Packages (${#repodepspkgs[@]}):"
-msgstr "Paquets de repositoris (${#repodepspkgs[@]}):"
+msgid "Repo Packages "
+msgstr "Paquets de repositoris "
 
 #: pacaur:735
-msgid "${binarysize[$i]} MiB"
-msgstr "${binarysize[$i]} MiB"
+msgid " MiB"
+msgstr " MiB"
 
 #: pacaur:751
 msgid "Repo Download Size:"
@@ -192,110 +190,104 @@ msgid "download"
 msgstr "baixada"
 
 #: pacaur:761
-msgid "Proceed with $action?"
-msgstr "Inicio la $action?"
+msgid "Proceed with installation?"
+msgstr "Inicio la installation?"
+
+#: pacaur:762
+msgid "Proceed with download?"
+msgstr "Inicio la download?"
 
 #: pacaur:770
-msgid "${colorW}Retrieving package(s)...${reset}"
-msgstr "${colorW}S'està(an) recuperant el(s) paquet(s)...${reset}"
+msgid "%sRetrieving package(s)...%s"
+msgstr "%sS'està(an) recuperant el(s) paquet(s)...%s"
 
 #: pacaur:805
-msgid "View $i build files diff?"
+msgid "View %s build files diff?"
 msgstr ""
 
 #: pacaur:808
 #, fuzzy
-msgid "${colorW}$i${reset} build files diff viewed"
-msgstr "S'ha vist l'script de ${colorW}$j${reset}"
+msgid "%s build files diff viewed"
+msgstr "S'ha vist l'script de %s"
 
 #: pacaur:812
-msgid "View $i PKGBUILD?"
-msgstr "Voleu veure el PKGBUILD de $i?"
+msgid "View %s PKGBUILD?"
+msgstr "Voleu veure el PKGBUILD de %s?"
 
 #: pacaur:813 pacaur:827
-msgid "${colorW}$i${reset} PKGBUILD viewed"
-msgstr "S'ha vist el PKGBUILD de ${colorW}$i${reset}"
+msgid "%s PKGBUILD viewed"
+msgstr "S'ha vist el PKGBUILD de %s"
 
 #: pacaur:813 pacaur:827
-msgid "Could not open ${colorW}$i${reset} PKGBUILD"
-msgstr "No s'ha pogut obrir el PKGBUILD de ${colorW}$i${reset}"
+msgid "Could not open %s PKGBUILD"
+msgstr "No s'ha pogut obrir el PKGBUILD de %s"
 
 #: pacaur:818
-msgid "View $j script?"
-msgstr "Voleu veure l'script de $j?"
+msgid "View %s script?"
+msgstr "Voleu veure l'script de %s?"
 
 #: pacaur:819 pacaur:830
-msgid "${colorW}$j${reset} script viewed"
-msgstr "S'ha vist l'script de ${colorW}$j${reset}"
+msgid "%s script viewed"
+msgstr "S'ha vist l'script de %s"
 
 #: pacaur:819 pacaur:830
-msgid "Could not open ${colorW}$j${reset} script"
-msgstr "No s'ha pogut obrir l'script de ${colorW}$j${reset}"
+msgid "Could not open %s script"
+msgstr "No s'ha pogut obrir l'script de %s"
 
 #: pacaur:891
-msgid "Checking ${colorW}${pkgsdeps[$i]}${reset} integrity..."
-msgstr "S'està comprovant la integritat de ${colorW}${pkgsdeps[$i]}${reset}..."
+msgid "Checking %s integrity..."
+msgstr "S'està comprovant la integritat de %s..."
 
 #: pacaur:903
-msgid "failed to verify ${colorW}$i${reset} integrity"
-msgstr "ha fallat en verificar la integritat de ${colorW}$j${reset}"
+msgid "failed to verify %s integrity"
+msgstr "ha fallat en verificar la integritat de %s"
 
 #: pacaur:908
-msgid "build.lck exists in $tmpdir"
-msgstr "build.lck existeix en $tmpdir"
+msgid "build.lck exists in %s"
+msgstr "build.lck existeix en %s"
 
 #: pacaur:913
 #, fuzzy
 msgid ""
-"Installing ${colorW}${repoprovidersconflictingpkgs[@]}${reset} "
+"Installing %s "
 "dependencies..."
 msgstr ""
 "S'estan instal·lant les dependències de "
-"${colorW}${providerpkgs[@]}${reset}..."
+"%s..."
 
 #: pacaur:937
-msgid "${colorW}$j${reset} is up-to-date -- skipping"
-msgstr "${colorW}$j${reset} és al dia -- s'està saltant"
+msgid "%s-%s is up-to-date -- skipping"
+msgstr "%s-%s és al dia -- s'està saltant"
 
 #: pacaur:953
-msgid "Installing ${colorW}$j${reset} cached package..."
+msgid "Installing %s cached package..."
 msgstr ""
-"S'està instal·lant el paquet ${colorW}$j${reset} des de la memòria cau..."
+"S'està instal·lant el paquet %s des de la memòria cau..."
 
 #: pacaur:957
-msgid "Package ${colorW}$j${reset} already available in cache"
-msgstr "El paquet ${colorW}$j${reset} ja està disponible en la memòria cau"
+msgid "Package %s already available in cache"
+msgstr "El paquet %s ja està disponible en la memòria cau"
 
 #: pacaur:966
-msgid "Building ${colorW}${pkgsdeps[$i]}${reset} package(s)..."
-msgstr "S'està(an) construint ${colorW}${pkgsdeps[$i]}${reset} paquet(s)..."
+msgid "Building %s package(s)..."
+msgstr "S'està(an) construint %s paquet(s)..."
 
 #: pacaur:1001
 #, fuzzy
-msgid "Installing ${colorW}${pkgsdeps[$i]}${reset} package(s)..."
-msgstr "S'està(an) construint ${colorW}${pkgsdeps[$i]}${reset} paquet(s)..."
-
-#: pacaur:1003
-msgid ""
-"${colorW}${pkgsdeps[$i]}${reset} package(s) failed to install. Check ."
-"SRCINFO for mismatching data with PKGBUILD."
-msgstr ""
+msgid "Installing %s package(s)..."
+msgstr "S'està(an) construint %s paquet(s)..."
 
 #: pacaur:1021
 msgid "Removing installed AUR dependencies..."
 msgstr "S'estan eliminant les dependències AUR instal·lades..."
 
 #: pacaur:1037
-msgid "${colorW}$i${reset} is a ${colorY}new orphan${reset} package"
-msgstr "${colorW}$i${reset} és un ${colorY}nou paquet orfe${reset}"
+msgid "%s is a %snew orphan%s package"
+msgstr "%s és un %snou paquet orfe%s"
 
 #: pacaur:1042
-msgid "failed to build ${colorW}$i${reset} package(s)"
-msgstr "ha fallat en construir ${colorW}${pkgsdeps[$i]}${reset} paquet(s)"
-
-#: pacaur:1069 pacaur:1110
-msgid "[ ignored ]"
-msgstr "[ ignorat ]"
+msgid "failed to build %s package(s)"
+msgstr "ha fallat en construir %s paquet(s)"
 
 #: pacaur:1125
 msgid "Packages to keep:"
@@ -365,16 +357,8 @@ msgstr ""
 "ha fallat en preparar la transacció (no s'ha pogut satisfer les dependències)"
 
 #: pacaur:1243
-msgid "${Qrequires[@]}: requires $@"
-msgstr "${Qrequires[@]}: requereix $@"
-
-#: pacaur:1252
-msgid "$2 [Y/n] "
-msgstr "$2 [S/n] "
-
-#: pacaur:1259
-msgid "$2 [y/N] "
-msgstr "$2 [s/N] "
+msgid "%s: requires %s"
+msgstr "%s: requereix %s"
 
 #: pacaur:1290
 msgid " there is nothing to do"
@@ -401,38 +385,6 @@ msgstr ""
 #, fuzzy
 msgid "                    extend pacman operations to the AUR"
 msgstr "                    estén les operacions del pacman a l'AUR"
-
-#: pacaur:1315
-msgid " AUR specific"
-msgstr " específic a l'AUR"
-
-#: pacaur:1316
-msgid "   -s, --search     search AUR for matching strings"
-msgstr "   -s, --search     cerca cadenes coincidents en l'AUR"
-
-#: pacaur:1317
-msgid "   -i, --info       view package information"
-msgstr "   -i, --info       mostra la informació dels paquets"
-
-#: pacaur:1318
-msgid ""
-"   -d, --download   download target(s) -- pass twice to download AUR "
-"dependencies"
-msgstr ""
-"   -d, --download   baixa objectiu(s) -- passa'l dues vegades per baixar les "
-"dependències AUR"
-
-#: pacaur:1319
-msgid "   -m, --makepkg    download and make target(s)"
-msgstr "   -m, --makepkg    baixa i fes objectiu(s)"
-
-#: pacaur:1320
-msgid "   -y, --sync       download, make and install target(s)"
-msgstr "   -y, --sync       baixa, fes i instal·la objectiu(s)"
-
-#: pacaur:1321
-msgid "   -k, --check      check for AUR update(s)"
-msgstr "   -k, --check      cerca actualització(ons) AUR"
 
 #: pacaur:1323 pacaur:1331
 msgid " general"
@@ -531,16 +483,10 @@ msgstr "no podeu realitzar aquesta operació com a root"
 msgid "${colorW}editor${reset} variable unset"
 msgstr "la variable ${colorW}editor${reset} no està establerta"
 
-#: pacaur:1471
-msgid ""
-"${colorW}clonedir${reset} or ${colorW}\\$AURDEST${reset} should be set to a "
-"non volatile memory location"
-msgstr ""
-
 #: pacaur:1472
 #, fuzzy
-msgid "${colorW}$clonedir${reset} does not have write permission."
-msgstr "${colorW}$builddir${reset} no té permís d'escriptura."
+msgid "%s does not have write permission."
+msgstr "%s no té permís d'escriptura."
 
 #: pacaur:1473
 msgid "no targets specified (use -h for help)"
@@ -552,11 +498,11 @@ msgstr "no s'ha trobat l'objectiu"
 
 #: pacaur:1511 pacaur:1523 pacaur:1531
 msgid ""
-"Package(s) ${colorW}${aurpkgs[*]}${reset} not found in repositories, trying "
-"${colorM}AUR${reset}..."
+"Package(s) %s not found in repositories, trying "
+"%sAUR%s..."
 msgstr ""
-"El(s) paquet(s) ${colorW}${aurpkgs[*]}${reset} no es troba(en) als "
-"repositoris, s'està intentant amb l'${colorM}AUR${reset}..."
+"El(s) paquet(s) %s no es troba(en) als "
+"repositoris, s'està intentant amb l'%sAUR%s..."
 
 #~ msgid "Installing ${colorW}${pkgsdeps[$i]}${reset} dependencies..."
 #~ msgstr ""

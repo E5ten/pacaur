@@ -12,87 +12,87 @@ msgstr ""
 "X-Generator: Poedit 1.8.7.1\n"
 
 #: pacaur:115
-msgid "${colorW}Starting AUR upgrade...${reset}"
-msgstr "${colorW}Starter AUR opgradering...${reset}"
+msgid "%sStarting AUR upgrade...%s"
+msgstr "%sStarter AUR opgradering...%s"
 
 #: pacaur:134
-msgid "${colorW}$i${reset} is ${colorY}not present${reset} in AUR -- skipping"
+msgid "%s is %snot present%s in AUR -- skipping"
 msgstr ""
-"${colorW}$i${reset} er ${colorY}ikke tilstede${reset} i AUR -- springer over"
+"%s er %sikke tilstede%s i AUR -- springer over"
 
 #: pacaur:163 pacaur:207 pacaur:1160
 msgid "latest"
 msgstr "nyeste"
 
 #: pacaur:168
-msgid "${checkaurpkgs[$i]} is in IgnorePkg/IgnoreGroup. Install anyway?"
-msgstr "${checkaurpkgs[$i]} er i IgnorePkg/IgnoreGroup. Installer alligevel?"
+msgid "%s is in IgnorePkg/IgnoreGroup. Install anyway?"
+msgstr "%s er i IgnorePkg/IgnoreGroup. Installer alligevel?"
 
 #: pacaur:169
-msgid "${colorW}${checkaurpkgs[$i]}${reset}: ignoring package upgrade"
-msgstr "${colorW}${checkaurpkgs[$i]}${reset}: ignorerer pakke opdatering"
+msgid "%s: ignoring package upgrade"
+msgstr "%s: ignorerer pakke opdatering"
 
 #: pacaur:174
 msgid ""
-"${colorW}${checkaurpkgs[$i]}${reset}: ignoring package upgrade "
-"(${colorR}${checkaurpkgsQver[$i]}${reset} => "
-"${colorG}${checkaurpkgsAver[$i]}${reset})"
+"$%s: ignoring package upgrade "
+"(%s => "
+"%s)"
 msgstr ""
-"${colorW}${checkaurpkgs[$i]}${reset}: ignorerer pakke opgradering "
-"(${colorR}${checkaurpkgsQver[$i]}${reset} => "
-"${colorG}${checkaurpkgsAver[$i]}${reset})"
+"%s: ignorerer pakke opgradering "
+"(%s => "
+"%s)"
 
 #: pacaur:188
 msgid "resolving dependencies..."
 msgstr "opklarer afhængigheder..."
 
 #: pacaur:212
-msgid "no results found for $i"
-msgstr "ingen resultater fundet for $i"
+msgid "no results found for %s"
+msgstr "ingen resultater fundet for %s"
 
 #: pacaur:365
 msgid "dependency cycle detected"
 msgstr "afhængigheds-løkke fundet"
 
 #: pacaur:433 pacaur:448
-msgid "${colorW}$i${reset}: ignoring package upgrade"
-msgstr "${colorW}$i${reset}: ignorerer pakke opgradering"
+msgid "%s: ignoring package upgrade"
+msgstr "%s: ignorerer pakke opgradering"
 
 #: pacaur:434 pacaur:440 pacaur:445 pacaur:449
-msgid "Unresolved dependency '${colorW}$i${reset}'"
-msgstr "Uafklaret afhængighed '${colorW}$i${reset}'"
+msgid "Unresolved dependency '%s'"
+msgstr "Uafklaret afhængighed '%s'"
 
 #: pacaur:444
-msgid "$i dependency is in IgnorePkg/IgnoreGroup. Install anyway?"
-msgstr "$i afhængighed er i IgnorePkg/IgnoreGroup. Installer alligevel?"
+msgid "%s dependency is in IgnorePkg/IgnoreGroup. Install anyway?"
+msgstr "%s afhængighed er i IgnorePkg/IgnoreGroup. Installer alligevel?"
 
 #: pacaur:484
 msgid ""
-"${colorW}There are ${#providers[@]} providers available for "
-"${providersdeps[$i]}:${reset}"
+"$%sThere are %s providers available for "
+"%s:%s"
 msgstr ""
-"${colorW}Der er ${#providers[@]} udbydere tilgængelige for "
-"${providersdeps[$i]}:${reset}"
+"%sDer er %s udbydere tilgængelige for "
+"%s:%s"
 
 #: pacaur:491
 msgid "Enter a number (default=0):"
 msgstr "Skriv et nummer (standard=0):"
 
 #: pacaur:498
-msgid "invalid value: $nb is not between 0 and $providersnb"
-msgstr "ugyldig værdi: $nb er ikke mellem 0 og $providersnb"
+msgid "invalid value: %s is not between 0 and %s"
+msgstr "ugyldig værdi: %s er ikke mellem 0 og %s"
 
 #: pacaur:503
-msgid "invalid number: $nb"
-msgstr "ugyldigt nummer: $nb"
+msgid "invalid number: %s"
+msgstr "ugyldigt nummer: %s"
 
 #: pacaur:545
 msgid "looking for inter-conflicts..."
 msgstr "leder efter inter-konflikter..."
 
 #: pacaur:581 pacaur:650
-msgid "$j and $k are in conflict ($i). Remove $k?"
-msgstr "$j og $k konflikter med hinanden ($i). Fjern $k?"
+msgid "%s and %s are in conflict (%s). Remove %s?"
+msgstr "%s og %s konflikter med hinanden (%s). Fjern %s?"
 
 #: pacaur:595 pacaur:658
 msgid "unresolvable package conflicts detected"
@@ -103,49 +103,47 @@ msgid "failed to prepare transaction (conflicting dependencies)"
 msgstr "kunne ikke forberede transaktion (konfliktende afhængigheder)"
 
 #: pacaur:597 pacaur:660
-msgid "$j and $k are in conflict"
-msgstr "$j og $k konflikter med hindanden"
+msgid "%s and %s are in conflict"
+msgstr "%s og %s konflikter med hindanden"
 
 #: pacaur:678
-msgid "${colorW}${depsAname[$i]}${reset} latest revision -- fetching"
-msgstr "${colorW}${depsAname[$i]}${reset} nyeste revision -- henter"
+msgid "%s latest revision -- fetching"
+msgstr "%s nyeste revision -- henter"
 
 #: pacaur:681
 msgid ""
-"${colorW}${depsAname[$i]}-${depsQver[$i]}${reset} is up to date -- "
+"%s-%s is up to date -- "
 "reinstalling"
 msgstr ""
-"${colorW}${depsAname[$i]}-${depsQver[$i]}${reset} er opdateret -- "
+"%s-%s er opdateret -- "
 "geninstallerer"
 
 #: pacaur:683
 msgid ""
-"${colorW}${depsAname[$i]}-${depsQver[$i]}${reset} is up to date -- skipping"
+"%s-%s is up to date -- skipping"
 msgstr ""
-"${colorW}${depsAname[$i]}-${depsQver[$i]}${reset} er opdateret - springer "
+"%s-%s er opdateret - springer "
 "over"
 
 #: pacaur:698
 msgid ""
-"${colorW}${depsAname[$i]}-${depsAver[$i]}${reset} has been flagged ${colorR}"
-"out of date${reset} on ${colorY}$(date -d \"@${depsAood[$i]}\" \"+%Y-%m-%d"
-"\")${reset}"
+"%s-%s has been flagged %s"
+"out of date%s on %s"
 msgstr ""
-"${colorW}${depsAname[$i]}-${depsAver[$i]}${reset} er blevet mærket ${colorR}"
-"forældet${reset} den ${colorY}$(date -d \"@${depsAood[$i]}\" \"+%Y-%m-%d"
-"\")${reset}"
+"%s-%s er blevet mærket %s"
+"forældet%s den %s"
 
 #: pacaur:726
 msgid "cached"
 msgstr "cached"
 
 #: pacaur:731 pacaur:764
-msgid "AUR Packages  (${#deps[@]})"
-msgstr "AUR Pakker  (${#deps[@]})"
+msgid "AUR Packages  "
+msgstr "AUR Pakker  "
 
 #: pacaur:731 pacaur:765
-msgid "Repo Packages (${#repodepspkgs[@]})"
-msgstr "Repo Pakker (${#repodepspkgs[@]})"
+msgid "Repo Packages "
+msgstr "Repo Pakker "
 
 #: pacaur:731
 msgid "Old Version"
@@ -160,8 +158,8 @@ msgid "Download Size"
 msgstr "Download Str."
 
 #: pacaur:753
-msgid "${binarysize[$i]} MiB"
-msgstr "${binarysize[$i]} MiB"
+msgid " MiB"
+msgstr " MiB"
 
 #: pacaur:769
 msgid "Repo Download Size:"
@@ -184,96 +182,92 @@ msgid "download"
 msgstr "download"
 
 #: pacaur:779 pacaur:873
-msgid "Proceed with $action?"
-msgstr "Fortsæt med $action?"
+msgid "Proceed with installation?"
+msgstr "Fortsæt med installation?"
+
+#: pacaur:779 pacaur:873
+msgid "Proceed with download"
+msgstr "Fortsæt med download"
 
 #: pacaur:788
-msgid "${colorW}Retrieving package(s)...${reset}"
-msgstr "${colorW}Henter Pakke(r)...${reset}"
+msgid "%sRetrieving package(s)...%s"
+msgstr "%sHenter Pakke(r)...%s"
 
 #: pacaur:821
-msgid "View $i build files diff?"
-msgstr "Vis $i build files diff?"
+msgid "View %s build files diff?"
+msgstr "Vis %s build files diff?"
 
 #: pacaur:823
-msgid "${colorW}$i${reset} build files diff viewed"
-msgstr "${colorW}$i${reset} build files diff vist"
+msgid "%s build files diff viewed"
+msgstr "%s build files diff vist"
 
 #: pacaur:827
-msgid "${colorW}$i${reset} build files are up-to-date -- skipping"
-msgstr "${colorW}$i${reset} build filer er opdaterede -- springer over"
+msgid "%s build files are up-to-date -- skipping"
+msgstr "%s build filer er opdaterede -- springer over"
 
 #: pacaur:831
-msgid "View $i PKGBUILD?"
-msgstr "Vis $i PKGBUILD?"
+msgid "View %s PKGBUILD?"
+msgstr "Vis %s PKGBUILD?"
 
 #: pacaur:833 pacaur:855
-msgid "${colorW}$i${reset} PKGBUILD viewed"
-msgstr "${colorW}$i${reset} PKGBUILD vist"
+msgid "%s PKGBUILD viewed"
+msgstr "%s PKGBUILD vist"
 
 #: pacaur:835 pacaur:857
-msgid "Could not open ${colorW}$i${reset} PKGBUILD"
-msgstr "Kunne ikke åbne ${colorW}$i${reset} PKGBUILD"
+msgid "Could not open %s PKGBUILD"
+msgstr "Kunne ikke åbne %s PKGBUILD"
 
 #: pacaur:841
-msgid "View $j script?"
-msgstr "Vis $j script?"
+msgid "View %s script?"
+msgstr "Vis %s script?"
 
 #: pacaur:843 pacaur:862
-msgid "${colorW}$j${reset} script viewed"
-msgstr "${colorW}$j${reset} script vist"
+msgid "%s script viewed"
+msgstr "%s script vist"
 
 #: pacaur:845 pacaur:864
-msgid "Could not open ${colorW}$j${reset} script"
-msgstr "Kunne ikke åbne ${colorW}$j${reset} script"
+msgid "Could not open %s script"
+msgstr "Kunne ikke åbne %s script"
 
 #: pacaur:934
-msgid "Checking ${colorW}${pkgsdeps[$i]}${reset} integrity..."
-msgstr "Tjekker ${colorW}${pkgsdeps[$i]}${reset} integritet..."
+msgid "Checking %s integrity..."
+msgstr "Tjekker %s integritet..."
 
 #: pacaur:946
-msgid "failed to verify ${colorW}$i${reset} integrity"
-msgstr "kunne ikke verificere ${colorW}$i${reset} integritet"
+msgid "failed to verify %s integrity"
+msgstr "kunne ikke verificere %s integritet"
 
 #: pacaur:951
-msgid "build.lck exists in $tmpdir"
-msgstr "build.lck eksisterer i $tmpdir"
+msgid "build.lck exists in %s"
+msgstr "build.lck eksisterer i %s"
 
 #: pacaur:956
 msgid ""
-"Installing ${colorW}${repoprovidersconflictingpkgs[@]}${reset} "
+"Installing %s "
 "dependencies..."
 msgstr ""
-"Installerer ${colorW}${repoprovidersconflictingpkgs[@]}${reset} "
+"Installerer %s "
 "afhængigheder..."
 
 #: pacaur:980
-msgid "${colorW}$j${reset} is up-to-date -- skipping"
-msgstr "${colorW}$j${reset} er opdateret -- springer over"
+msgid "%s is up-to-date -- skipping"
+msgstr "%s er opdateret -- springer over"
 
 #: pacaur:1001
-msgid "Installing ${colorW}$j${reset} cached package..."
-msgstr "Installerer ${colorW}$j${reset} cached pakke..."
+msgid "Installing %s cached package..."
+msgstr "Installerer %s cached pakke..."
 
 #: pacaur:1005
-msgid "Package ${colorW}$j${reset} already available in cache"
-msgstr "Pakken ${colorW}$j${reset} er allerede tilgængelig i cache"
+msgid "Package %s already available in cache"
+msgstr "Pakken %s er allerede tilgængelig i cache"
 
 #: pacaur:1014
-msgid "Building ${colorW}${pkgsdeps[$i]}${reset} package(s)..."
-msgstr "Bygger ${colorW}${pkgsdeps[$i]}${reset} pakke(r)..."
+msgid "Building %s package(s)..."
+msgstr "Bygger %s pakke(r)..."
 
 #: pacaur:1050
-msgid "Installing ${colorW}${pkgsdeps[$i]}${reset} package(s)..."
-msgstr "Installerer ${colorW}${pkgsdeps[$i]}${reset} pakke(r)..."
-
-#: pacaur:1052
-msgid ""
-"${colorW}${pkgsdeps[$i]}${reset} package(s) failed to install. Check ."
-"SRCINFO for mismatching data with PKGBUILD."
-msgstr ""
-"${colorW}${pkgsdeps[$i]}${reset} pakkep(r) kunne ikke installeres. Tjek ."
-"SRCINFO for ikke-matchende data med PKGBUILD."
+msgid "Installing %s package(s)..."
+msgstr "Installerer %s pakke(r)..."
 
 #: pacaur:1070
 msgid "Removing installed AUR dependencies..."
@@ -284,8 +278,8 @@ msgid "${colorW}$i${reset} is a ${colorY}new orphan${reset} package"
 msgstr "${colorW}$i${reset} er en ${colorY}ny forældreløs${reset} pakke"
 
 #: pacaur:1091
-msgid "failed to build ${colorW}$i${reset} package(s)"
-msgstr "kunne ikke bygge ${colorW}$i${reset} pakke(r)"
+msgid "failed to build %s package(s)"
+msgstr "kunne ikke bygge %s pakke(r)"
 
 #: pacaur:1118 pacaur:1159
 msgid "[ ignored ]"
@@ -357,16 +351,8 @@ msgstr ""
 "kunne ikke forberede transaktionen (kunne ikke tilfredsstille afhængigheder)"
 
 #: pacaur:1293
-msgid "${Qrequires[@]}: requires $@"
-msgstr "${Qrequires[@]}: kræver $@"
-
-#: pacaur:1302
-msgid "$2 [Y/n] "
-msgstr "$2 [J/n] "
-
-#: pacaur:1309
-msgid "$2 [y/N] "
-msgstr "$2 [j/N] "
+msgid "%s: requires %s"
+msgstr "%s: kræver %s"
 
 #: pacaur:1340
 msgid " there is nothing to do"
@@ -391,38 +377,6 @@ msgstr "   -S, -Ss, -Si, -Sw, -Su, -Qu, -Sc, -Scc"
 #: pacaur:1364
 msgid "                    extend pacman operations to the AUR"
 msgstr "                    udvid pacman handlinger med AUR"
-
-#: pacaur:1365
-msgid " AUR specific"
-msgstr " AUR specifikt"
-
-#: pacaur:1366
-msgid "   -s, --search     search AUR for matching strings"
-msgstr "   -s, --search     søg AUR for matchende ord"
-
-#: pacaur:1367
-msgid "   -i, --info       view package information"
-msgstr "   -i, --info       vis pakke information"
-
-#: pacaur:1368
-msgid ""
-"   -d, --download   download target(s) -- pass twice to download AUR "
-"dependencies"
-msgstr ""
-"   -d, --download   download mål -- skriv dobbelt for at downloade AUR "
-"afhængigheder"
-
-#: pacaur:1369
-msgid "   -m, --makepkg    download and make target(s)"
-msgstr "   -m, --makepkg    download og byg mål"
-
-#: pacaur:1370
-msgid "   -y, --sync       download, make and install target(s)"
-msgstr "   -y, --sync       download, byg og installer mål"
-
-#: pacaur:1371
-msgid "   -k, --check      check for AUR update(s)"
-msgstr "   -k, --check      tjek for AUR opdateringer"
 
 #: pacaur:1373 pacaur:1381
 msgid " general"
@@ -510,17 +464,9 @@ msgstr "Du kan ikke gøre denne handling som root"
 msgid "${colorW}editor${reset} variable unset"
 msgstr "${colorW}editor${reset} variabel er ikke sat"
 
-#: pacaur:1520
-msgid ""
-"${colorW}clonedir${reset} or ${colorW}\\$AURDEST${reset} should be set to a "
-"non volatile memory location"
-msgstr ""
-"${colorW}clonedir${reset} eller ${colorW}\\$AURDEST${reset} burde være sat "
-"til en ikke-flygtig hukommelses placering"
-
 #: pacaur:1521
-msgid "${colorW}$clonedir${reset} does not have write permission."
-msgstr "${colorW}$clonedir${reset} har ikke skrive tilladelse."
+msgid "%s does not have write permission."
+msgstr "%s har ikke skrive tilladelse."
 
 #: pacaur:1522 pacaur:1523
 msgid "no targets specified (use -h for help)"
@@ -532,8 +478,8 @@ msgstr "mål ikke fundet"
 
 #: pacaur:1565 pacaur:1577 pacaur:1589
 msgid ""
-"Package(s) ${colorW}${aurpkgs[*]}${reset} not found in repositories, trying "
-"${colorM}AUR${reset}..."
+"Package(s) %s not found in repositories, trying "
+"%sAUR%s..."
 msgstr ""
-"Pakke(r) ${colorW}${aurpkgs[*]}${reset} ikke fundet i repoer, prøver "
-"${colorM}AUR${reset}..."
+"Pakke(r) %s ikke fundet i repoer, prøver "
+"%sAUR%s..."
