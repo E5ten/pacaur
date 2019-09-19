@@ -553,7 +553,7 @@ FindDepsRepoProvider() {
         providerspkgs=("${providerrepodepspkgstmp[@]}"); FindDepsRepoProvider "${providerspkgs[@]}"; }
 }
 
-IgnoreDepsChecks() {
+IgnoreDepsCheck() {
     local i repodepspkgsgrp=()
     # global ignoredpkgs ignoredgrps aurpkgs aurdepspkgs aurdepspkgsgrp rmaurpkgs deps repodepspkgs
     [[ "${ignoredpkgs[*]}" || "${ignoredgrps[*]}" ]] || return
@@ -1583,8 +1583,8 @@ SudoV() {
 CommArr() {
     # args are names of 2 array names and arguments to comm
     local arr='' arr1="$2[@]" arr2="$3[@]"
-    [[ ! "${arr:=$(comm "$1" <(SortArr "${!arr1}") <(SortArr "${!arr2}"))}" ]] ||
-        printf '%sii' "${arr}"
+    [[ ! "${arr:=$(comm "$1" <(SortArr "${!arr1-}") <(SortArr "${!arr2-}"))}" ]] ||
+        printf '%s\n' "${arr}"
 }
 
 SortArr() {
