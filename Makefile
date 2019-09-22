@@ -13,6 +13,11 @@ MANPREFIX = $(DATAROOTDIR)/man
 MSGFMT = $(shell command -v msgfmt 2>/dev/null)
 POD2MAN = $(shell command -v pod2man 2>/dev/null)
 
+LIBRARY = $(shell pkg-config --variable=libmakepkgdir libmakepkg)
+ifeq ($(LIBRARY),)
+	LIBRARY = $(DATAROOTDIR)/makepkg
+endif
+
 TRANSLATIONS = \
 	ca \
 	da \
@@ -50,14 +55,14 @@ endif
 install: doc
 	@echo "Installing..."
 	@install -Dm644 ./config $(DESTDIR)$(DOCDIR)/config.example
-	@install -Dm755 ./pacaur -t $(DESTDIR)$(BINDIR)
-	@sed -e "s%(declare -r version=).*%\1\'$(VERSION)\'%" \
-		 -e "s%/usr/share/makepkg%$(shell pkg-config --variable=libmakepkgdir libmakepkg)%" \
-		 -Ei $(DESTDIR)$(BINDIR)/pacaur
+	@sed -E "s%(declare -r version=).*%\1\'$(VERSION)\'%;s%/usr/share/makepkg%$(LIBRARY)%" ./pacaur | \
+		install -Dm755 /dev/stdin $(DESTDIR)$(BINDIR)/pacaur
 	@install -Dm644 ./completions/bash.completion $(DESTDIR)$(DATAROOTDIR)/bash-completion/completions/pacaur
 	@install -Dm644 ./completions/zsh.completion $(DESTDIR)$(DATAROOTDIR)/zsh/site-functions/_pacaur
 	@install -Dm644 ./LICENSE -t $(DESTDIR)$(DATAROOTDIR)/licenses/pacaur
+ifneq ($(POD2MAN),)
 	@install -Dm644 ./pacaur.8 -t $(DESTDIR)$(MANPREFIX)/man8
+endif
 ifneq ($(MSGFMT),)
 	for i in $(TRANSLATIONS); do \
 		mkdir -p "$(DESTDIR)$(DATAROOTDIR)/locale/$$i/LC_MESSAGES/"; \
