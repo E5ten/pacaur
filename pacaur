@@ -132,6 +132,7 @@ UpgradeAur() {
 
     # add devel packages
     if ((devel)); then
+        needed=1
         for i in "${allaurpkgs[@]}"; do
             [[ "${i}" != *${vcs} || " ${aurpkgs[*]} " = *" ${i} "* ]] || aurpkgs+=("${i}")
         done
