@@ -63,8 +63,6 @@ pacman_conf=('pacman-conf')
 [[ ! -r "${configdir}/config" ]] || source "${configdir}/config"
 [[ ! -r "${userconfigdir}/config" ]] || source "${userconfigdir}/config"
 
-set -u # enable after sourcing libmakepkg and configs which may break with it
-
 case "${silent}"   in true) silent=1  ;; false) silent=0  ;; esac
 case "${sudoloop}" in true) sudoloop=1;; false) sudoloop=0;; esac
 
@@ -1720,7 +1718,7 @@ for ((;;)) {
         --@(${case_lo_arg%|}))          pacopts+=("$1=$2")                                                  ;;&
         --@(${case_lo_aur_arg%|}))      shift                                                               ;;&
         *)                              shift                                                               ;;&
-        --)                             break                                                               ;;
+        --)                             break
     esac
 }
 
