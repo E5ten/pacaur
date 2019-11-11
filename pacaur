@@ -272,11 +272,11 @@ DepsSolver() {
                     [[ "${deps[j]}" != "${errdepsnover[i]}" ]] || break; done
                 # reverse deps order
                 mapfile -t tsorterrdeps < \
-                    <(for ((j=0; j<"${#tsorterrdeps[@]}"; j++)) { printf '%s\n' "${tsorterrdeps[-j-1]}";})
+                    <(for ((j=0; j<${#tsorterrdeps[@]}; j++)) { printf '%s\n' "${tsorterrdeps[-j-1]}";})
                 errdepslist+=("${tsorterrdeps[0]}")
                 FindDepsAurError "${tsorterrdeps[@]}"
                 mapfile -t errdepslist < \
-                    <(for ((j=0; j<"${#errdepslist[@]}"; j++)) { printf '%s\n' "${errdepslist[-j-1]}";})
+                    <(for ((j=0; j<${#errdepslist[@]}; j++)) { printf '%s\n' "${errdepslist[-j-1]}";})
                 fail $"no results found for %s (dependency tree: %s)" "${errdeps[i]}" "${errdepslist[*]}"
             fi
         done
@@ -368,8 +368,7 @@ FindDepsAur() {
             read -r j < <(expac -Qs '%n' "^${depspkgs[i]}$")
             if [[ "${j}" ]]; then
                 depspkgs[i]="${j}"
-                ((! devel)) || [[ " ${ignoredpkgs[*]} " = *" ${j} "* || "${j}" != *${vcs} ]] ||
-                    vcsdepspkgs+=("${j}")
+                [[ " ${ignoredpkgs[*]} " = *" ${j} "* || "${j}" != *${vcs} ]] || vcsdepspkgs+=("${j}")
             else
                 foreignpkgs+=("${depspkgs[i]}")
             fi
@@ -669,13 +668,13 @@ ProviderChecks() {
             [[ " ${provided[*]} " != *" ${providersdeps[i]} "* ]] || continue
         fi
 
-        if ((! noconfirm && "${#providers[*]}" > 1)); then
+        if ((! noconfirm && ${#providers[*]} > 1)); then
             info $"%sThere are %s providers available for %s:%s" "${colorW}" "${#providers[@]}" \
                 "${providersdeps[i]}" "${reset}"
             expac -S1 '   %!) %n (%r) ' "${providers[@]}"
             nb='-1'
-            providersnb="$(("${#providers[@]}" - 1))" # count from 0
-            while ((nb < 0 || nb >= "${#providers}")); do
+            providersnb="$((${#providers[@]} - 1))" # count from 0
+            while ((nb < 0 || nb >= ${#providers})); do
                 printf '\n%s ' $"Enter a number (default=0):"
                 case "${TERM:-}" in
                     dumb)   read -r nb;;
@@ -683,7 +682,7 @@ ProviderChecks() {
                 esac
 
                 case "${nb}" in
-                    +([0-9])) if ((nb < 0 || nb >= "${#providers[@]}")); then
+                    +([0-9])) if ((nb < 0 || nb >= ${#providers[@]})); then
                             printf '\n'
                             fail $"invalid value: %s is not between 0 and %s" "${nb}" "${providersnb}"; ((--i))
                         else
@@ -858,7 +857,7 @@ ReinstallChecks() {
             warn $"%s latest revision -- fetching" "${colorW}${depsAname[i]}${reset}"
         elif ((needed)); then
             warn $"%s-%s is up to date -- skipping" "${colorW}${depsAname[i]}" "${depsQver[i]}${reset}"
-            for ((j=0; j < "${#deps[@]}"; j++)) { [[ "${deps[j]}" != "${depsAname[i]}" ]] || unset -v 'deps[j]';}
+            for ((j=0; j < ${#deps[@]}; j++)) { [[ "${deps[j]}" != "${depsAname[i]}" ]] || unset -v 'deps[j]';}
             deps=("${deps[@]}")
             unset -v 'depsAname[i]' 'depsQver[i]' 'depsAver[i]' 'depsAood[i]' 'depsAmain[i]'
         else
@@ -927,7 +926,7 @@ Prompt() {
         lsize="$(GetLength "${strsize}")"
 
         # local version column cleanup
-        for ((i=0; i<"${#deps[@]}"; i++)) { [[ "${depsQver[i]}" != '%' ]] || depsQver[i]='';}
+        for ((i=0; i<${#deps[@]}; i++)) { [[ "${depsQver[i]}" != '%' ]] || depsQver[i]='';}
         # show detailed output
         printf "\n${colorW}%-${lname}s  %-${lver}s  %-${lver}s${reset}\n\n" \
             "${straurname}" "${stroldver}" "${strnewver}"
@@ -1111,8 +1110,8 @@ MakePkgs() {
     pkgsdeps=("${pkgsdeps[@]#,}") # remove empty array indices and leading ','
 
     # reverse deps order
-    mapfile -t basepkgs < <(for ((i=0; i<"${#basepkgs[@]}"; i++)) { printf '%s\n' "${basepkgs[-i-1]}";})
-    mapfile -t basepkgs < <(for ((i=0; i<"${#pkgsdeps[@]}"; i++)) { printf '%s\n' "${pkgsdeps[-i-1]}";})
+    mapfile -t basepkgs < <(for ((i=0; i<${#basepkgs[@]}; i++)) { printf '%s\n' "${basepkgs[-i-1]}";})
+    mapfile -t basepkgs < <(for ((i=0; i<${#pkgsdeps[@]}; i++)) { printf '%s\n' "${pkgsdeps[-i-1]}";})
 
     # integrity check
     for i in "${!basepkgs[@]}"; do
@@ -1243,11 +1242,7 @@ MakePkgs() {
         builtpkgs=() builtdepspkgs=()
         for j in "${pkgsdepslist[@]}"; do
             builtpkg=''
-            if [[ "${PKGDEST}" ]]; then
-                GetBuiltPkg "${j}-${aurpkgsAver}" "${PKGDEST}"
-            else
-                GetBuiltPkg "${j}-${aurpkgsAver}" "${clonedir}/${basepkgs[i]}"
-            fi
+            GetBuiltPkg "${j}-${aurpkgsAver}" "${PKGDEST:-${clonedir}/${basepkgs[i]}}"
             [[ " ${aurdepspkgs[*]} " = *" ${j} "* ]] && builtdepspkgs+=("${builtpkg}") ||
                 builtpkgs+=("${builtpkg}")
         done
@@ -1477,7 +1472,7 @@ GetInfo() {
     field="$(declare -p "$1")"
     local -A "${field/#declare -A $1/field}"; shift
 
-    if (("$#")); then
+    if (($#)); then
         for i in "$@"; do
             if [[ "${i}" && "${field[${i}]:-}" ]]; then
                 printf '%s\n' "${field[${i}]//  /$'\n'}"
@@ -1559,13 +1554,13 @@ error() {
 GetLength() {
     local length=0 i
     for i in "$@"; do
-        ((length="${#i}" > length ? "${#i}" : length))
+        ((length=${#i} > length ? ${#i} : length))
     done
     printf '%s\n' "${length}"
 }
 
 NothingToDo() {
-    (("$#")) || { printf '%s\n' $" there is nothing to do"; exit "${E_OK}";}
+    (($#)) || { printf '%s\n' $" there is nothing to do"; exit "${E_OK}";}
 }
 
 SudoV() {
@@ -1587,7 +1582,7 @@ CommArr() {
 
 SortArr() {
     local IFS=$'\n' # \n as only IFS character so $* expands newline-delimited
-    ((! "$#")) || sort -u <<<"$*" # pass all arguments to sort -u
+    ((! $#)) || sort -u <<<"$*" # pass all arguments to sort -u
 }
 
 SortArrAssign() {
@@ -1659,13 +1654,13 @@ trap Cancel INT
 
 # options
 shortopts='DFGQRSTUVacdeghiklmnopqrstuvwxy'
-longopts=('help' 'database' 'files' 'query' 'remove' 'sync' 'deptest' 'upgrade')
+longopts=('database' 'files' 'query' 'remove' 'sync' 'deptest' 'upgrade')
 printf -v case_ops '%s|' "${longopts[@]}"
 longopts+=('asdeps' 'asexplicit' 'cascade' 'changelog' 'check' 'clean' 'confirm' 'dbonly' 'debug'
            'deps' 'disable-download-timeout' 'downloadonly' 'explicit' 'file' 'foreign' 'groups'
-           'info' 'list' 'machinereadable' 'native' 'needed' 'noconfirm' 'nodeps' 'noprogressbar'
-           'nosave' 'noscriptlet' 'owns' 'print' 'recursive' 'refresh' 'regex' 'quiet' 'search'
-           'sysupgrade' 'unneeded' 'unrequired' 'upgrades' 'verbose')
+           'help' 'info' 'list' 'machinereadable' 'native' 'needed' 'noconfirm' 'nodeps'
+           'noprogressbar' 'nosave' 'noscriptlet' 'owns' 'print' 'recursive' 'refresh' 'regex'
+           'quiet' 'search' 'sysupgrade' 'unneeded' 'unrequired' 'upgrades' 'verbose')
 printf -v case_lo '%s|' "${longopts[@]}"
 longopts_arg=('arch:' 'assume-installed:' 'cachedir:' 'color:' 'config:' 'dbpath:' 'gpgdir:' 'hookdir:'
               'ignore:' 'ignoregroup:' 'logfile:' 'overwrite:' 'print-format:' 'root:' 'sysroot:')
@@ -1735,7 +1730,12 @@ case "${sortorder}" in
 esac
 
 # packages
-pkgs=("$@")
+for arg in "$@"; do
+    case "${arg}" in
+        -) MapfileAdd pkgs;;
+        *) pkgs+=("${arg}");;
+    esac
+done
 
 # color
 [[ ! "${color}" && (! "$("${pacman_conf[@]}" Color)" || "${operation}" = 'upgrades' ||
