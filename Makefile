@@ -47,8 +47,7 @@ all: doc
 doc:
 ifneq ($(POD2MAN),)
 	@echo "Generating documentation..."
-	@pod2man --utf8 --section=8 --center="Pacaur Manual" --name="PACAUR" \
-	--release="pacaur $(VERSION)" ./README.pod ./pacaur.8
+	@pod2man -u -s 8 -c "Pacaur Manual" -n "PACAUR" -r "pacaur $(VERSION)" < ./README.pod > ./pacaur.8
 endif
 
 # aux

@@ -29,7 +29,12 @@ export QUIET="${QUIET:-0}"
 command -v gettext >/dev/null || gettext() { printf '%s\n' "$@";}
 
 # check if we have sudo, if not use su instead, but this isn't a good time
-command -v sudo >/dev/null || sudo() { su root -c "$(printf '%q ' "$@")";}
+command -v sudo >/dev/null ||
+    sudo() {
+        local params
+        printf -v params '%q ' "$@"
+        su root -c "${params}"
+    }
 
 # import libmakepkg
 for lib in config option parseopts; do
@@ -85,7 +90,7 @@ ClassifyPkgs() {
         done
         if [[ "${noaurpkgs[*]}" ]]; then
             while read -r i; do
-                #[[ "${i}" != 'error: database not found: '* ]] || continue
+                [[ "${i}" != 'error: database not found: '* ]] || continue
                 i="${i#error: target not found: }"
                 [[ "${i}" != 'error: '* ]] || continue
                 [[ " ${noaurpkgs[*]} " = *' '+([a-zA-Z0-9.+-])"/${i} "* ]] || aurpkgs+=("${i}")
@@ -116,8 +121,6 @@ UpgradeAur() {
     # global aurpkgs
     info $"%sStarting AUR upgrade...%s" "${colorW}" "${reset}"
     mapfile -t aurpkgs < <(auracle sync -q) # use auracle to find out of date AUR packages
-    # quit if there are no possibilities for packages ending up in aurpkgs
-    ((devel)) || NothingToDo "${aurpkgs[@]}" "${pkgs[@]}"
 
     mapfile -t foreignpkgs < <("${pacman}" -Qmq)
     SetInfo "${foreignpkgs[@]}"
@@ -146,7 +149,7 @@ UpgradeAur() {
 IgnoreChecks() {
     local checkaurpkgs checkaurpkgsver checkaurgrps i j
     # global aurpkgs rmaurpkgs
-    [[ "${ignoredpkgs[*]:-}" || "${ignoredgrps[*]:-}" ]] || return
+    [[ "${ignoredpkgs[*]:-}${ignoredgrps[*]:-}" ]] || return
 
     # remove AUR pkgs versioning
     aurpkgsnover=("${aurpkgs[@]%%[><=]*}")
