@@ -63,7 +63,7 @@ msgstr "%s에 대한 검색 결과가 없습니다.(의존성 트리: %s)"
 
 #: pacaur:419
 msgid "dependency cycle detected (%s)"
-msgstr "순환 의존성이 감지되었습니다 (%s) ."
+msgstr "순환 의존성이 감지되었습니다 (%s)."
 
 #: pacaur:579 pacaur:607
 msgid "%s: ignoring package upgrade"
@@ -71,7 +71,7 @@ msgstr "%s: 꾸러미 업그레이드 무시함"
 
 #: pacaur:580 pacaur:587 pacaur:604 pacaur:609
 msgid "Unresolved dependency '%s'"
-msgstr "%s의 의존성을 해결할 수 없습니다."
+msgstr "의존성을 해결할 수 없습니다. '%s'"
 
 #: pacaur:602
 msgid "%s dependency is in IgnorePkg/IgnoreGroup. Install anyway?"
@@ -103,7 +103,7 @@ msgstr "%s와 %s는 서로 충돌합니다 (%s). %s를 제거하시겠습니까?
 
 #: pacaur:774 pacaur:837
 msgid "failed to prepare transaction (conflicting dependencies)"
-msgstr "트랜잭션 준비에 실패했습니다(의존성이 충돌합니다.)"
+msgstr "트랜잭션 준비에 실패했습니다.(의존성이 충돌합니다)"
 
 #: pacaur:777 pacaur:840
 msgid "%s and %s are in conflict (required by %s)"
