@@ -523,8 +523,8 @@ msgid ""
 "%s\\$VISUAL%s and %s\\$EDITOR%s environment variables not set or defined "
 "%seditor%s not found"
 msgstr ""
-"%s\\$VISUAL%s 와 %s\\$EDITOR%s 환경변수가 설정되지 않았거나 정의된 "
-"%s편집기%s를 찾을 수 없습니다."
+ "%s\\$VISUAL%s 및 %s\\$EDITOR%s 환경 변수가 설정되지 않았거나 설정된 "
+ "%s편집기%s를 찾을 수 없습니다."
 
 #: pacaur:1773
 msgid "you cannot use %spacaur%s as PACMAN environment variable"
