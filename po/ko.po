@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: pacaur\n"
 "POT-Creation-Date: 2021.2.11\n"
 "PO-Revision-Date: \n"
-"Last-Translator: Kim Taewhan <ktcar214@ktcar214.com>\n"
+"Last-Translator: Kim Taehwan <ktcar214@ktcar214.com>\n"
 "Language-Team: \n"
 "Language: ko\n"
 "MIME-Version: 1.0\n"
@@ -395,7 +395,7 @@ msgstr "AUR 사본 캐시에서 모든 사본을 제거하는 중..."
 
 #: pacaur:1493
 msgid "failed to prepare transaction (could not satisfy dependencies)"
-msgstr "트랜잭션을 준비하는 데 실패했습니다. (의존성을 만족할 수 없음)"
+msgstr "트랜잭션을 준비하는 데 실패했습니다. (의존성을 해결할 수 없음)"
 
 #: pacaur:1494
 msgid "%s: requires %s"
@@ -427,7 +427,7 @@ msgstr "pacman의 동작을 AUR로 확장합니다."
 
 #: pacaur:1631 pacaur:1639
 msgid " general"
-msgstr "일반"
+msgstr " 일반"
 
 #: pacaur:1632
 msgid "   -v, --version    display version information"
@@ -453,16 +453,16 @@ msgid ""
 "   -a, --aur        only search, build, install or clean target(s) from the "
 "AUR"
 msgstr ""
-"   -a, --aur     오직 AUR에서만 대상을 검색, 설치, 또는 정리합니다."
-""
+"   -a, --aur     오직 AUR에서만 "
+"대상을 검색, 설치, 또는 정리합니다."
 
 #: pacaur:1638
 msgid ""
 "   -r, --repo       only search, build, install or clean target(s) from the "
 "repositories"
 msgstr ""
-"   -r, --repo     오직 저장소 에서만 대상들을 검색, 설치, 또는 정리합니다."
-" "
+"   -r, --repo     오직 저장소 에서만 "
+"대상들을 검색, 설치, 또는 정리합니다."
 
 #: pacaur:1640
 msgid "   -e, --edit       edit target(s) PKGBUILD and view install script"
@@ -478,7 +478,7 @@ msgstr "   --devel     AUR 개발 꾸러미들의 업그레이드를 포함합�
 
 #: pacaur:1643
 msgid "   --foreign        consider already installed foreign dependencies"
-msgstr "   --foreing     이미 설치된 외부 의존성도 포합합니다."
+msgstr "   --foreign     이미 설치된 외부 의존성도 포함합니다."
 
 #: pacaur:1644
 msgid ""
@@ -508,7 +508,7 @@ msgstr "   --silent     출력을 하지 않습니다."
 
 #: pacaur:1764
 msgid "only one operation may be used at a time"
-msgstr "오직 하나의 동작만 동시에 사용될 수 있습니다."
+msgstr "한번에 오직 하나의 동작만 사용될 수 있습니다."
 
 #: pacaur:1766
 msgid "you cannot perform this operation as root"
