@@ -83,7 +83,7 @@ msgstr "%s %s:%s에 대해 이용할 수 있는 %s 제공자가 있습니다."
 
 #: pacaur:681
 msgid "Enter a number (default=0):"
-msgstr "번호를 입력하세요 (기본값=0)"
+msgstr "번호를 입력하세요 (기본값=0):"
 
 #: pacaur:691
 msgid "invalid value: %s is not between 0 and %s"
