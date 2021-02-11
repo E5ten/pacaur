@@ -1,0 +1,547 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: pacaur\n"
+"POT-Creation-Date: 2021.2.11\n"
+"PO-Revision-Date: \n"
+"Last-Translator: Kim Taewhan <ktcar214@ktcar214.com>\n"
+"Language-Team: \n"
+"Language: ko\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Language: ko\n"
+"X-Source-Language: C\n"
+
+#: pacaur:122
+msgid "%sStarting AUR upgrade...%s"
+msgstr "AUR 업그레이드 시작하는중..."
+
+#: pacaur:131
+msgid "%s is %snot present%s in AUR -- skipping"
+msgstr "%s는 AUR에 %s등록되어있지 않습니다%s -- 건너뛰기"
+
+#: pacaur:165 pacaur:259
+msgid "latest"
+msgstr "latest"
+
+#: pacaur:180
+msgid "%s is in IgnorePkg/IgnoreGroup. Install anyway?"
+msgstr "%s는 IgnorePkg/IgnoreGroup 에 포함되어 있습니다. 그래도 설치하시겠습니까?"
+
+#: pacaur:181 pacaur:186 pacaur:578 pacaur:603 pacaur:608
+msgid "skipping target: %s"
+msgstr "대상 건너뛰는 중: %s"
+
+#: pacaur:191
+msgid "%s: ignoring package upgrade (%s => %s)"
+msgstr "%s: 꾸러미 업그레이드 (%s => %s) 무시함"
+
+#: pacaur:209
+msgid "resolving dependencies..."
+msgstr "의존성 해결 중..."
+
+#: pacaur:230 pacaur:773 pacaur:836
+msgid "unresolvable package conflicts detected"
+msgstr "해결할 수 없는 꾸러미 충돌이 있습니다."
+
+#: pacaur:231
+msgid "failed to prepare transaction (conflicting dependencies: %s)"
+msgstr "트랜잭션 준비에 실패했습니다. (의존성이 충돌하였습니다: %s)"
+
+#: pacaur:249
+msgid "dependency cycle detected"
+msgstr "순환 의존성이 감지되었습니다."
+
+#: pacaur:266
+msgid "no results found for %s"
+msgstr "%s에 대한 검색 결과가 없습니다."
+
+#: pacaur:283
+msgid "no results found for %s (dependency tree: %s)"
+msgstr "%s에 대한 검색 결과가 없습니다.(의존성 트리: %s)"
+
+#: pacaur:419
+msgid "dependency cycle detected (%s)"
+msgstr "순환 의존성이 감지되었습니다 (%s) ."
+
+#: pacaur:579 pacaur:607
+msgid "%s: ignoring package upgrade"
+msgstr "%s: 꾸러미 업그레이드 무시함"
+
+#: pacaur:580 pacaur:587 pacaur:604 pacaur:609
+msgid "Unresolved dependency '%s'"
+msgstr "%s의 의존성을 해결할 수 없습니다."
+
+#: pacaur:602
+msgid "%s dependency is in IgnorePkg/IgnoreGroup. Install anyway?"
+msgstr "%s가 의존하는 꾸러미는 IgnorePkg/IgnoreGroup 에 있습니다. 그래도 설치하시겠습니까?"
+
+#: pacaur:675
+msgid "%sThere are %s providers available for %s:%s"
+msgstr "%s %s:%s에 대해 이용할 수 있는 %s 제공자가 있습니다."
+
+#: pacaur:681
+msgid "Enter a number (default=0):"
+msgstr "번호를 입력하세요 (기본값=0)"
+
+#: pacaur:691
+msgid "invalid value: %s is not between 0 and %s"
+msgstr "유효하지 않은 값: %s가 0과 %s사이에 있지 않음."
+
+#: pacaur:696
+msgid "invalid number: %s"
+msgstr "유효하지 않은 번호: %s"
+
+#: pacaur:729
+msgid "looking for inter-conflicts..."
+msgstr "상호간 충돌을 확인하는 중..."
+
+#: pacaur:761 pacaur:829
+msgid "%s and %s are in conflict (%s). Remove %s?"
+msgstr "%s와 %s는 서로 충돌합니다 (%s). %s를 제거하시겠습니까?"
+
+#: pacaur:774 pacaur:837
+msgid "failed to prepare transaction (conflicting dependencies)"
+msgstr "트랜잭션 준비에 실패했습니다(의존성이 충돌합니다.)"
+
+#: pacaur:777 pacaur:840
+msgid "%s and %s are in conflict (required by %s)"
+msgstr "의존성 $s(%s가 요구)를 만족시킬 수 없습니다"
+
+#: pacaur:780 pacaur:843
+msgid "%s and %s are in conflict"
+msgstr "%s와 %s가 서로 충돌합니다."
+
+#: pacaur:861
+msgid "%s latest revision -- fetching"
+msgstr "%s가 최신 버전입니다 -- 받아오기"
+
+#: pacaur:863
+msgid "%s-%s is up to date -- skipping"
+msgstr "%s-%s는 최신 버전입니다 -- 건너뛰기"
+
+#: pacaur:868
+msgid "%s-%s is up to date -- reinstalling"
+msgstr "%s-%s는 최신 버전입니다 -- 재설치"
+
+#: pacaur:881
+msgid "%s-%s has been flagged %sout of date%s on %s"
+msgstr "%s-%s는 %s에 꾸러미가 오래되었다고 표시되었습니다."
+
+#: pacaur:889
+msgid "%s-%s is %sorphaned%s in AUR"
+msgstr "%s-%s는 AUR에서 %s관리되지 않습니다%s"
+
+#: pacaur:919
+msgid "cached"
+msgstr "캐시됨"
+
+#: pacaur:924 pacaur:961
+msgid "AUR Packages  "
+msgstr "AUR 꾸러미들 "
+
+#: pacaur:924 pacaur:963
+msgid "Repo Packages "
+msgstr "저장소 꾸러미들 "
+
+#: pacaur:925
+msgid "Old Version"
+msgstr "오래된 버전"
+
+#: pacaur:925
+msgid "New Version"
+msgstr "새로운 버전"
+
+#: pacaur:925
+msgid "Download Size"
+msgstr "다운로드 크기"
+
+#: pacaur:950
+msgid " MiB"
+msgstr "MiB"
+
+#: pacaur:967
+msgid "Repo Download Size:"
+msgstr "저장소 다운로드 크기"
+
+#: pacaur:967
+msgid "Repo Installed Size:"
+msgstr "저장소 설치 크기"
+
+#: pacaur:967 pacaur:968
+msgid "MiB"
+msgstr "MiB"
+
+#: pacaur:976 pacaur:1075
+msgid "Proceed with installation?"
+msgstr "설치를 진행하시겠습니까?"
+
+#: pacaur:978 pacaur:1077
+msgid "Proceed with download?"
+msgstr "다운로드를 진행하시겠습니까?"
+
+#: pacaur:985
+msgid "%sRetrieving package(s)...%s"
+msgstr "%s꾸러미(들)을 가져오는 중...%s"
+
+#: pacaur:989
+msgid "no results found"
+msgstr "결과 없음"
+
+#: pacaur:998
+msgid "failed to retrieve packages"
+msgstr "패키지를 가져오는 데 실패하였습니다"
+
+#: pacaur:1013
+msgid "%s build files are up-to-date -- skipping"
+msgstr "%s의 빌드 파일들은 최신 버전입니다 -- 건너뛰기"
+
+#: pacaur:1015
+msgid "View %s build files diff?"
+msgstr "%s 빌드 피일의 변경점을 읽어보시겠습니까?"
+
+#: pacaur:1018
+msgid "%s build files diff viewed"
+msgstr "%s 빌드 파일의 변경점을 확인했습니다."
+
+#: pacaur:1023
+msgid "View %s PKGBUILD?"
+msgstr "%s의 PKGBUILD 파일을 읽어보시겠습니까?"
+
+#: pacaur:1026 pacaur:1050
+msgid "%s PKGBUILD viewed"
+msgstr "%s PKGBUILD 파일을 확인했습니다."
+
+#: pacaur:1028 pacaur:1052
+msgid "Could not open %s PKGBUILD"
+msgstr "%s의 PKGBUILD 파일을 열 수 없습니다."
+
+#: pacaur:1034
+msgid "View %s script?"
+msgstr "%s 스크립트를 읽어보시겠습니까?"
+
+#: pacaur:1037 pacaur:1058
+msgid "%s script viewed"
+msgstr "%s 스크립트 파일을 확인했습니다"
+
+#: pacaur:1040 pacaur:1060
+msgid "Could not open %s script"
+msgstr "%s 스크립트 파일을 열 수 없습니다."
+
+#: pacaur:1069
+msgid "%s errored on exit"
+msgstr "%s 실행 중 오류가 발생했습니다."
+
+#: pacaur:1150
+msgid "Checking %s integrity..."
+msgstr "%s의 무결성을 확인하는 중..."
+
+#: pacaur:1153
+msgid "Preparing %s..."
+msgstr "%s를 준비하는 중..."
+
+#: pacaur:1159
+msgid "failed to verify integrity or prepare %s package"
+msgstr "%s 꾸러미의 무결성을 검증하거나 꾸러미를 준비하는데 실패하였습니다."
+
+#: pacaur:1166
+msgid "db.lck exists in /var/lib/pacman"
+msgstr "/var/lib/pacman에 db.lck이 이미 존재합니다"
+
+#: pacaur:1169
+msgid "pacaur.build.lck exists in %s"
+msgstr "%s에 pacaur.build.lck이 이미 존재합니다."
+
+#: pacaur:1174
+msgid "Installing %s dependencies..."
+msgstr "%s의 의존성 설치하는 중"
+
+#: pacaur:1193
+msgid "%s is up-to-date -- skipping"
+msgstr "%s는 최신 버전입니다 -- 건너뛰기"
+
+#: pacaur:1211
+msgid "Installing %s cached package..."
+msgstr "%s의 캐시된 꾸러미를 설치하는 중..."
+
+#: pacaur:1216
+msgid "Package %s already available in cache"
+msgstr "%s 꾸러미는 이미 캐시에 있습니다"
+
+#: pacaur:1229
+msgid "Building %s package(s)..."
+msgstr "%s 꾸러미를 빌드하는 중..."
+
+#: pacaur:1256
+msgid "Installing %s package(s)..."
+msgstr "%s 꾸러미를 설치하는 중..."
+
+#: pacaur:1274
+msgid "Removing installed AUR dependencies..."
+msgstr "설치된 AUR 의존성을 제거하는 중..."
+
+#: pacaur:1287
+msgid "%s is now an %sorphan%s package"
+msgstr "%s는 이제 %s관리되지 않는%s 꾸러미입니다."
+
+#: pacaur:1293
+msgid "%s is now an %soptional%s package"
+msgstr "%s는 이제 %s선택적인%s 꾸러미입니다."
+
+#: pacaur:1299
+msgid "failed to build %s package(s)"
+msgstr "%s 꾸러미를 빌드하는 데 실패하였습니다."
+
+#: pacaur:1309
+msgid "Packages to keep:"
+msgstr "유지할 꾸러미들:"
+
+#: pacaur:1309
+msgid "All locally installed packages"
+msgstr "로컬에 설치한 모든 꾸러미"
+
+#: pacaur:1310
+msgid "AUR cache directory:"
+msgstr "AUR 캐시 디렉터리:"
+
+#: pacaur:1312
+msgid "Do you want to remove all other packages from AUR cache?"
+msgstr "AUR 캐시에서 다른 모든 꾸러미를 제거하시겠습니까?"
+
+#: pacaur:1313
+msgid "removing old packages from cache..."
+msgstr "캐시에서 오래된 꾸러미를 삭제하는 중..."
+
+#: pacaur:1320
+msgid "Do you want to remove ALL files from AUR cache?"
+msgstr "AUR 캐시에서 모든 파일들을 제거하시겠습니까?"
+
+#: pacaur:1321
+msgid "removing all files from AUR cache..."
+msgstr "AUR 캐시에서 모든 파일들을 삭제하는 중..."
+
+#: pacaur:1327
+msgid "Sources to keep:"
+msgstr "유지할 원본 파일:"
+
+#: pacaur:1327
+msgid "All development packages sources"
+msgstr "모든 개발 꾸러미 원본"
+
+#: pacaur:1328
+msgid "AUR source cache directory:"
+msgstr "AUR 원본 파일 캐시 디렉터리:"
+
+#: pacaur:1330
+msgid "Do you want to remove all non development files from AUR source cache?"
+msgstr "AUR 원본 캐시에서 개발 파일이 아닌 다른 모든 파일들을 제거하시겠습니까?"
+
+#: pacaur:1331
+msgid "removing non development files from source cache..."
+msgstr "원본 캐시에서 개발 파일이 아닌 다른 모든 파일을 삭제하는 중..."
+
+#: pacaur:1333
+msgid "Do you want to remove ALL files from AUR source cache?"
+msgstr "AUR 원본 캐시에서 모든 파일들을 제거하시겠습니까?"
+
+#: pacaur:1334
+msgid "removing all files from AUR source cache..."
+msgstr "AUR 원본 캐시에서 모든 파일을 제거하는 중..."
+
+#: pacaur:1341 pacaur:1343
+msgid "Clones to keep:"
+msgstr "유지할 사본:"
+
+#: pacaur:1341
+msgid "All locally installed clones"
+msgstr "로컬에 설치된 모든 사본"
+
+#: pacaur:1343
+msgid "All other locally installed clones"
+msgstr "로켈에 설치된 다른 모든 사본"
+
+#: pacaur:1346
+msgid "AUR clone directory:"
+msgstr "AUR 사본 디렉터리:"
+
+#: pacaur:1354
+msgid "Do you want to remove %s clones from AUR clone directory?"
+msgstr "%s의 사본들을 AUR 사본 디렉터리에서 제거하시겠습니까?"
+
+#: pacaur:1356 pacaur:1363
+msgid "removing uninstalled clones from AUR clone cache..."
+msgstr "AUR 사본 캐시에서 삭제된 사본들을 제거하는 중..."
+
+#: pacaur:1362
+msgid "Do you want to remove all uninstalled clones from AUR clone directory?"
+msgstr "AUR 사본 캐시 디렉터리에서 모든 삭제된 사본을 제거하시겠습니까?"
+
+#: pacaur:1370
+msgid "Do you want to remove all untracked files from AUR clone directory?"
+msgstr "AUR 사본 디렉터리에서 모든 추적되지 않는 파일을 제거하시겠습니까?"
+
+#: pacaur:1371
+msgid "removing untracked files from AUR clone cache..."
+msgstr "AUR 사본 캐시에서 추적되지 않는 파일을 제거하는 중..."
+
+#: pacaur:1380
+msgid "Do you want to remove ALL clones from AUR clone directory?"
+msgstr "AUR 사본 디렉터리에서 모든 사본을 제거하시겠습니까?"
+
+#: pacaur:1381
+msgid "removing all clones from AUR clone cache..."
+msgstr "AUR 사본 캐시에서 모든 사본을 제거하는 중..."
+
+#: pacaur:1493
+msgid "failed to prepare transaction (could not satisfy dependencies)"
+msgstr "트랜잭션을 준비하는 데 실패했습니다. (의존성을 만족할 수 없음)"
+
+#: pacaur:1494
+msgid "%s: requires %s"
+msgstr "%s: %s를 필요로 함"
+
+#: pacaur:1567
+msgid " there is nothing to do"
+msgstr "할 일이 없습니다."
+
+#: pacaur:1626
+msgid "usage:  pacaur <operation> [options] [target(s)] -- See also pacaur(8)"
+msgstr "사용법: pacaur <동작> [옵션들] [대상(들)] -- pacaur(8) 또한 참조하세요."
+
+#: pacaur:1627
+msgid "operations:"
+msgstr "동작:"
+
+#: pacaur:1628
+msgid " pacman extension"
+msgstr "pacman 확장"
+
+#: pacaur:1629
+msgid "   -S, -Ss, -Si, -Sw, -Su, -Qu, -Sc, -Scc"
+msgstr "   -S, -Ss, -Si, -Sw, -Su, -Qu, -Sc, -Scc"
+
+#: pacaur:1630
+msgid "                    extend pacman operations to the AUR"
+msgstr "pacman의 동작을 AUR로 확장합니다."
+
+#: pacaur:1631 pacaur:1639
+msgid " general"
+msgstr "일반"
+
+#: pacaur:1632
+msgid "   -v, --version    display version information"
+msgstr "   -v, --version    버전 정보를 보여줍니다."
+
+#: pacaur:1633
+msgid "   -h, --help       display help information"
+msgstr "   -h, --help     도움말 정보를 보여줍니다."
+
+#: pacaur:1635
+msgid "options:"
+msgstr "옵션들:"
+
+#: pacaur:1636
+msgid ""
+" pacman extension - can be used with the -S, -Ss, -Si, -Sw, -Su, -Sc, -Scc "
+"operations"
+msgstr ""
+"pacman 확장 - -S, -Ss, -Si, -Sw, -Su, -Qu, -Sc, -Scc와 같이 쓰일 수 있음."
+
+#: pacaur:1637
+msgid ""
+"   -a, --aur        only search, build, install or clean target(s) from the "
+"AUR"
+msgstr ""
+"   -a, --aur     오직 AUR에서만 대상을 검색, 설치, 또는 정리합니다."
+""
+
+#: pacaur:1638
+msgid ""
+"   -r, --repo       only search, build, install or clean target(s) from the "
+"repositories"
+msgstr ""
+"   -r, --repo     오직 저장소 에서만 대상들을 검색, 설치, 또는 정리합니다."
+" "
+
+#: pacaur:1640
+msgid "   -e, --edit       edit target(s) PKGBUILD and view install script"
+msgstr "   -e, --edit     대상(들)의 PKGBUILD를 수정하고 설치 스크립트를 확인합니다."
+
+#: pacaur:1641
+msgid "   -q, --quiet      show less information for query and search"
+msgstr "   -q, --quiet     조회 및 검색시 더 적은 정보를 보여줍니다."
+
+#: pacaur:1642
+msgid "   --devel          consider AUR development packages upgrade"
+msgstr "   --devel     AUR 개발 꾸러미들의 업그레이드를 포함합니다."
+
+#: pacaur:1643
+msgid "   --foreign        consider already installed foreign dependencies"
+msgstr "   --foreing     이미 설치된 외부 의존성도 포합합니다."
+
+#: pacaur:1644
+msgid ""
+"   --ignore         ignore a package upgrade (can be used more than once)"
+msgstr ""
+"   --ignore     꾸러미 업그레이드를 무시합니다. (여러번 사용될 수 있음)"
+
+#: pacaur:1645
+msgid "   --needed         do not reinstall already up-to-date target(s)"
+msgstr "   --needed     이미 최신 버전인 대상(들)을 설치하지 않습니다."
+
+#: pacaur:1646
+msgid "   --noconfirm      do not prompt for any confirmation"
+msgstr "   --noconfirm     어떤 확인 절차도 요구하지 않습니다."
+
+#: pacaur:1647
+msgid "   --noedit         do not prompt to edit files"
+msgstr "   --noedit     파일을 수정하라고 요구하지 않습니다."
+
+#: pacaur:1648
+msgid "   --rebuild        always rebuild package(s)"
+msgstr "   --rebuild     언제나 꾸러미를 다시 빌드합니다."
+
+#: pacaur:1649
+msgid "   --silent         silence output"
+msgstr "   --silent     출력을 하지 않습니다."
+
+#: pacaur:1764
+msgid "only one operation may be used at a time"
+msgstr "오직 하나의 동작만 동시에 사용될 수 있습니다."
+
+#: pacaur:1766
+msgid "you cannot perform this operation as root"
+msgstr "이 동작을 root 권한으로 실행할 수 없습니다."
+
+#: pacaur:1768
+msgid "invalid option: '--info' and '--search' may not be used together"
+msgstr "유효하지 않은 옵션: '--info'와 '--search'는 같이 사용될 수 없습니다."
+
+#: pacaur:1770
+msgid ""
+"%s\\$VISUAL%s and %s\\$EDITOR%s environment variables not set or defined "
+"%seditor%s not found"
+msgstr ""
+"%s\\$VISUAL%s 와 %s\\$EDITOR%s 환경변수가 설정되거나 정의된"
+"%seditor%s를 찾을 수 없습니다."
+
+#: pacaur:1773
+msgid "you cannot use %spacaur%s as PACMAN environment variable"
+msgstr "%spacaur%s를 PACMAN 환경변수로 사용할 수 없습니다."
+
+#: pacaur:1775
+msgid "%s does not have write permission"
+msgstr "%s는 쓰기 권한을 가지고 있지 않습니다."
+
+#: pacaur:1777
+msgid "no targets specified (use -h for help)"
+msgstr "대상이 지정되지 않았습니다. (도움말을 보려면 -h를 사용하십시오.)"
+
+#: pacaur:1779
+msgid "invalid option: '--repo' and '--aur' may not be used together"
+msgstr "유효하지 않은 옵션: '--repo'와 '--aur'는 동시에 사용될 수 없습니다."
+
+#: pacaur:1823 pacaur:1840 pacaur:1858
+msgid "Package(s) %s not found in repositories, trying %sAUR%s..."
+msgstr "꾸러미 %s를 저장소에서 찾을 수 없습니다. %sAUR%s에서 찾아봅니다..."
