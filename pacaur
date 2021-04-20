@@ -1765,7 +1765,7 @@ esac
     error $"you cannot perform this operation as root" "${E_ROOT}"
 ((! pacS || ! search || ! info)) ||
     error $"invalid option: '--info' and '--search' may not be used together" "${E_INVALID_OPTION}"
-command -v "${editor%% *}" >/dev/null ||
+((noedit)) || command -v "${editor%% *}" >/dev/null ||
     error $"%s\$VISUAL%s and %s\$EDITOR%s environment variables not set or defined %seditor%s not found" \
         "${colorW}" "${reset}" "${colorW}" "${reset}" "${colorW}" "${reset}" "${E_MISSING_FILE}"
 [[ "${PACMAN-}" != "${0##*/}" ]] ||
